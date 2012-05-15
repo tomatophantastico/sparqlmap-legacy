@@ -1,0 +1,6 @@
+R2RServ('sparql');
+R2RConn('mysql:host=localhost;dbname=DB;user=USER;password=PASS');
+R2RNS('foaf','http://xmlns.com/foaf/0.1/');
+R2RNS('base','http://example.com/myblog/');
+R2RNS('schema','http://triplify.org/vocabulary/blog/');
+R2RMap('select authorid, username, realname, email from serendipity_authors ', 'person', 'foaf:Person','id','foaf:accountName', 'foaf:name',   'foaf:mbox');

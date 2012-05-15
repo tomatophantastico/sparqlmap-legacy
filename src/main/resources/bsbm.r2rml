@@ -1,0 +1,184 @@
+// Database settings
+R2RConn("jdbc:postgresql://localhost/benchmark","postgres","postgres");
+// Base Namespace Definition
+R2RBase("http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/");
+
+// Schema Base Namespace Definition
+R2RSchemaBase("http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/");
+
+// Some Prefix Definitions
+R2RNS("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+R2RNS("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
+R2RNS("foaf", "http://xmlns.com/foaf/0.1/");
+
+R2RNS("dc", "http://purl.org/dc/elements/1.1/");
+R2RNS("xsd", "http://www.w3.org/2001/XMLSchema#");
+R2RNS("rev", "http://purl.org/stuff/rev#");
+R2RNS("bsbm", "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/");
+R2RNS("bsbm-inst", "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/");
+
+// Mappings
+R2RMap(
+    "product",
+    "dataFromProducer{product.producer}/Product{product.nr}",
+    "bsbm:Product",
+    "nr",           
+    "NULL",
+    "rdfs:label",
+    "rdfs:comment",
+    "bsbm:producer->producer",
+    "bsbm:productPropertyNumeric1",
+    "bsbm:productPropertyNumeric2",
+    "bsbm:productPropertyNumeric3",
+    "bsbm:productPropertyNumeric4",
+    "bsbm:productPropertyNumeric5",
+    "bsbm:productPropertyNumeric6",
+    "bsbm:productPropertyTextual1",
+    "bsbm:productPropertyTextual2",
+    "bsbm:productPropertyTextual3",
+    "bsbm:productPropertyTextual4",
+    "bsbm:productPropertyTextual5",
+    "bsbm:productPropertyTextual6",
+    "dc:publisher->producer",
+    "dc:date^^xsd:date"
+);
+
+
+
+R2RMap(
+    "producttype",
+    "ProductType",
+    "bsbm:ProductType",
+    "nr",
+    "NULL",
+    "rdfs:label",
+    "rdfs:comment",
+    "rdfs:subClassOf->producttype",
+    "dc:publisher",
+    "dc:date^^xsd:date"
+);
+
+R2RMap(
+    "productfeature",
+    "ProductFeature",
+    "bsbm:ProductFeature",
+    "nr",
+    "NULL",
+    "rdfs:label",
+    "rdfs:comment",
+    "dc:publisher",
+    "dc:date^^xsd:date"
+);
+
+R2RMap(
+    "productfeatureproduct",
+    "dataFromProducer{product.producer}/Product{productfeatureproduct.product}",
+    "NULL",
+    "product",
+    "NULL",
+    "bsbm:productFeature->productfeature"
+);
+
+R2RMap(
+    "producttypeproduct",
+    "dataFromProducer{product.producer}/Product{producttypeproduct.product}",
+    "NULL",
+    "product",
+    "NULL",
+    "rdf:type->producttype"
+);
+
+
+
+
+
+R2RMap(
+    "producer",
+    "Producer",
+    "bsbm:Producer",
+    "nr",
+    "NULL",
+    "rdfs:label",
+    "rdfs:comment",
+    "foaf:homepage->",
+    "bsbm:country-><http://downlode.org/rdf/iso-3166/countries#>",
+    "dc:publisher->producer",
+    "dc:date^^xsd:date"
+);
+
+R2RMap(
+    "vendor",
+    "Vendor",
+    "bsbm:Vendor",
+    "nr",
+    "NULL",
+    "rdfs:label",
+    "rdfs:comment",
+    "foaf:homepage->",
+    "bsbm:country-><http://downlode.org/rdf/iso-3166/countries#>",
+    "dc:publisher->vendor",
+    "dc:date^^xsd:date"
+);
+
+R2RMap(
+    "offer",
+    "dataFromVendor{offer.vendor}/Offer{offer.nr}",
+    "bsbm:Offer",
+    "nr",
+    "NULL",
+    "bsbm:product->product",
+    "bsbm:producer->producer",
+    "bsbm:vendor->vendor",
+    "bsbm:price^^bsbm:USD",
+    "bsbm:validFrom^^xsd:date",
+    "bsbm:validTo^^xsd:date",
+    "bsbm:deliveryDays^^xsd:Integer",
+    "bsbm:offerWebpage-><{offer.offerwebpage}>",
+    "dc:publisher->vendor",
+    "dc:date^^xsd:date"
+);
+
+R2RMap(
+    "person",
+    "Reviewer",
+    "foaf:Person",
+    "nr",
+    "NULL",
+    "foaf:name",
+    "foaf:mbox_sha1sum",
+    "bsbm:country-><http://downlode.org/rdf/iso-3166/countries#>",
+    "dc:publisher",
+    "dc:date^^xsd:date"
+);
+
+R2RMap(
+    "review",
+    "dataFromRatingSite{review.publisher}/Review{review.nr}",
+    "rev:Review",
+    "nr",
+    "NULL",
+    "bsbm:reviewFor->product",
+    "NULL",
+    "rev:reviewer->person",
+    "bsbm:reviewDate^^xsd:date",
+    "dc:title",
+    "rev:text",
+    "NULL",
+    "bsbm:rating1^^xsd:Integer",
+    "bsbm:rating2^^xsd:Integer",
+    "bsbm:rating3^^xsd:Integer",
+    "bsbm:rating4^^xsd:Integer",
+    "dc:publisher",
+    "dc:date^^xsd:date"
+);
+
+// TODO languages from columns
+// TODO rdf:types from separate tables
+// TODO object properties with values in column
+// TODO object properties with separate base URI
+
+
+
+
+
+    
