@@ -9,6 +9,7 @@ import java.util.Set;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -63,12 +64,28 @@ public abstract  class TermCreator{
 		
 		
 		//read the litypefield
-		Expression litTypeExpr = exprs.remove(0);
-		Long litType = ((LongValue) FilterUtil.uncast(litTypeExpr)).getValue();
-		SelectExpressionItem litTypeSei = new SelectExpressionItem();
-		litTypeSei.setAlias(colalias + ColumnHelper.LIT_TYPE_COL);
-		litTypeSei.setExpression(litTypeExpr);
-		seis.add(litTypeSei);
+		Expression sqlTypeExpr = exprs.remove(0);
+		SelectExpressionItem sqlTypeSei = new SelectExpressionItem();
+		sqlTypeSei.setAlias(colalias + ColumnHelper.SQL_TYPE_COL);
+		sqlTypeSei.setExpression(sqlTypeExpr);
+		seis.add(sqlTypeSei);
+		
+		//read the litypefield
+				Expression litTypeExpr = exprs.remove(0);
+				SelectExpressionItem litTypeSei  = new SelectExpressionItem();
+				litTypeSei.setAlias(colalias + ColumnHelper.LIT_TYPE_COL);
+				litTypeSei.setExpression(litTypeExpr);
+				seis.add(litTypeSei);
+		
+				//read the lang
+				Expression litlangExpr = exprs.remove(0);
+				SelectExpressionItem litnangSei  = new SelectExpressionItem();
+				litnangSei.setAlias(colalias + ColumnHelper.LIT_LANG_COL);
+				litnangSei.setExpression(litlangExpr);
+				seis.add(litnangSei);
+				
+		
+		
 		
 		
 		//add all the resource expressions
@@ -253,7 +270,7 @@ public abstract  class TermCreator{
 		List<Expression> expressions = new ArrayList<Expression>();
 		int length = getLength();
 		for(int i = 0; i < length; i++){
-			expressions.add(getExpressions().get(i+3));
+			expressions.add(getExpressions().get(i+5));
 		}
 		return expressions;
 	}
@@ -296,7 +313,7 @@ public abstract  class TermCreator{
 		//jump to the literals
 				List<Expression> expressions = new ArrayList<Expression>(getExpressions());
 				int length = getLength();
-				for(int i = 0; i< length+3; i++){
+				for(int i = 0; i< length+5; i++){
 					expressions.remove(0);
 				}
 				return expressions;		
@@ -334,6 +351,19 @@ public abstract  class TermCreator{
 	public Integer getSqlType(){
 		if(FilterUtil.uncast(getExpressions().get(2)) instanceof LongValue){
 			return  (int) ((LongValue)FilterUtil.uncast(getExpressions().get(2))).getValue();
+		}else{
+			return null;
+		}
+		
+	}
+	public Expression getLanguage(){
+		
+		return FilterUtil.uncast(getExpressions().get(4));
+
+	}
+	public String  getDataType(){
+		if(FilterUtil.uncast(getExpressions().get(5)) instanceof StringValue){
+			return  (String) ((StringValue)FilterUtil.uncast(getExpressions().get(3))).getValue();
 		}else{
 			return null;
 		}

@@ -140,7 +140,7 @@ R2RMap(
 
 R2RMap(
     "person",
-    "Reviewer",
+    "dataFromRatingSite{person.publisher}/Reviewer{person.nr}",
     "foaf:Person",
     "nr",
     "NULL",
@@ -162,7 +162,7 @@ R2RMap(
     "rev:reviewer->person",
     "bsbm:reviewDate^^xsd:date",
     "dc:title",
-    "rev:text",
+    "rev:text@->language",
     "NULL",
     "bsbm:rating1^^xsd:Integer",
     "bsbm:rating2^^xsd:Integer",

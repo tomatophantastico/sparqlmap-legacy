@@ -14,7 +14,7 @@
       <unpack>true</unpack>
       <outputDirectory>webapps/root/</outputDirectory>
       <includes>
-        <include>de.ahoehma:dummy-webapp:war</include>
+        <include>org.aksw:sparqlmap:war</include>
       </includes>
     </dependencySet>
     <dependencySet>

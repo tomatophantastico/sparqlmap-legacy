@@ -1,5 +1,6 @@
 package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
 
+import java.io.ObjectInputStream.GetField;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.NullValue;
@@ -153,8 +155,9 @@ public class PlainSelectWrapper implements Wrapper {
 							oldTc.getExpressions(), term.getExpressions());
 
 						for (int i = 0; i < eqs.size(); i++) {
-							fromItem2joincondition.put(((Column)FilterUtil.uncast(eqs.get(i).getLeftExpression())).getTable(), eqs.get(i));
-							fromItem2joincondition.put(((Column)FilterUtil.uncast(eqs.get(i).getRightExpression())).getTable(), eqs.get(i));
+							addJoinCondition(eqs.get(i));
+							//fromItem2joincondition.put(((Column)FilterUtil.uncast(eqs.get(i).getLeftExpression())).getTable(), eqs.get(i));
+							//fromItem2joincondition.put(((Column)FilterUtil.uncast(eqs.get(i).getRightExpression())).getTable(), eqs.get(i));
 							//fromItem2joincondition.put(term.getFromItems().get(i), eqs.get(i));
 						}
 
@@ -197,78 +200,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 		TermCreator cloneTerm = term.clone("_dupVar_" + dupcounter++);
 
-		// for (int i = 0; i < dupvarCol.getMapp().getIdColumn()
-		// .getIdColumns().size(); i++) {
-		// // we need to join this new mapping to with the one we
-		// // just
-		// // cloned
-		// List<EqualsTo> eqs = new ArrayList<EqualsTo>();
-		//
-		// // get the join to from the original column of our clone
-		// Collection<Expression> origeqs = joincondition
-		// .get(term.getMapp().getFromPart());
-		// if (origeqs == null || origeqs.isEmpty()) {
-		// EqualsTo eq = new EqualsTo();
-		// eq.setRightExpression(dupvarCol.getMapp()
-		// .getIdColumn().getColumnExpression());
-		// eq.setLeftExpression(term.getMapp().getIdColumn()
-		// .getColumnExpression());
-		// eqs.add(eq);
-		// } else {
-		// for (Expression origeq : origeqs) {
-		// // this one is flaky
-		//
-		// EqualsTo eq = new EqualsTo();
-		//
-		// if (origeq instanceof EqualsTo) {
-		// Expression exprToModify = ((BinaryExpression) origeq)
-		// .getRightExpression();
-		//
-		// // we find out at which place the
-		// // exprToMidify is in the resources of the
-		// // old one and we replace it with the new
-		// // one
-		//
-		// for (int j = 0; j < term.getMapp()
-		// .getIdColumn()
-		// .getColumnExpressions().size(); j++) {
-		// if (term
-		// .getMapp()
-		// .getIdColumn()
-		// .getColumnExpressions()
-		// .get(j)
-		// .toString()
-		// .equals(exprToModify.toString())) {
-		// eq.setRightExpression(dupvarCol
-		// .getMapp().getIdColumn()
-		// .getColumnExpressions()
-		// .get(j));
-		// }
-		// }
-		//
-		// // we have to replace all the join from the
-		// // old construct with the new construct
-		// ((EqualsTo) origeq).getRightExpression();
-		// eq.setLeftExpression(((EqualsTo) origeq)
-		// .getLeftExpression());
-		// } else {
-		// throw new ImplementationException(
-		// "Implement and join conditions");
-		// }
-		// eqs.add(eq);
-		// }
-		// }
-		//
-		// for (EqualsTo eq : eqs) {
-		// eq = (EqualsTo) FilterUtil.shortCut(eq);
-		// joincondition.put(
-		// dupvarCol.getMapp().getFromPart(), eq);
-		// }
-		//
-		// }
-		
-		
-		//get the equals filters for that term
+	
 		Set<EqualsTo> newEqs = new HashSet<EqualsTo>();
 		
 		for(int fromItemCount = 0;fromItemCount <term.getFromItems().size();fromItemCount++){
@@ -277,7 +209,7 @@ public class PlainSelectWrapper implements Wrapper {
 	
 		
 			
-			for(EqualsTo eq : fromItem2joincondition.get(fri)){
+			for(EqualsTo eq : getFromItem2joincondition().get(fri.getAlias())){
 				Expression rightUncast = FilterUtil.uncast(eq.getRightExpression());
 				
 				if(rightUncast instanceof Column){
@@ -291,8 +223,9 @@ public class PlainSelectWrapper implements Wrapper {
 			}
 		}
 		for (EqualsTo clonedEq : newEqs) {
-			fromItem2joincondition.put(((Column)FilterUtil.uncast(clonedEq.getLeftExpression())).getTable(), clonedEq);
-			fromItem2joincondition.put(((Column)FilterUtil.uncast(clonedEq.getRightExpression())).getTable(), clonedEq);
+			addJoinCondition(clonedEq);
+			//fromItem2joincondition.put(((Column)FilterUtil.uncast(clonedEq.getLeftExpression())).getTable(), clonedEq);
+			//fromItem2joincondition.put(((Column)FilterUtil.uncast(clonedEq.getRightExpression())).getTable(), clonedEq);
 		}
 		
 		return cloneTerm;
@@ -302,7 +235,7 @@ public class PlainSelectWrapper implements Wrapper {
 	private Expression cloneEqualsExpression(Expression castedCol, FromItem oldFi, FromItem newFi){
 		if( FilterUtil.uncast(castedCol) instanceof Column) {
 			Column col  = (Column) FilterUtil.uncast(castedCol);
-			if(col.getTable().toString().equals(oldFi.toString())){
+			if(col.getTable().getAlias().equals(oldFi.getAlias())){
 				String origCastType = FilterUtil.getCastType(castedCol);
 				
 				
@@ -383,7 +316,7 @@ public class PlainSelectWrapper implements Wrapper {
 						fiAliases.add(fi.getAlias());
 					}
 					
-					if(this.fromItems.keySet().containsAll(fiAliases)){
+					if(this._fromItems.keySet().containsAll(fiAliases)){
 						addColumn(rightVarTc, var, true);
 						shortcutted = true;
 					}
@@ -480,10 +413,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 		this.plainSelect.getSelectItems().addAll(newSeis);
 
-		
-		
 
-		
 		for(String var: newColGroups.keySet()){
 			List<Expression> expressions  = (List) newColGroups.get(var);
 			SubSelectTermCreator sstc = new SubSelectTermCreator(dataTypeHelper, expressions);
@@ -491,22 +421,19 @@ public class PlainSelectWrapper implements Wrapper {
 			colstring2var.put(sstc.toString(), var);
 		}
 		
-		
-		
-		
-		
-
-	
-
 		subselects.put(subsell, right);
 		
 		
 		if(optional){
-			optFromItem2joincondition.putAll(subsell, joinon);
+			for (EqualsTo eq : joinon) {
+				addOptJoinCondition(eq);
+			}
 			addOptFromItem(subsell);
 			
 		}else{
-			fromItem2joincondition.putAll(subsell,joinon);
+			for(EqualsTo eq : joinon){
+				addJoinCondition(eq);
+			}
 			
 			addFromItem(subsell);
 			
@@ -558,25 +485,13 @@ public class PlainSelectWrapper implements Wrapper {
 
 		if (!filters.containsKey(sqlEx.toString())) {
 			filters.put(sqlEx.toString(), sqlEx);
-			plainSelect.setWhere(conjunctFilters(new HashSet<Expression>(
+			plainSelect.setWhere(FilterUtil.conjunctFilters(new HashSet<Expression>(
 					filters.values())));
 
 		}
 	}
 
-	private Expression conjunctFilters(Collection<Expression> exps) {
-		if (exps.isEmpty()) {
-			return null;
-		} else if (exps.size() == 1) {
-			return exps.iterator().next();
-		} else {
-			Expression exp = exps.iterator().next();
-			exps.remove(exp);
-			AndExpression and = new AndExpression(exp, conjunctFilters(exps));
-			return and;
-		}
 
-	}
 
 	/**
 	 * extracts the from item of the expressions and adds them to the select
@@ -587,8 +502,9 @@ public class PlainSelectWrapper implements Wrapper {
 
 		
 		for(EqualsTo eq : tc.getFromJoins()){
-			fromItem2joincondition.put(((Column) eq.getLeftExpression()).getTable(), eq);
-			fromItem2joincondition.put(((Column) eq.getRightExpression()).getTable(), eq);
+			addJoinCondition(eq);
+			//fromItem2joincondition.put(((Column) eq.getLeftExpression()).getTable(), eq);
+			//fromItem2joincondition.put(((Column) eq.getRightExpression()).getTable(), eq);
 		}
 		
 		for (FromItem fi : tc.getFromItems()) {
@@ -607,26 +523,112 @@ public class PlainSelectWrapper implements Wrapper {
 	 * 
 	 * @param fi
 	 */
-	private Map<String, FromItem> fromItems = new LinkedHashMap<String, FromItem>();
+	private Map<String, FromItem> _fromItems = new LinkedHashMap<String, FromItem>();
 	
-	private Map<String, FromItem> optFromItems = new LinkedHashMap<String, FromItem>();
+	private Map<String, FromItem> _optFromItems = new LinkedHashMap<String, FromItem>();
 	
-	private Multimap<FromItem, EqualsTo> fromItem2joincondition = LinkedListMultimap.create();
+	private Multimap<String, EqualsTo> _fromItem2joincondition = LinkedListMultimap.create();
 
-	private Multimap<FromItem, EqualsTo> optFromItem2joincondition = LinkedListMultimap.create();
+	private Multimap<String, EqualsTo> _optFromItem2joincondition = LinkedListMultimap.create();
 
 	private void addFromItem(FromItem fi) {
-		if (!fromItems.containsKey(fi.getAlias())) {
-			fromItems.put(fi.getAlias(), fi);
-			putFromItems();
+		if (!_fromItems.containsKey(fi.getAlias())) {
+			_fromItems.put(fi.getAlias(), fi);
 		}
+		putFromItems();
 	}
 	
 	private void addOptFromItem(FromItem fi) {
-		if (!optFromItems.containsKey(fi.getAlias())) {
-			optFromItems.put(fi.getAlias(), fi);
-			putFromItems();
+		if (!_optFromItems.containsKey(fi.getAlias())) {
+			_optFromItems.put(fi.getAlias(), fi);
 		}
+		putFromItems();
+	}
+	
+	private void addJoinCondition(Expression exp1, Expression exp2, boolean isOptional){
+		//we create here an equals join condition out of two expression, of one or both columns are and the rest are fixed values.
+		FromItem fi1 = null;
+		FromItem fi2 = null;
+		
+		//((Column)FilterUtil.uncast(exp1)).getTable();
+		//((Column)FilterUtil.uncast(exp2)).getTable();
+		
+		if(FilterUtil.uncast(exp1) instanceof Column){
+			fi1 = ((Column)FilterUtil.uncast(exp1)).getTable();
+			if(FilterUtil.uncast(exp2) instanceof Column){
+				fi2 = ((Column)FilterUtil.uncast(exp2)).getTable();
+			}
+		} else if (FilterUtil.uncast(exp2) instanceof Column){
+			fi1 = ((Column)FilterUtil.uncast(exp2)).getTable();
+		}
+	
+		EqualsTo eq = new EqualsTo();
+		eq.setLeftExpression(exp1);
+		eq.setRightExpression(exp2);
+		
+		//construct the inverse
+		EqualsTo eqinv = new EqualsTo();
+		eqinv.setLeftExpression(exp2);
+		eqinv.setRightExpression(exp1);
+
+		// we only need to check for one From ITem here, as we always put the data in for both. So if it is in there for one, so it is in for both
+		Collection<EqualsTo> otherEqs = new ArrayList<EqualsTo>();
+		if(isOptional && fi1!=null){
+			otherEqs = _fromItem2joincondition.get(fi1.getAlias());
+		} else if(fi1!=null){
+			otherEqs = _optFromItem2joincondition.get(fi1.getAlias());
+		}
+		  
+		
+		boolean isAlreadyInThere = false;
+		// we now check, if it is already in there
+		for (EqualsTo otherEq : otherEqs) {
+			if(otherEq.toString().equals(eq.toString()) 
+					&& otherEq.toString().equals(eqinv.toString())){
+				isAlreadyInThere = true;
+				break;
+			}
+		}
+		
+		if(!isAlreadyInThere){
+			//not in there, add the join condition
+			if(isOptional){
+				_optFromItem2joincondition.put(fi1.getAlias(), eq);
+				if(fi2 !=null){
+				_optFromItem2joincondition.put(fi2.getAlias(), eq);
+				}
+			}else{
+				_fromItem2joincondition.put(fi1.getAlias(), eq);
+				if(fi2 !=null){
+					_fromItem2joincondition.put(fi2.getAlias(), eq);
+				}
+				
+			}
+			
+		}
+		
+
+		
+	}
+	private void addJoinCondition(Expression exp1, Expression exp2){
+		addJoinCondition(exp1, exp2,false);
+	}
+	
+	private void addJoinCondition(EqualsTo eq){
+		addJoinCondition(eq.getLeftExpression(), eq.getRightExpression(),false);
+	}
+	
+	private void addOptJoinCondition(EqualsTo eq){
+		addJoinCondition(eq.getLeftExpression(), eq.getRightExpression(),true);
+	}
+	
+	private void addOptJoinCondition(Expression exp1, Expression exp2){
+		addJoinCondition(exp1, exp2,true);
+	}
+	
+	
+	public Multimap<String, EqualsTo> getFromItem2joincondition() {
+		return _fromItem2joincondition;
 	}
 
 	
@@ -640,62 +642,195 @@ public class PlainSelectWrapper implements Wrapper {
 		// we start with purging the previously created stuff
 		plainSelect.setFromItem(null);
 		plainSelect.setJoins(new ArrayList<FromItem>());
+		
+		
+		//determine the order of the from items
+		Map<String,FromItem> tooLookAt = new TreeMap<String, FromItem>(_fromItems);
+		
+		//contains the lists of connected blocks
+		List<List<String>> connectedJoinBlock = new ArrayList<List<String>>();
+		
+		//take the first to start with
+		while(tooLookAt.size()>0){
+			
+			FromItem rootFi = tooLookAt.values().iterator().next();
+			tooLookAt.remove(rootFi.getAlias());
+			List<String> connected = new ArrayList<String>();
+			depthFirst(rootFi, connected, tooLookAt);
+			connectedJoinBlock.add(connected);
+		}
+		
+		
+		//we put the blocks into the query.
+		
+		Set<String> inTheQuery = new HashSet<String>();
+		
+		for (List<String> joinBlock : connectedJoinBlock) {
+			
+			
+			for (String fromItemString : joinBlock) {
+				inTheQuery.add(fromItemString);
+				FromItem fi = _fromItems.get(fromItemString);
+				
+				if(plainSelect.getFromItem()==null){
+					plainSelect.setFromItem(fi);
+				}else{
+					//we create a join
+					Collection<EqualsTo> eqs = _fromItem2joincondition.get(fi.getAlias());
+					Collection<EqualsTo> eqsWeCanUse = new HashSet<EqualsTo>();
+					for (EqualsTo equalsTo : eqs) {
+						if(inTheQuery.contains(FilterUtil.getOtherFromItem(equalsTo, fi).getAlias())){
+							eqsWeCanUse.add(equalsTo);
+						}
+					}
+					
+					Join join = new Join();
+					join.setRightItem(fi);
+		
+					if (eqsWeCanUse.size()>0) {
+						
+						List<Expression> simplified = new ArrayList<Expression>();
+						
+						for (EqualsTo equalsTo : eqsWeCanUse) {
+							simplified.add(filterUtil.shortCutFilter(equalsTo));
+						}
+		
+						join.setOnExpression(FilterUtil.conjunctFilters(new ArrayList<Expression>(
+										simplified)));
+					} else {
+						join.setSimple(true);
+					}
+					plainSelect.getJoins().add(join);
+					
+				}
+			}
+			
+		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 
-		Iterator<FromItem> fis = fromItems.values().iterator();
-		FromItem mainfrom = fis.next();
-		plainSelect.setFromItem(mainfrom);
+//		Iterator<FromItem> fis = _fromItems.values().iterator();
+//		FromItem mainfrom = fis.next();
+//		plainSelect.setFromItem(mainfrom);
+//		
+//		
+//		
+//		//we fill the map
+//		
+//		
+//		
+//		Set<String> fromItemsInTheQuery = new HashSet<String>();
+//		fromItemsInTheQuery.add(mainfrom.toString());
+//		
+//		
+//		while (fis.hasNext()) {
+//			FromItem fi = fis.next();
+//			
+//			fromItemsInTheQuery.add(fi.toString());
+//			
+//			Join join = new Join();
+//			join.setRightItem(fi);
+//			Collection<EqualsTo> fiEqs = _fromItem2joincondition.get(fi);
+//			Set<Expression> conditionsWithBothFromItemsPresent = new HashSet<Expression>();
+//			for (EqualsTo eq : fiEqs) {
+//				FromItem fi1 = ((Column)FilterUtil.uncast(eq.getLeftExpression())).getTable();
+//				FromItem fi2 = ((Column)FilterUtil.uncast(eq.getLeftExpression())).getTable();
+//				
+//				if(fromItemsInTheQuery.contains(fi1.toString())&&fromItemsInTheQuery.contains(fi2.toString())){
+//					conditionsWithBothFromItemsPresent.add(eq);
+//				}
+//			}
+//			
+//			
+//			if(conditionsWithBothFromItemsPresent.size()>0){
+//				join.setOnExpression(FilterUtil.conjunctFilters(conditionsWithBothFromItemsPresent));
+//			}
+//			
+//			plainSelect.getJoins().add(join);
+//		}
 		
 		
-		Set<EqualsTo> mainFromJoinCond = new HashSet<EqualsTo>(fromItem2joincondition.get(plainSelect.getFromItem()));
+		
+//		Set<EqualsTo> mainFromJoinCond = new HashSet<EqualsTo>(_fromItem2joincondition.get(plainSelect.getFromItem()));
+		
 //		if (fromItem2joincondition.containsKey(plainSelect.getFromItem())) {
 //			for (Expression ex : fromItem2joincondition.get(plainSelect.getFromItem())) {
 //				addSQLFilter(ex);
 //			}
 //		}
 
-		while (fis.hasNext()) {
-			FromItem fi = fis.next();
-			//get the condition, that maps this FromItem with the one in the select
-			
-			Set<EqualsTo> additionalFiJoinConds = new HashSet<EqualsTo>(fromItem2joincondition.get(fi));
-			additionalFiJoinConds.retainAll(mainFromJoinCond);
-			
-			Set<EqualsTo> leftovers = new HashSet<EqualsTo>(fromItem2joincondition.get(fi));
-			leftovers.removeAll(additionalFiJoinConds);
-			mainFromJoinCond.addAll(leftovers);
-			
-			Join join = new Join();
-			join.setRightItem(fi);
-
-			if (additionalFiJoinConds.size()>0) {
-				
-				List<Expression> simplified = new ArrayList<Expression>();
-				
-				for (EqualsTo equalsTo : additionalFiJoinConds) {
-					simplified.add(filterUtil.shortCutFilter(equalsTo));
-				}
-
-				join.setOnExpression(this
-						.conjunctFilters(new ArrayList<Expression>(
-								simplified)));
-			} else {
-				join.setSimple(true);
-			}
-			plainSelect.getJoins().add(join);
-		}
-		// adding the optionals here
+//		while (fis.hasNext()) {
+//			FromItem fi = fis.next();
+//			//get the condition, that maps this FromItem with the one in the select
+//			
+//			Set<EqualsTo> additionalFiJoinConds = new HashSet<EqualsTo>(_fromItem2joincondition.get(fi));
+//			additionalFiJoinConds.retainAll(mainFromJoinCond);
+//			
+//			Set<EqualsTo> leftovers = new HashSet<EqualsTo>(_fromItem2joincondition.get(fi));
+//			leftovers.removeAll(additionalFiJoinConds);
+//			mainFromJoinCond.addAll(leftovers);
+//			
+//			Join join = new Join();
+//			join.setRightItem(fi);
+//
+//			if (additionalFiJoinConds.size()>0) {
+//				
+//				List<Expression> simplified = new ArrayList<Expression>();
+//				
+//				for (EqualsTo equalsTo : additionalFiJoinConds) {
+//					simplified.add(filterUtil.shortCutFilter(equalsTo));
+//				}
+//
+//				join.setOnExpression(this
+//						.conjunctFilters(new ArrayList<Expression>(
+//								simplified)));
+//			} else {
+//				join.setSimple(true);
+//			}
+//			plainSelect.getJoins().add(join);
+//		}
 		
-		for(FromItem ofi: optFromItems.values()){
-			Collection<EqualsTo> joincond = optFromItem2joincondition.get(ofi);
+		
+		
+		
+		
+		
+		// adding the optionals here
+		for(FromItem ofi: _optFromItems.values()){
+			Collection<EqualsTo> joincond = _optFromItem2joincondition.get(ofi.getAlias());
 			
 			Join ojoin = new Join();
 			ojoin.setLeft(true);
-			ojoin.setOnExpression(conjunctFilters(new ArrayList<Expression>(joincond)));
+			ojoin.setOnExpression(FilterUtil.conjunctFilters(new ArrayList<Expression>(joincond)));
 			ojoin.setRightItem(ofi);
 			plainSelect.getJoins().add(ojoin);
 		}
 		
 
+	}
+	
+	
+	
+	private void depthFirst(FromItem fi, List<String> connected, Map<String,FromItem> toLookAt){
+		//get the join connections
+		Collection<EqualsTo> joinconds = _fromItem2joincondition.get(fi.getAlias());
+		connected.add(fi.getAlias());
+		
+		for (EqualsTo equalsTo : joinconds) {
+			FromItem theOtherInTheJoin = FilterUtil.getOtherFromItem(equalsTo,fi);
+			if(toLookAt.containsKey(theOtherInTheJoin.getAlias())){
+				toLookAt.remove(theOtherInTheJoin.getAlias());
+				depthFirst(theOtherInTheJoin, connected, toLookAt);
+			}
+		}
 	}
 
 	
@@ -753,6 +888,38 @@ public class PlainSelectWrapper implements Wrapper {
 	public List<SelectExpressionItem> getSelectExpressionItems() {
 		return plainSelect.getSelectItems();
 	}
+	
+	
+	
+	
+	
+	@Override
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+		sb.append("*************\n");
+		sb.append("JOIN Conditions are:\n");
+		
+		for(String fis : _fromItem2joincondition.keySet()){
+			sb.append("  FromItem: " + fis + "\n");
+			for (EqualsTo eq : _fromItem2joincondition.get(fis)) {
+				
+				sb.append("         " + eq.toString() + "\n");			
+			}
+			
+			
+		}
+		
+		
+		
+		return sb.toString();
+	}
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	

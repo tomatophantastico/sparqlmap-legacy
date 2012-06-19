@@ -1,8 +1,7 @@
 package org.aksw.sparqlmap.config.syntax;
 
-import org.apache.commons.collections15.BidiMap;
-import org.apache.commons.collections15.bidimap.TreeBidiMap;
-
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
@@ -14,7 +13,7 @@ public class NameSpaceConfig {
 		private String instanceBase;
 	
 	
-	private BidiMap namespaces = new TreeBidiMap() ;
+	private BiMap<String,String> namespaces = HashBiMap.create() ;
 	
 	public String getSchemaBase() {
 		return schemaBase;
@@ -38,7 +37,7 @@ public class NameSpaceConfig {
 	}
 	
 	public String getPrefixForUrl(String url){
-		return (String) namespaces.getKey(url);
+		return (String) namespaces.inverse().get(url);
 	}
 	
 	public void putNamespaceMapping(String prefix, String url){

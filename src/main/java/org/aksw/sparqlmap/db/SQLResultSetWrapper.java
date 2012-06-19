@@ -15,11 +15,11 @@ import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ColumnHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.SBlockNodeMapping;
-import org.apache.commons.collections15.multimap.MultiHashMap;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
+import com.hp.hpl.jena.datatypes.BaseDatatype;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.query.QuerySolution;
@@ -67,7 +67,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	 * 
 	 * @throws SQLException
 	 */
-	private void initVars() throws SQLException {
+	public void initVars() throws SQLException {
 
 		for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
 			String colname = rs.getMetaData().getColumnName(i);
@@ -158,12 +158,23 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					}
 					
 				} else if (type == ColumnHelper.COL_TYPE_LITERAL) {
+					
+					String litType = rs.getString(var + ColumnHelper.LIT_TYPE_COL);
+					RDFDatatype dt = null;
+					if(litType!=null&&!litType.isEmpty()){
+						dt = new BaseDatatype(litType);
+					}
+					
+					String lang =  rs.getString(var + ColumnHelper.LIT_LANG_COL);
+					
+					
+					
 					// node =
 					// Node.createLiteral(rs.getString(var+ColumnHelper.LITERAL_COL_STRING));
 
 					// determine the data type
 					int sqldatatype = rs.getInt(var
-							+ ColumnHelper.LIT_TYPE_COL);
+							+ ColumnHelper.SQL_TYPE_COL);
 						
 					String literalVal = null;
 					if(dth.getCastTypeString(sqldatatype) == dth.getStringCastType()&&
@@ -185,8 +196,8 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					node = Node
 							.createLiteral(
 									literalVal,
-									null,
-									DataTypeHelper.getRDFDataType(sqldatatype));
+									lang, dt
+									);
 					}else{
 						node = null; 
 					}

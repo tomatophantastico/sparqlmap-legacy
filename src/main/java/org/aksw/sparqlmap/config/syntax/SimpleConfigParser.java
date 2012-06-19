@@ -19,6 +19,7 @@ import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectBody;
@@ -36,6 +37,7 @@ import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 import org.apache.log4j.Logger;
 
 import com.Ostermiller.util.CSVParser;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 public class SimpleConfigParser {
 
@@ -81,6 +83,16 @@ public class SimpleConfigParser {
 					coldef.setTermCreator(ctc);
 				}		
 			}
+			
+			//process the type of statement
+			
+			ColumDefinition typecol = new ColumDefinition();
+			typecol.setProperty(RDF.type.getURI());
+			TermCreator typeTc = new ConstantResourceCreator(config.getDbConn().getDataTypeHelper(), mapping.getTypeOf().getURI());
+			typecol.setTermCreator(typeTc);
+			typecol.setMapp(mapping);
+			mapping.addColDefinition(typecol);
+			
 		}
 		config.getMappingConfiguration().fillMaps();
 
@@ -139,7 +151,7 @@ public class SimpleConfigParser {
 		
 		DataTypeHelper dth = config.getDbConn().getDataTypeHelper();
 		List<String> resourceSegments = getResourceSegements(coldef);
-		List<Expression> expressions = ColumnHelper.getBaseExpressions(1, resourceSegments.size(), ColumnHelper.COL_SQL_TYPE_RESOURCE,config.getDbConn().getDataTypeHelper());
+		List<Expression> expressions = ColumnHelper.getBaseExpressions(1, resourceSegments.size(), ColumnHelper.COL_SQL_TYPE_RESOURCE,config.getDbConn().getDataTypeHelper(),null,null,null);
 		for (int i = 0; i < resourceSegments.size(); i++) {
 			if (i % 2 == 0) {
 				// we have a string
@@ -169,7 +181,7 @@ public class SimpleConfigParser {
 	}
 	
 	public List<Expression> getLiteralExpressions(ColumDefinition coldef){
-		List<Expression> literalExpressions = ColumnHelper.getBaseExpressions(2, 0, coldef.getSqldataType(),config.getDbConn().getDataTypeHelper());
+		List<Expression> literalExpressions = ColumnHelper.getBaseExpressions(2, 0, coldef.getSqldataType(),config.getDbConn().getDataTypeHelper(),coldef.getDatatype(), coldef.getLanguage(),coldef.getLanguageColumn());
 		
 		
 		Expression castedcol = FilterUtil.cast(coldef.getColumn(), config.getDbConn().getDataTypeHelper().getCastTypeString(coldef.getSqldataType()));
@@ -391,6 +403,12 @@ public class SimpleConfigParser {
 				+ elementSplit[1]);
 		map.setTypeOf(config.getNameSpaceConfig().resolveToResource(
 				elementSplit[2]));
+		
+		
+		
+		
+		
+		
 		map.setId(elementSplit[3]);
 
 		// this variable defines at which column in the config file the
@@ -406,6 +424,39 @@ public class SimpleConfigParser {
 					.getExpression());
 			Integer dataType = selectExpressionItemDataType.get(column
 					.getColumnName());
+			
+			//we first check for language tags defined with @. These are always at the rear.
+			
+			String lang = null;
+			Column langColumn = null;
+			
+			if(elementSplit[i].contains("@")){
+				
+				String langdef =elementSplit[i].split("@")[1]; 
+				//check if it is a column
+				if(langdef.startsWith("->")){
+					langColumn = new Column(column.getTable(), langdef.substring(2));
+				}else if(langdef.length()==2){ //should be iso code
+					lang = langdef;
+				}else{
+					throw new RuntimeException("Error in config, check language def (@)");
+				}
+				elementSplit[i] = elementSplit[i].split("@")[0];
+			}
+			
+			String literalType = null;
+			
+			if(elementSplit[i].contains("^^")){
+				//add the datatype
+				String typeDefString = elementSplit[i].split("\\^\\^")[1]; 
+				literalType = this.config.getNameSpaceConfig().resolveToResource(typeDefString).getURI();
+				
+				
+			}
+			
+			
+			
+			
 			if (!elementSplit[i].contains("->")) {
 				if (elementSplit[i].equals("NULL")) {
 					prop = config.getNameSpaceConfig().resolveToProperty(
@@ -421,6 +472,9 @@ public class SimpleConfigParser {
 				coldef.setColname(column.getColumnName());
 				coldef.setSqldataType(dataType);
 				coldef.setColum(column);
+				coldef.setLanguage(lang);
+				coldef.setLanguageColumn(langColumn);
+				coldef.setDatatype(literalType);
 				map.addColDefinition(coldef);
 
 			} else {
@@ -446,6 +500,9 @@ public class SimpleConfigParser {
 				coldef.setSqldataType(dataType);
 				coldef.setColum(column);
 				coldef.setJoinsWith(joinswith);
+				coldef.setLanguage(lang);
+				coldef.setLanguageColumn(langColumn);
+				coldef.setDatatype(literalType);
 				if(uritemplate!=null){
 					coldef.setUriTemplate(uritemplate);
 				}
@@ -456,6 +513,10 @@ public class SimpleConfigParser {
 			// }
 
 		}
+		
+		
+						
+		
 
 		config.getMappingConfiguration().add(map);
 

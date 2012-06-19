@@ -27,6 +27,10 @@ public class AlgebraBasedMapper implements Mapper {
 	private SQLAccessFacade conn;
 	
 	private SparqlBeautifier beautifier = new SparqlBeautifier();
+	
+	public SparqlBeautifier getBeautifier() {
+		return beautifier;
+	}
 
 	public AlgebraBasedMapper(R2RConfiguration mainConf) {
 		this.mappingConf = mainConf.getMappingConfiguration();

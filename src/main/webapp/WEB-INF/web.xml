@@ -8,11 +8,34 @@
     <servlet-name>sparql</servlet-name>
     <servlet-class>org.aksw.sparqlmap.SPARQLServlet</servlet-class>
   </servlet>
+    <servlet>
+    <servlet-name>sparqlDummy</servlet-name>
+    <servlet-class>org.aksw.sparqlmap.DummySparqlServlet</servlet-class>
+  </servlet>
+    <servlet>
+    <servlet-name>sparqlFindingDummy</servlet-name>
+    <servlet-class>org.aksw.sparqlmap.DummyFindingServlet</servlet-class>
+  </servlet>
+      <servlet>
+    <servlet-name>dump</servlet-name>
+    <servlet-class>org.aksw.sparqlmap.BSBMDumpServlet</servlet-class>
+  </servlet>
   <servlet-mapping>
     <servlet-name>sparql</servlet-name>
     <url-pattern>/sparql</url-pattern>
   </servlet-mapping>
-
+  <servlet-mapping>
+    <servlet-name>sparqlDummy</servlet-name>
+    <url-pattern>/dummy</url-pattern>
+  </servlet-mapping>
+    <servlet-mapping>
+    <servlet-name>sparqlFindingDummy</servlet-name>
+    <url-pattern>/finding</url-pattern>
+  </servlet-mapping>
+      <servlet-mapping>
+    <servlet-name>dump</servlet-name>
+    <url-pattern>/dump</url-pattern>
+  </servlet-mapping>
   
   
   

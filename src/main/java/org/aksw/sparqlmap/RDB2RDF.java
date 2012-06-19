@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +17,7 @@ import org.aksw.sparqlmap.db.SQLAccessFacade;
 import org.aksw.sparqlmap.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.mapper.Mapper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.AlgebraBasedMapper;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 import org.openjena.riot.system.JenaWriterRdfJson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +37,7 @@ import com.hp.hpl.jena.xmloutput.impl.Basic;
 
 public class RDB2RDF {
 
-	private Mapper mapper;
+	public Mapper mapper;
 	
 	private R2RConfiguration config;
 	
@@ -65,9 +67,7 @@ public class RDB2RDF {
 		
 		
 	}
-	private static long sqltime = 0;
-	private static long executetime= 0;
-	
+
 	
 	public enum ReturnType {JSON,XML}
 	
@@ -84,7 +84,7 @@ public class RDB2RDF {
 		
 		Query query = QueryFactory.create(qstring);
 		if(query.isAskType()){
-			
+			throw new ImplementationException("Dont Ask");
 		}
 		if(query.isConstructType()){
 			Model model = executeConstruct(rt,  query, com.hp.hpl.jena.sparql.graph.GraphFactory.makeJenaDefaultModel());
@@ -179,9 +179,12 @@ public class RDB2RDF {
 	}
 	
 	
-	private SQLResultSetWrapper executeSparql(Query query) throws SQLException{
+	public SQLResultSetWrapper executeSparql(Query query) throws SQLException{
 
 		String sql = mapper.rewrite(query);
+		
+
+		
 		return db.executeSQL(sql);
 		
 	}

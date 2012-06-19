@@ -18,12 +18,6 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
-import org.apache.commons.dbcp.ConnectionFactory;
-import org.apache.commons.dbcp.DriverManagerConnectionFactory;
-import org.apache.commons.dbcp.PoolableConnectionFactory;
-import org.apache.commons.dbcp.PoolingDriver;
-import org.apache.commons.pool.ObjectPool;
-import org.apache.commons.pool.impl.GenericObjectPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -78,37 +78,12 @@ public abstract class BSBMTest extends BaseTest {
 			+ "FILTER (!bound(?testVar))  } " + "ORDER BY ?label LIMIT 10";
 	
 	public static String q3 = "PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/> PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  SELECT ?product ?label WHERE {     ?product rdfs:label ?label .     ?product a <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType1267> . 	?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature8000> . 	?product bsbm:productPropertyNumeric1 ?p1 . 	FILTER ( ?p1 > 228 )  	?product bsbm:productPropertyNumeric3 ?p3 . 	FILTER (?p3 < 156 )     OPTIONAL {          ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature8001> .         ?product rdfs:label ?testVar }     FILTER (!bound(?testVar))  } ORDER BY ?label LIMIT 10  ";
+
 	
-	private String q4_old = "PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/>"
-			+ "PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/>"
-			+ "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-			+ "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
-			+ "SELECT DISTINCT ?product ?label ?propertyTextual"
-			+ "WHERE {"
-			+ " { "
-			+ " ?product rdfs:label ?label ."
-			+ " ?product rdf:type bsbm-inst:ProductType1 ."
-			+ " ?product bsbm:productFeature bsbm-inst:ProductFeature39 ."
-			+ "	?product bsbm:productFeature bsbm-inst:ProductFeature41 ."
-			+ " ?product bsbm:productPropertyTextual1 ?propertyTextual ."
-			+ "	?product bsbm:productPropertyNumeric1 ?p1 ."
-			+ "	FILTER ( ?p1 > 2 )"
-			+ " } UNION {"
-			+ " ?product rdfs:label ?label ."
-			+ " ?product rdf:type bsbm-inst:ProductType1  ."
-			+ " ?product bsbm:productFeature bsbm-inst:ProductFeature39 ."
-			+ "	?product bsbm:productFeature bsbm-inst:ProductFeature46  ."
-			+ " ?product bsbm:productPropertyTextual1 ?propertyTextual ."
-			+ "	?product bsbm:productPropertyNumeric2 ?p2 ."
-			+ "	FILTER ( ?p2 > 3 ) "
-			+ " } "
-			+ "} "
-			+ "ORDER BY ?label "
-			+ "OFFSET 5 " + "LIMIT 10 ";
 	
-	private String q4_real = "PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/> PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  SELECT DISTINCT ?product ?label ?propertyTextual WHERE {     {         ?product rdfs:label ?label .        ?product rdf:type <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType959> .        ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature14> . 	   ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature383> .        ?product bsbm:productPropertyTextual1 ?propertyTextual . 	   ?product bsbm:productPropertyNumeric1 ?p1 . 	   FILTER ( ?p1 > 137 )     } UNION {        ?product rdfs:label ?label .        ?product rdf:type <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType959> .        ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature14> . 	   ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature13> .        ?product bsbm:productPropertyTextual1 ?propertyTextual . 	   ?product bsbm:productPropertyNumeric2 ?p2 . 	   FILTER ( ?p2> 93 )      }  } ORDER BY ?label OFFSET 5  LIMIT 10 ";
 	
-	public static String q4 ="PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/> PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  SELECT DISTINCT ?product ?label ?propertyTextual WHERE {     {         ?product rdfs:label ?label .        ?product rdf:type <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType1638> .        ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature12515> . 	   ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature12515> .        ?product bsbm:productPropertyTextual1 ?propertyTextual . 	   ?product bsbm:productPropertyNumeric1 ?p1 . 	   FILTER ( ?p1 > 395 )     } UNION {        ?product rdfs:label ?label .        ?product rdf:type <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType1638> .        ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature12515> . 	   ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature83> .        ?product bsbm:productPropertyTextual1 ?propertyTextual . 	   ?product bsbm:productPropertyNumeric2 ?p2 . 	   FILTER ( ?p2> 37 )      }  } ORDER BY ?label OFFSET 5 LIMIT 10  ";
+	
+	public static String q4 ="PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/> PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT DISTINCT ?product ?label ?propertyTextual WHERE {     {        ?product rdfs:label ?label .        ?product rdf:type <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType87> .        ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature2675> .            ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature557> .        ?product bsbm:productPropertyTextual1 ?propertyTextual .            ?product bsbm:productPropertyNumeric1 ?p1 .            FILTER ( ?p1 > 9 )     } UNION {        ?product rdfs:label ?label .        ?product rdf:type <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType87> .        ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature2675> .            ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature545> .        ?product bsbm:productPropertyTextual1 ?propertyTextual .            ?product bsbm:productPropertyNumeric2 ?p2 .            FILTER ( ?p2> 1 )     } } ORDER BY ?label OFFSET 5 LIMIT 10  ";
 	
 	private String sql4 = "SELECT distinct p.nr, p.label, p.propertyTex1 FROM product p, producttypeproduct ptp WHERE p.nr=ptp.product AND ptp.productType=1 AND p.nr IN (SELECT distinct product FROM productfeatureproduct WHERE productFeature=39) AND ((propertyNum1>2 AND p.nr IN (SELECT distinct product FROM productfeatureproduct WHERE productFeature=41)) OR (propertyNum2>3 AND p.nr IN (SELECT distinct product FROM productfeatureproduct WHERE productFeature=46))) ORDER BY label LIMIT 10 OFFSET 5;";
 	
@@ -130,7 +105,25 @@ public abstract class BSBMTest extends BaseTest {
 			+ "FILTER (?simProperty2 < (?origProperty2 + 170) && ?simProperty2 > (?origProperty2 - 170)) } "
 			+ "" + "ORDER BY ?productLabel LIMIT 5";
 	
-	public static String q5 = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/>  SELECT DISTINCT ?product ?productLabel WHERE {  	?product rdfs:label ?productLabel .     FILTER (<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer197/Product9534> != ?product) 	<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer197/Product9534> bsbm:productFeature ?prodFeature . 	?product bsbm:productFeature ?prodFeature . 	<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer197/Product9534> bsbm:productPropertyNumeric1 ?origProperty1 . 	?product bsbm:productPropertyNumeric1 ?simProperty1 . 	FILTER (?simProperty1 < (?origProperty1 + 120) && ?simProperty1 > (?origProperty1 - 120)) 	<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer197/Product9534> bsbm:productPropertyNumeric2 ?origProperty2 . 	?product bsbm:productPropertyNumeric2 ?simProperty2 . 	FILTER (?simProperty2 < (?origProperty2 + 170) && ?simProperty2 > (?origProperty2 - 170)) } ORDER BY ?productLabel LIMIT 5 ";
+	public static String q5 = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" + 
+			"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" + 
+			"PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/>\n" + 
+			"\n" + 
+			"SELECT DISTINCT ?product ?productLabel\n" + 
+			"WHERE { \n" + 
+			"	?product rdfs:label ?productLabel .\n" + 
+			"    FILTER (<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer25/Product1190> != ?product)\n" + 
+			"	<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer25/Product1190> bsbm:productFeature ?prodFeature .\n" + 
+			"	?product bsbm:productFeature ?prodFeature .\n" + 
+			"	<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer25/Product1190> bsbm:productPropertyNumeric1 ?origProperty1 .\n" + 
+			"	?product bsbm:productPropertyNumeric1 ?simProperty1 .\n" + 
+			"	FILTER (?simProperty1 < (?origProperty1 + 120) && ?simProperty1 > (?origProperty1 - 120))\n" + 
+			"	<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer25/Product1190> bsbm:productPropertyNumeric2 ?origProperty2 .\n" + 
+			"	?product bsbm:productPropertyNumeric2 ?simProperty2 .\n" + 
+			"	FILTER (?simProperty2 < (?origProperty2 + 170) && ?simProperty2 > (?origProperty2 - 170))\n" + 
+			"}\n" + 
+			"ORDER BY ?productLabel\n" + 
+			"LIMIT 5";
 	
 	private String sql5 = "SELECT distinct p.nr, p.label FROM product p, product po, (Select distinct pfp1.product FROM productfeatureproduct pfp1, (SELECT productFeature FROM productfeatureproduct WHERE product=1) pfp2 WHERE pfp2.productFeature=pfp1.productFeature) pfp WHERE p.nr=pfp.product AND po.nr=1 AND p.nr!=po.nr AND p.propertyNum1<(po.propertyNum1+120) AND p.propertyNum1>(po.propertyNum1-120) AND p.propertyNum2<(po.propertyNum2+170) AND p.propertyNum2>(po.propertyNum2-170) ORDER BY label LIMIT 5;";		
 			
@@ -167,25 +160,61 @@ public abstract class BSBMTest extends BaseTest {
 			+ "?reviewer foaf:name ?revName . 	"
 			+ "?review dc:title ?revTitle .  OPTIONAL { ?review bsbm:rating1 ?rating1 . }  OPTIONAL { ?review bsbm:rating2 ?rating2 . }   } } limit 10000" ;
 	
-	public static String q7 = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rev: <http://purl.org/stuff/rev#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> PREFIX dc: <http://purl.org/dc/elements/1.1/>  SELECT ?productLabel ?offer ?price ?vendor ?vendorTitle ?review ?revTitle         ?reviewer ?revName ?rating1 ?rating2 WHERE {  	<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer251/Product12245> rdfs:label ?productLabel .     OPTIONAL {         ?offer bsbm:product <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer251/Product12245> . 		?offer bsbm:price ?price . 		?offer bsbm:vendor ?vendor . 		?vendor rdfs:label ?vendorTitle .         ?vendor bsbm:country <http://downlode.org/rdf/iso-3166/countries#DE> .         ?offer dc:publisher ?vendor .          ?offer bsbm:validTo ?date .         FILTER (?date > '2008-06-20T00:00:00'^^<http://www.w3.org/2001/XMLSchema#dateTime> )     }     OPTIONAL { ?review bsbm:reviewFor <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer251/Product12245> . 	?review rev:reviewer ?reviewer . 	?reviewer foaf:name ?revName . 	?review dc:title ?revTitle .     OPTIONAL { ?review bsbm:rating1 ?rating1 . }     OPTIONAL { ?review bsbm:rating2 ?rating2 . }      } } ";
-	private String q8_old = "PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/> "
-			+ "PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> "
-			+ "PREFIX dc: <http://purl.org/dc/elements/1.1/> "
-			+ "PREFIX rev: <http://purl.org/stuff/rev#> "
-			+ "PREFIX foaf: <http://xmlns.com/foaf/0.1/> "
-			+ "SELECT  ?title ?text ?reviewDate ?reviewer ?reviewerName ?rating1 ?rating2 ?rating3 ?rating4  "
-			+ "WHERE {  	?review bsbm:reviewFor bsbm-inst:Product1 . 	"
-			+ "?review dc:title ?title . 	?review rev:text ?text . 	"
-			+ "FILTER langMatches( lang(?text), \"EN\" )  	"
-			+ "?review bsbm:reviewDate ?reviewDate . 	"
-			+ "?review rev:reviewer ?reviewer . 	"
-			+ "?reviewer foaf:name ?reviewerName . 	"
-			+ "OPTIONAL { ?review bsbm:rating1 ?rating1 . } 	"
-			+ "OPTIONAL { ?review bsbm:rating2 ?rating2 . } 	"
-			+ "OPTIONAL { ?review bsbm:rating3 ?rating3 . } 	"
-			+ "OPTIONAL { ?review bsbm:rating4 ?rating4 . } } "
-			+ "ORDER BY DESC(?reviewDate) LIMIT 20";
-	public static String q8 ="PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> PREFIX dc: <http://purl.org/dc/elements/1.1/> PREFIX rev: <http://purl.org/stuff/rev#> PREFIX foaf: <http://xmlns.com/foaf/0.1/>  SELECT ?title ?text ?reviewDate ?reviewer ?reviewerName ?rating1 ?rating2 ?rating3 ?rating4  WHERE {  	?review bsbm:reviewFor <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer482/Product23755> . 	?review dc:title ?title . 	?review rev:text ?text . 	FILTER langMatches( lang(?text), 'EN' )  	?review bsbm:reviewDate ?reviewDate . 	?review rev:reviewer ?reviewer . 	?reviewer foaf:name ?reviewerName . 	OPTIONAL { ?review bsbm:rating1 ?rating1 . } 	OPTIONAL { ?review bsbm:rating2 ?rating2 . } 	OPTIONAL { ?review bsbm:rating3 ?rating3 . } 	OPTIONAL { ?review bsbm:rating4 ?rating4 . } } ORDER BY DESC(?reviewDate) LIMIT 20 ";
+	public static String q7 = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" + 
+			"PREFIX rev: <http://purl.org/stuff/rev#>\n" + 
+			"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" + 
+			"PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/>\n" + 
+			"PREFIX dc: <http://purl.org/dc/elements/1.1/>\n" + 
+			"\n" + 
+			"SELECT ?productLabel ?offer ?price ?vendor ?vendorTitle ?review ?revTitle \n" + 
+			"       ?reviewer ?revName ?rating1 ?rating2\n" + 
+			"WHERE { \n" + 
+			"	<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer12/Product554> rdfs:label ?productLabel .\n" + 
+			"    OPTIONAL {\n" + 
+			"        ?offer bsbm:product <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer12/Product554> .\n" + 
+			"		?offer bsbm:price ?price .\n" + 
+			"		?offer bsbm:vendor ?vendor .\n" + 
+			"		?vendor rdfs:label ?vendorTitle .\n" + 
+			"        ?vendor bsbm:country <http://downlode.org/rdf/iso-3166/countries#DE> .\n" + 
+			"        ?offer dc:publisher ?vendor . \n" + 
+			"        ?offer bsbm:validTo ?date .\n" + 
+			"        FILTER (?date > \"2008-06-20T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> )\n" + 
+			"    }\n" + 
+			"    OPTIONAL {\n" + 
+			"	?review bsbm:reviewFor <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer12/Product554> .\n" + 
+			"	?review rev:reviewer ?reviewer .\n" + 
+			"	?reviewer foaf:name ?revName .\n" + 
+			"	?review dc:title ?revTitle .\n" + 
+			"    OPTIONAL { ?review bsbm:rating1 ?rating1 . }\n" + 
+			"    OPTIONAL { ?review bsbm:rating2 ?rating2 . } \n" + 
+			"    }\n" + 
+			"}";
+	
+
+	public static String q8 ="PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/>\n" + 
+			"PREFIX dc: <http://purl.org/dc/elements/1.1/>\n" + 
+			"PREFIX rev: <http://purl.org/stuff/rev#>\n" + 
+			"PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" + 
+			"\n" + 
+			"SELECT ?title ?text ?reviewDate ?reviewer ?reviewerName ?rating1 ?rating2 ?rating3 ?rating4 \n" + 
+			"WHERE { \n" + 
+			"	?review bsbm:reviewFor <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer16/Product738> .\n" + 
+			"	?review dc:title ?title .\n" + 
+			"	?review rev:text ?text .\n" + 
+			"	FILTER langMatches( lang(?text), \"EN\" ) \n" + 
+			"	?review bsbm:reviewDate ?reviewDate .\n" + 
+			"	?review rev:reviewer ?reviewer .\n" + 
+			"	?reviewer foaf:name ?reviewerName .\n" + 
+			"	OPTIONAL { ?review bsbm:rating1 ?rating1 . }\n" + 
+			"	OPTIONAL { ?review bsbm:rating2 ?rating2 . }\n" + 
+			"	OPTIONAL { ?review bsbm:rating3 ?rating3 . }\n" + 
+			"	OPTIONAL { ?review bsbm:rating4 ?rating4 . }\n" + 
+			"}\n" + 
+			"ORDER BY DESC(?reviewDate)\n" + 
+			"LIMIT 20";
+	
+	
+	
 	private String q9_old = "PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/> "
 			+ "PREFIX rev: <http://purl.org/stuff/rev#>  "
 			+ "DESCRIBE ?x WHERE { bsbm-inst:Review1 rev:reviewer ?x}";
@@ -208,14 +237,26 @@ public abstract class BSBMTest extends BaseTest {
 			+ "?offer bsbm:validTo ?date .  "
 			+ "FILTER (?date > \"2005-05-01T00:00:00Z\"^^xsd:dateTime  ) } "
 			+ "ORDER BY xsd:double(str(?price)) LIMIT 10";
-	public static String q10 = "PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>  PREFIX dc: <http://purl.org/dc/elements/1.1/>  SELECT DISTINCT ?offer ?price WHERE { 	?offer bsbm:product <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer235/Product11435> . 	?offer bsbm:vendor ?vendor .     ?offer dc:publisher ?vendor . 	?vendor bsbm:country <http://downlode.org/rdf/iso-3166/countries#US> . 	?offer bsbm:deliveryDays ?deliveryDays . 	FILTER (?deliveryDays <= 3) 	?offer bsbm:price ?price .     ?offer bsbm:validTo ?date .     FILTER (?date > '2008-06-20T00:00:00'^^<http://www.w3.org/2001/XMLSchema#dateTime> ) } ORDER BY xsd:double(str(?price)) LIMIT 10 ";
+	public static String q10 = "PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/>\n" + 
+			"PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> \n" + 
+			"PREFIX dc: <http://purl.org/dc/elements/1.1/>\n" + 
+			"\n" + 
+			"SELECT DISTINCT ?offer ?price\n" + 
+			"WHERE {\n" + 
+			"	?offer bsbm:product <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer34/Product1546> .\n" + 
+			"	?offer bsbm:vendor ?vendor .\n" + 
+			"    ?offer dc:publisher ?vendor .\n" + 
+			"	?vendor bsbm:country <http://downlode.org/rdf/iso-3166/countries#US> .\n" + 
+			"	?offer bsbm:deliveryDays ?deliveryDays .\n" + 
+			"	FILTER (?deliveryDays <= 3)\n" + 
+			"	?offer bsbm:price ?price .\n" + 
+			"    ?offer bsbm:validTo ?date .\n" + 
+			"    FILTER (?date > \"2008-06-20T00:00:00\"^^<http://www.w3.org/2001/XMLSchema#dateTime> )\n" + 
+			"}\n" + 
+			"ORDER BY xsd:double(str(?price))\n" + 
+			"LIMIT 10";
 	
-	public static final String q11_old = "PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/>"
-			+ "SELECT ?property ?hasValue ?isValueOf "
-			+ "WHERE {"
-			+ "{ bsbm-inst:Offer1 ?property ?hasValue }"
-			+ "UNION"
-			+ "{ ?isValueOf ?property bsbm-inst:Offer1 }" + "}";
+	
 	
 	public static String q11  = "SELECT ?property ?hasValue ?isValueOf " +
 			"WHERE {   { <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromVendor244/Offer480636> ?property ?hasValue }   UNION   { ?isValueOf ?property <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromVendor244/Offer480636> } } ";

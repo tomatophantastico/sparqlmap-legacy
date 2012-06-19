@@ -3,6 +3,7 @@ package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 
@@ -39,11 +41,13 @@ import com.google.common.collect.BiMap;
 import com.hp.hpl.jena.graph.Node_URI;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
+import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.E_Add;
 import com.hp.hpl.jena.sparql.expr.E_Bound;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_Function;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
+import com.hp.hpl.jena.sparql.expr.E_Lang;
 import com.hp.hpl.jena.sparql.expr.E_LangMatches;
 import com.hp.hpl.jena.sparql.expr.E_LessThan;
 import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
@@ -125,13 +129,64 @@ public class FilterUtil {
 			EqualsTo next = eqs.next();
 			AndExpression and = new AndExpression(eq,next);
 			eq = and;
-			
 		}
-		
 		return eq;
-		
-		
+	}
+	
+	public static List<NotEqualsTo> createNotEqualsTos(List<Expression> left,
+			List<Expression> right) {
+		List<NotEqualsTo> neqs = new ArrayList<NotEqualsTo>();
 
+		left = new ArrayList<Expression>(left);
+		right = new ArrayList<Expression>(right);
+
+		// purge identical values
+		List<Expression> lremove = new ArrayList<Expression>();
+		List<Expression> rremove = new ArrayList<Expression>();
+		for (int i = 0; i < left.size() && i < right.size(); i++) {
+			if (left.get(i).toString().equals(right.get(i).toString())) {
+				lremove.add(left.get(i));
+				rremove.add(right.get(i));
+			}
+		}
+
+		left.removeAll(lremove);
+		right.removeAll(rremove);
+
+		if (left.size() == 0 && right.size() == 0) {
+			NotEqualsTo neq = new NotEqualsTo();
+			neq.setLeftExpression(new StringValue("\"true\""));
+			neq.setRightExpression(new StringValue("\"true\""));
+			neqs.add(neq);
+		} else if (left.size() != right.size()) {
+			NotEqualsTo neq = new NotEqualsTo();
+			neq.setLeftExpression(concat(left.toArray(new Expression[0])));
+			neq.setRightExpression(concat(right.toArray(new Expression[0])));
+			neqs.add( neq);
+		} else {
+			for (int i = 0; i < left.size(); i++) {
+				NotEqualsTo neq = new NotEqualsTo();
+				neq.setLeftExpression(left.get(i));
+				neq.setRightExpression(right.get(i));
+				neqs.add(neq);
+				
+			}
+		}
+		return  neqs;
+
+	}
+
+	public static Expression createNotEqualsTo(List<Expression> left,
+			List<Expression> right) {
+		
+		Iterator<NotEqualsTo> eqs = createNotEqualsTos(left, right).iterator(); 
+		Expression neq = eqs.next();
+		while (eqs.hasNext()) {
+			NotEqualsTo next = eqs.next();
+			AndExpression and = new AndExpression(neq,next);
+			neq = and;
+		}
+		return neq;
 	}
 
 	public FilterUtil(MappingConfiguration mappingConfiguration) {
@@ -180,7 +235,50 @@ public class FilterUtil {
 			}
 
 		} else if (exp instanceof E_LangMatches) {
-			log.warn("Filter langmatches not implemented");
+			//check against the lang 
+			
+			E_LangMatches lm = (E_LangMatches) exp;
+			
+			
+			String lang = ((NodeValueString)lm.getArg2()).asUnquotedString();
+			
+			
+			Function toLower = new Function();
+			toLower.setName("lower");
+			toLower.setParameters(new ExpressionList(Arrays.asList(getSQLExpression(lm.getArg1(),colstring2var, colstring2col))));
+			
+			EqualsTo eq = new EqualsTo();
+			
+			eq.setLeftExpression(toLower);
+			eq.setRightExpression(new StringValue("\"" + lang.toLowerCase() + "\""));
+			sqlExpression = eq;
+			
+			
+			
+			
+		} else if (exp instanceof E_Lang) {
+			//check against the lang 
+			
+			E_Lang lang = (E_Lang) exp;
+			
+			Expr arg =  lang.getArg();
+			
+			if(arg instanceof ExprVar){
+				Var var = ((ExprVar) arg).asVar();
+				//resolve var directly to take the 
+				TermCreator tc = colstring2col.get(colstring2var.inverse().get(var.getName()));
+				
+				sqlExpression = tc.getLanguage();
+				
+				
+				// in the odd case, lang() is applied on a literal, do this
+			}else if(arg instanceof NodeValueNode ){
+				sqlExpression = new StringValue(((NodeValueNode)arg).asNode().getLiteralLanguage());
+			}else{
+				throw new ImplementationException("Should not happen");
+			}
+			
+
 		} else if (exp instanceof E_Bound) {
 			log.warn("filter bound not implemented yet");
 		} else if (exp instanceof E_Regex) {
@@ -409,18 +507,38 @@ public class FilterUtil {
 			if (reduced) {
 
 				if (stringNew.size() > 0 && compareto.size() > 0) {
+					
+					if(bex instanceof EqualsTo){
+						
 					sqlExpression = FilterUtil.createEqualsTo(
 							new ArrayList<Expression>(stringNew),
 							new ArrayList<Expression>(compareto));
+					} else if (bex instanceof NotEqualsTo){
+						sqlExpression = FilterUtil.createNotEqualsTo(
+								new ArrayList<Expression>(stringNew),
+								new ArrayList<Expression>(compareto));
+					}
 				} else {
+					
+					
+					if(bex instanceof EqualsTo){
+						EqualsTo eq = new EqualsTo();
+						eq.setLeftExpression(new StringValue("\"true\""));
+						eq.setRightExpression(new StringValue("\"true\""));
+
+						sqlExpression = eq;
+						
+						} else if (bex instanceof NotEqualsTo){
+							NotEqualsTo neq = new NotEqualsTo();
+							neq.setLeftExpression(new StringValue("\"true\""));
+							neq.setRightExpression(new StringValue("\"true\""));
+
+							sqlExpression = neq;
+						}
 
 					// fallback, if everything was eleminated
 
-					EqualsTo eq = new EqualsTo();
-					eq.setLeftExpression(new StringValue("\"true\""));
-					eq.setRightExpression(new StringValue("\"true\""));
-
-					sqlExpression = eq;
+					
 				}
 
 			}
@@ -486,7 +604,7 @@ public class FilterUtil {
 			expression = new LongValue(String.valueOf(((NodeValueDouble) expr)
 					.getDouble()));
 
-		} else {
+		}  else {
 			expression = getSQLExpression(expr, colstring2var, colstring2col);
 			log.warn("encountered unknown variable data type: "
 					+ expr.getClass().getCanonicalName());
@@ -728,6 +846,41 @@ public class FilterUtil {
 		
 		return expr;
 				
+	}
+	
+	public static Expression conjunctFilters(Collection<Expression> exps) {
+		if (exps.isEmpty()) {
+			return null;
+		} else if (exps.size() == 1) {
+			return exps.iterator().next();
+		} else {
+			Expression exp = exps.iterator().next();
+			exps.remove(exp);
+			AndExpression and = new AndExpression(exp, conjunctFilters(exps));
+			return and;
+		}
+
+	}
+	/**
+	 * use this method to get the other from item in a join condition
+	 * @param equalsTo
+	 * @param fi
+	 * @return
+	 */
+
+	public static FromItem getOtherFromItem(EqualsTo equalsTo, FromItem fi) {
+		
+		FromItem fi1 = ((Column)FilterUtil.uncast(equalsTo.getLeftExpression())).getTable();
+		FromItem fi2 = ((Column)FilterUtil.uncast(equalsTo.getRightExpression())).getTable();
+		
+		if(fi.toString().equals(fi1.toString())){
+			return fi2;
+		}else if (fi.toString().equals(fi2.toString())){
+			return fi1;
+		}else{
+			throw new ImplementationException("not a correct join condition ");
+		}
+		
 	}
 	
 	

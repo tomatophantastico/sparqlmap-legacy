@@ -17,7 +17,6 @@ public class ColumDefinition implements Cloneable{
 	
 	private Pattern ldPattern;
 	
-	
 	private Integer sqldataType;
 
 	private String uriTemplate;
@@ -36,7 +35,15 @@ public class ColumDefinition implements Cloneable{
 	
 	private String joinsWith;
 	
-	private List<Expression> terms;
+	private String language;
+	
+	private String datatype;
+	
+	private Column languageColumn;
+	
+	//private List<Expression> terms;
+	
+	
 	
 	
 	
@@ -48,6 +55,30 @@ public class ColumDefinition implements Cloneable{
 		return ldPattern;
 	}
 	
+	public Column getLanguageColumn() {
+		return languageColumn;
+	}
+
+	public void setLanguageColumn(Column languageColumn) {
+		this.languageColumn = languageColumn;
+	}
+
+	public String getLanguage() {
+		return language;
+	}
+
+	public void setLanguage(String language) {
+		this.language = language;
+	}
+
+	public String getDatatype() {
+		return datatype;
+	}
+
+	public void setDatatype(String datatype) {
+		this.datatype = datatype;
+	}
+
 	public void setLdPattern(Pattern ldPattern) {
 		this.ldPattern = ldPattern;
 	}
@@ -64,9 +95,7 @@ public class ColumDefinition implements Cloneable{
 		this.linkedDataPath = linkedDataPath;
 	}
 	
-	public List<Expression> getTerms() {
-		return terms;
-	}
+
 	
 	public TermCreator getTermCreator() {
 		return termCreator;
@@ -181,36 +210,11 @@ public class ColumDefinition implements Cloneable{
 	public boolean isIdColumn(){
 		boolean isId = false;
 		
-		if(mapp.getIdColumn().colname.equals(colname)){
+		if(colname!=null&&mapp.getIdColumn().colname.equals(colname)){
 			isId= true;
 			}
 		
 		return isId;
-	}
-	
-	
-	
-	protected boolean isResource(){
-		if(terms == null || terms.size()==0){
-			return false;
-		}else{
-			return true;
-		}
-	}
-	
-
-
-	
-	
-	@Override
-	public String toString() {
-		
-		if(termCreator ==null){
-			return mapp.getName() + "."+ colname;
-		}
-		
-		return termCreator.toString();
-		
 	}
 
 	@Override
@@ -222,14 +226,16 @@ public class ColumDefinition implements Cloneable{
 		result = prime * result
 				+ ((joinsWith == null) ? 0 : joinsWith.hashCode());
 		result = prime * result
+				+ ((ldPattern == null) ? 0 : ldPattern.hashCode());
+		result = prime * result
 				+ ((linkedDataPath == null) ? 0 : linkedDataPath.hashCode());
 		result = prime * result + ((locale == null) ? 0 : locale.hashCode());
 		result = prime * result
 				+ ((property == null) ? 0 : property.hashCode());
 		result = prime * result
-				+ ((terms == null) ? 0 : terms.hashCode());
-		result = prime * result
 				+ ((sqldataType == null) ? 0 : sqldataType.hashCode());
+		result = prime * result
+				+ ((termCreator == null) ? 0 : termCreator.hashCode());
 		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		result = prime * result
 				+ ((uriTemplate == null) ? 0 : uriTemplate.hashCode());
@@ -260,6 +266,11 @@ public class ColumDefinition implements Cloneable{
 				return false;
 		} else if (!joinsWith.equals(other.joinsWith))
 			return false;
+		if (ldPattern == null) {
+			if (other.ldPattern != null)
+				return false;
+		} else if (!ldPattern.equals(other.ldPattern))
+			return false;
 		if (linkedDataPath == null) {
 			if (other.linkedDataPath != null)
 				return false;
@@ -270,20 +281,22 @@ public class ColumDefinition implements Cloneable{
 				return false;
 		} else if (!locale.equals(other.locale))
 			return false;
+		
+
 		if (property == null) {
 			if (other.property != null)
 				return false;
 		} else if (!property.equals(other.property))
 			return false;
-		if (terms == null) {
-			if (other.terms != null)
-				return false;
-		} else if (!terms.equals(other.terms))
-			return false;
 		if (sqldataType == null) {
 			if (other.sqldataType != null)
 				return false;
 		} else if (!sqldataType.equals(other.sqldataType))
+			return false;
+		if (termCreator == null) {
+			if (other.termCreator != null)
+				return false;
+		} else if (!termCreator.equals(other.termCreator))
 			return false;
 		if (type == null) {
 			if (other.type != null)
@@ -297,11 +310,20 @@ public class ColumDefinition implements Cloneable{
 			return false;
 		return true;
 	}
+	
+	
 
+
+@Override
+public String toString() {
+	StringBuffer sb = new StringBuffer();
+	sb.append("colname:" +mapp.getFromPart().getAlias()+"."+colname+" : with prop: " + property);
+	
+	return sb.toString();
+}
+	
 	
 
-	
-	
 
 
 

@@ -7,6 +7,7 @@ import java.util.List;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
 
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
@@ -22,6 +23,8 @@ public class ConstantResourceCreator extends ConstantTermCreator{
 		expressions.add(cast(new LongValue("1"),dataTypeHelper.getNumericCastType())); //type
 		expressions.add(cast(new LongValue("1"),dataTypeHelper.getNumericCastType())); //length
 		expressions.add(cast(new LongValue("-99"),dataTypeHelper.getNumericCastType())); //littype
+		expressions.add(cast(new net.sf.jsqlparser.expression.NullValue(), dataTypeHelper.getStringCastType()));
+		expressions.add(cast(new NullValue(), dataTypeHelper.getStringCastType()));
 		expressions.add(cast(new StringValue("\"" +resourceIri +"\""),dataTypeHelper.getStringCastType()));
 	}
 	@Override

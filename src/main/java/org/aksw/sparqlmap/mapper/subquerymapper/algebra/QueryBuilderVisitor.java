@@ -286,7 +286,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			for (String ldp : sbmap.getLdps()) {
 				for (Mapping mapping : sbmap.getMappings(ldp)) {
 					for (ColumDefinition coldef : sbmap.getColumn(o,mapping)) {
-						if (!coldef.getColname().equals(
+						if (coldef.getColname() != null && !coldef.getColname().equals(
 								mapping.getIdColumn().getColname())) {
 
 							PlainSelectWrapper plainSelect = new PlainSelectWrapper(

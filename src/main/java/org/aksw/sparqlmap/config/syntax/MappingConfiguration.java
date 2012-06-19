@@ -11,11 +11,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
-import org.apache.commons.collections15.MultiMap;
-import org.apache.commons.collections15.multimap.MultiHashMap;
+import org.openjena.atlas.lib.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.vocabulary.RDF;
 
@@ -45,15 +46,15 @@ public class MappingConfiguration {
 
 	private Map<String, Mapping> mappingAliases = new HashMap<String, Mapping>();
 
-	private MultiMap<String, Mapping> linkedDataPath2mapping = new MultiHashMap<String, Mapping>();
+	private Multimap<String, Mapping> linkedDataPath2mapping = HashMultimap.create();
 
 	// URL of a rdfs:Property to Mapping
-	private MultiMap<String, ColumDefinition> prop2Column = new MultiHashMap<String, ColumDefinition>();
+	private Multimap<String, ColumDefinition> prop2Column = HashMultimap.create();
 
-	private MultiMap<String, Mapping> prop2Mapping = new MultiHashMap<String, Mapping>();
+	private Multimap<String, Mapping> prop2Mapping =HashMultimap.create();
 
 	// URL of a rdfs:Class to Mapping
-	private MultiMap<Resource, Mapping> type2Mapping = new MultiHashMap<Resource, Mapping>();
+	private Multimap<Resource, Mapping> type2Mapping = HashMultimap.create();
 	
 	
 	private FilterUtil filterUtil = new FilterUtil(this);
