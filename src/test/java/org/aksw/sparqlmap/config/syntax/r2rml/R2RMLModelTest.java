@@ -23,7 +23,7 @@ public class R2RMLModelTest {
 		
 	Set<TripleMap> maps  = model.getTripleMaps();
 		
-		fail("Not yet implemented");
+	assertTrue(maps.size()==10);	
 	}
 
 }

@@ -35,7 +35,7 @@ import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 
 import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.TermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.TermCreator;
 
 import com.google.common.collect.BiMap;
 import com.hp.hpl.jena.graph.Node_URI;

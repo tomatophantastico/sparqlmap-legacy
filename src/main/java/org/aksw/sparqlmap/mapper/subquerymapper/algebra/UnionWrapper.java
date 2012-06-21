@@ -17,7 +17,7 @@ import net.sf.jsqlparser.statement.select.Union;
 
 import org.aksw.sparqlmap.config.syntax.Mapping;
 import org.aksw.sparqlmap.config.syntax.MaterializedColumn;
-import org.aksw.sparqlmap.config.syntax.TermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.TermCreator;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;

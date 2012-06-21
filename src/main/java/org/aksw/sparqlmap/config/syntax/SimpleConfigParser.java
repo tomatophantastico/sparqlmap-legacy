@@ -29,6 +29,10 @@ import net.sf.jsqlparser.statement.select.SelectVisitor;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.Union;
 
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnTermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.ConstantResourceCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.ConstantValueColumn;
+import org.aksw.sparqlmap.config.syntax.r2rml.TermCreator;
 import org.aksw.sparqlmap.db.SQLAccessFacade;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ColumnHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;

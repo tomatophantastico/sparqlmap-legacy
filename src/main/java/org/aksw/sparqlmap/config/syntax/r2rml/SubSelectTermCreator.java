@@ -1,4 +1,4 @@
-package org.aksw.sparqlmap.config.syntax;
+package org.aksw.sparqlmap.config.syntax.r2rml;
 
 import java.util.List;
 

@@ -19,7 +19,6 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
-import org.aksw.sparqlmap.config.syntax.ColumDefinition;
 import org.aksw.sparqlmap.config.syntax.Mapping;
 import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
 

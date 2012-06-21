@@ -28,10 +28,10 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
-import org.aksw.sparqlmap.config.syntax.ColumnTermCreator;
 import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.SubSelectTermCreator;
-import org.aksw.sparqlmap.config.syntax.TermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnTermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.SubSelectTermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.TermCreator;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BiMap;

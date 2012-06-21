@@ -23,7 +23,6 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
 import org.aksw.sparqlmap.config.syntax.ColumDefinition;
-import org.aksw.sparqlmap.config.syntax.ConstantValueColumn;
 import org.aksw.sparqlmap.config.syntax.Mapping;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ColumnHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
@@ -38,6 +37,8 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.reasoner.Reasoner;
+import com.hp.hpl.jena.reasoner.ReasonerRegistry;
 import com.hp.hpl.jena.sparql.modify.GraphStoreUtils;
 import com.hp.hpl.jena.update.GraphStoreFactory;
 import com.hp.hpl.jena.update.UpdateExecutionFactory;
@@ -53,20 +54,35 @@ public class R2RMLModel {
 	Model mapping = null;
 	Model r2rmlSchema = null;
 	Model reasoningModel = null;
-	public R2RMLModel(String baseVocabUri, String baseInstanceUri) {
+//	public R2RMLModel(String baseVocabUri, String baseInstanceUri) {
+//		r2rmlSchema = ModelFactory.createDefaultModel();
+//		mapping =  ModelFactory.createDefaultModel();
+//
+//	
+//		FileManager.get().readModel(r2rmlSchema, r2rmlSchemaLocation);
+//		
+//		Reasoner reasoner = ReasonerRegistry.getOWLReasoner();
+//	    reasoner = reasoner.bindSchema(r2rmlSchema);
+//	    reasoningModel = ModelFactory.createInfModel(reasoner, mapping);
+//		
+//		
+//		//reasoningModel = ModelFactory.createRDFSModel(r2rmlSchema,mapping);
+//		resolveR2RMLShortcuts();
+//		
+//	}
+	
+	public R2RMLModel(String mappingLocation){
 		r2rmlSchema = ModelFactory.createDefaultModel();
 		mapping =  ModelFactory.createDefaultModel();
-
-	
 		FileManager.get().readModel(r2rmlSchema, r2rmlSchemaLocation);
-		reasoningModel = ModelFactory.createRDFSModel(r2rmlSchema,mapping);
-		resolveR2RMLShortcuts(reasoningModel);
-		
-	}
+		FileManager.get().readModel(mapping, mappingLocation);
+		reasoningModel = ModelFactory.createRDFSModel(r2rmlSchema,mapping);	
+		resolveR2RMLShortcuts();
 
+	}
 	
 	
-	private void resolveR2RMLShortcuts(Model reasoningModel2) {
+	private void resolveR2RMLShortcuts() {
 		String query = "PREFIX  rr:   <http://www.w3.org/ns/r2rml#> INSERT { ?x rr:subjectMap [ rr:constant ?y ]. } WHERE {?x rr:subject ?y.}";
 		UpdateExecutionFactory.create(UpdateFactory.create(query),GraphStoreFactory.create(reasoningModel)).execute();
 		query = "PREFIX  rr:   <http://www.w3.org/ns/r2rml#> INSERT { ?x rr:predicateMap [ rr:constant ?y ]. } WHERE {?x rr:predicate ?y.}";
@@ -75,20 +91,13 @@ public class R2RMLModel {
 		UpdateExecutionFactory.create(UpdateFactory.create(query),GraphStoreFactory.create(reasoningModel)).execute();
 		query = "PREFIX  rr:   <http://www.w3.org/ns/r2rml#> INSERT { ?x rr:graphMap [ rr:constant ?y ]. } WHERE {?x rr:graph ?y.}";
 		UpdateExecutionFactory.create(UpdateFactory.create(query),GraphStoreFactory.create(reasoningModel)).execute();
+		reasoningModel.size();
 
 	}
 
 
 
-	public R2RMLModel(String mappingLocation){
-		r2rmlSchema = ModelFactory.createDefaultModel();
-		mapping =  ModelFactory.createDefaultModel();
-		FileManager.get().readModel(r2rmlSchema, r2rmlSchemaLocation);
-		FileManager.get().readModel(mapping, mappingLocation);
-		reasoningModel = ModelFactory.createRDFSModel(r2rmlSchema,mapping);	
-		resolveR2RMLShortcuts(reasoningModel);
 
-	}
 
 	
 	public void getVirtualTables(){
@@ -108,7 +117,7 @@ public class R2RMLModel {
 		Set<TripleMap> tripleMaps = new HashSet<TripleMap>();
 		
 	
-		String tmquery = "PREFIX rr: <http://www.w3.org/ns/r2rml#> SELECT ?tm ?tableName ?query ?version { ?tm a rr:TriplesMap. ?tm rr:logicalTable ?tab . {?tab rr:tableName ?tableName} UNION {?tab rr:sqlQuery ?query. OPTIONAL{?tab rr:sqlVersion ?version}}}" ;
+		String tmquery = "PREFIX rr: <http://www.w3.org/ns/r2rml#> SELECT ?tm ?tableName ?query ?version {?tm a rr:TriplesMap. ?tm rr:logicalTable ?tab . {?tab rr:tableName ?tableName} UNION {?tab rr:sqlQuery ?query. OPTIONAL{?tab rr:sqlVersion ?version}}}" ;
 		ResultSet tmrs = QueryExecutionFactory.create(QueryFactory.create(tmquery), reasoningModel).execSelect();
 		
 		while(tmrs.hasNext()){
@@ -184,6 +193,8 @@ public class R2RMLModel {
 				stm = new TermMapColumn(col, sres.termTypeInt,tm);
 			}
 			
+			tm.subject = stm;
+			
 			
 			//get the POs
 			
@@ -199,6 +210,15 @@ public class R2RMLModel {
 			while(pors.hasNext()){
 				QuerySolution posol = pors.next();
 				TermMapQueryResult p = new TermMapQueryResult(posol,"p");
+				TermMap ptm;
+				
+				
+				if(p.column==null){
+					TermMapConstant ctm = new TermMapConstant(p.constant, null, triMap)
+				}
+				
+				
+				
 				TermMapQueryResult o = new TermMapQueryResult(posol,"o");
 				
 			}
@@ -210,7 +230,7 @@ public class R2RMLModel {
 		
 	
 		
-		return null;
+		return tripleMaps;
 	}
 	
 	
@@ -226,6 +246,7 @@ public class R2RMLModel {
 						"UNION {?"+p+"m rr:template ?"+p+"template} " +
 								"OPTIONAL {?"+p+"m rr:class ?"+p+"tmclass} " +
 										"OPTIONAL {?"+p+"m rr:termType ?"+p+"termtype} " +
+										"OPTIONAL {?"+p+"m rr:datatype ?"+p+"datatype} " +
 												"OPTIONAL {?"+p+"m <"+R2RML.language+"> ?"+p+"lang} " +
 														"OPTIONAL {?"+p+"m <"+R2RML.inverseExpression+"> ?"+p+"inverseexpression}";
 		

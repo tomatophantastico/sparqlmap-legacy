@@ -21,11 +21,11 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.Union;
 
 import org.aksw.sparqlmap.config.syntax.ColumDefinition;
-import org.aksw.sparqlmap.config.syntax.ColumnTermCreator;
-import org.aksw.sparqlmap.config.syntax.ConstantResourceCreator;
 import org.aksw.sparqlmap.config.syntax.Mapping;
 import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.TermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnTermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.ConstantResourceCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.TermCreator;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.MappingFilterFinder;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.SBlockNodeMapping;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.ScopeBlock;

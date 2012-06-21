@@ -1,6 +1,5 @@
 package org.aksw.sparqlmap.config.syntax.r2rml;
 
-import org.aksw.sparqlmap.config.syntax.TermCreator;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ColumnHelper;
 
 import com.hp.hpl.jena.rdf.model.Literal;
