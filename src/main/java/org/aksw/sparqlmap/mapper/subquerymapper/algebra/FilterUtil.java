@@ -1,5 +1,7 @@
 package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +16,7 @@ import net.sf.jsqlparser.expression.CastStringExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.TimestampValue;
 import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
@@ -34,8 +37,9 @@ import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 
-import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.r2rml.TermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
+import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
+import org.apache.commons.lang.reflect.MethodUtils;
 
 import com.google.common.collect.BiMap;
 import com.hp.hpl.jena.graph.Node_URI;
@@ -73,7 +77,9 @@ public class FilterUtil {
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory
 			.getLogger(FilterUtil.class);
 
-	MappingConfiguration mconf;
+	private DataTypeHelper dth;
+
+	private R2RMLModel r2rmodel;
 
 	// Op query;
 
@@ -189,13 +195,14 @@ public class FilterUtil {
 		return neq;
 	}
 
-	public FilterUtil(MappingConfiguration mappingConfiguration) {
-		mconf = mappingConfiguration;
+	public FilterUtil(DataTypeHelper dth, R2RMLModel r2rmodel) {
+		this.r2rmodel = r2rmodel;
+		this.dth = dth;
 	}
 
 	public Expression getSQLExpression(Expr exp,
 			BiMap<String, String> colstring2var,
-			Map<String, TermCreator> colstring2col) {
+			Map<String, TermMap> colstring2col) {
 
 		Expression sqlExpression = null;
 		if (exp instanceof E_GreaterThan) {
@@ -216,25 +223,27 @@ public class FilterUtil {
 					colstring2var, colstring2col));
 			sqlExpression = mt;
 		} else
-		// check for special case of not bound
-		if (exp instanceof E_LogicalNot) {
-			Expr negatedExp = ((E_LogicalNot) exp).getArg();
-			if (negatedExp instanceof E_Bound) {
-				E_Bound boundExpr = (E_Bound) negatedExp;
-				IsNullExpression isNull = new IsNullExpression();
-				Expression left = colstring2col.get(
-						colstring2var.inverse().get(
-								boundExpr.getArg().getVarName()))
-						.getExpression();
-				isNull.setLeftExpression(left);
-				// sqlExpression = isNull;
-
-			} else {
-				throw new ImplementationException(
-						"unsupported negated filter encountered");
-			}
-
-		} else if (exp instanceof E_LangMatches) {
+//		// check for special case of not bound
+//		if (exp instanceof E_LogicalNot) {
+//			Expr negatedExp = ((E_LogicalNot) exp).getArg();
+//			if (negatedExp instanceof E_Bound) {
+//				E_Bound boundExpr = (E_Bound) negatedExp;
+//				IsNullExpression isNull = new IsNullExpression();
+//				Expression left = colstring2col.get(
+//						colstring2var.inverse().get(
+//								boundExpr.getArg().getVarName()))
+//						.getExpression();
+//				isNull.setLeftExpression(left);
+//				isNull.setNot(true);
+//				sqlExpression = isNull;
+//
+//			} else {
+//				throw new ImplementationException(
+//						"unsupported negated filter encountered");
+//			}
+//
+//		} else 
+			if (exp instanceof E_LangMatches) {
 			//check against the lang 
 			
 			E_LangMatches lm = (E_LangMatches) exp;
@@ -266,7 +275,7 @@ public class FilterUtil {
 			if(arg instanceof ExprVar){
 				Var var = ((ExprVar) arg).asVar();
 				//resolve var directly to take the 
-				TermCreator tc = colstring2col.get(colstring2var.inverse().get(var.getName()));
+				TermMap tc = colstring2col.get(colstring2var.inverse().get(var.getName()));
 				
 				sqlExpression = tc.getLanguage();
 				
@@ -280,7 +289,67 @@ public class FilterUtil {
 			
 
 		} else if (exp instanceof E_Bound) {
-			log.warn("filter bound not implemented yet");
+			E_Bound bound = (E_Bound) exp;
+			Expression tobebound = getBestExpression(bound.getArg(), colstring2var, colstring2col);
+			
+			IsNullExpression isnull  = new IsNullExpression();
+			isnull.setNot(true);
+			isnull.setLeftExpression(tobebound);
+			
+			sqlExpression = isnull;
+		} else if (exp instanceof E_LogicalNot) {
+			E_LogicalNot not = (E_LogicalNot) exp;
+			Expression expr = getSQLExpression(not.getArg(), colstring2var, colstring2col);
+			Expression negatedExpr = null;
+			
+
+			//using reflection, as there are no interfaces to do the job
+			
+			for (Method method : (expr.getClass().getDeclaredMethods())) {
+				
+				
+				
+				
+				if(method.getName().equals("setNot")){
+					try {
+						
+						//get the old value
+						
+						
+						
+						boolean oldValue = (Boolean) MethodUtils.invokeExactMethod(expr, "isNot", null);
+						
+						method.invoke(expr, new Boolean((!oldValue)));
+					} catch (IllegalArgumentException e) {
+						// TODO Auto-generated catch block
+						log.error("Error:",e);
+					} catch (IllegalAccessException e) {
+						// TODO Auto-generated catch block
+						log.error("Error:",e);
+					} catch (InvocationTargetException e) {
+						// TODO Auto-generated catch block
+						log.error("Error:",e);
+					} catch (NoSuchMethodException e) {
+						// TODO Auto-generated catch block
+						log.error("Error:",e);
+					}
+					negatedExpr = expr;
+				}
+			}
+			
+			if(negatedExpr !=null){
+				sqlExpression = negatedExpr;
+			}else{
+				log.error("Unable to negate expr" + exp.toString() + " nevertheless continuing");
+				sqlExpression = expr;
+			}
+			
+			
+		
+			
+			
+			
+			
 		} else if (exp instanceof E_Regex) {
 			E_Regex regex = (E_Regex) exp;
 
@@ -389,8 +458,7 @@ public class FilterUtil {
 
 				sqlExpression = cast(
 						getBestExpression(func.getArg(1), colstring2var,
-								colstring2col), mconf.getR2rconf().getDbConn()
-								.getDataTypeHelper().getNumericCastType());
+								colstring2col), dth.getNumericCastType());
 			} else {
 				throw new ImplementationException("E_Function for "
 						+ func.getFunctionIRI() + " not yet implemented");
@@ -401,8 +469,7 @@ public class FilterUtil {
 
 			sqlExpression = cast(
 					getBestExpression(str.getArg(), colstring2var,
-							colstring2col), mconf.getR2rconf().getDbConn()
-							.getDataTypeHelper().getStringCastType());
+							colstring2col), dth.getStringCastType());
 		} else {
 
 			throw new ImplementationException("Filter " + exp.toString()
@@ -415,7 +482,7 @@ public class FilterUtil {
 		return sqlExpression;
 	}
 
-	protected static Expression shortCut(Expression sqlExpression) {
+	public static Expression shortCut(Expression sqlExpression) {
 
 		// handle the 'uri' == concat('uri', column) case
 		if (sqlExpression instanceof EqualsTo
@@ -508,33 +575,33 @@ public class FilterUtil {
 
 				if (stringNew.size() > 0 && compareto.size() > 0) {
 					
-					if(bex instanceof EqualsTo){
+					//if(bex instanceof EqualsTo){
 						
 					sqlExpression = FilterUtil.createEqualsTo(
 							new ArrayList<Expression>(stringNew),
 							new ArrayList<Expression>(compareto));
-					} else if (bex instanceof NotEqualsTo){
-						sqlExpression = FilterUtil.createNotEqualsTo(
-								new ArrayList<Expression>(stringNew),
-								new ArrayList<Expression>(compareto));
-					}
+//					} else if (bex instanceof NotEqualsTo){
+//						sqlExpression = FilterUtil.createNotEqualsTo(
+//								new ArrayList<Expression>(stringNew),
+//								new ArrayList<Expression>(compareto));
+//					}
 				} else {
 					
 					
-					if(bex instanceof EqualsTo){
+//					if(bex instanceof EqualsTo){
 						EqualsTo eq = new EqualsTo();
 						eq.setLeftExpression(new StringValue("\"true\""));
 						eq.setRightExpression(new StringValue("\"true\""));
 
 						sqlExpression = eq;
 						
-						} else if (bex instanceof NotEqualsTo){
-							NotEqualsTo neq = new NotEqualsTo();
-							neq.setLeftExpression(new StringValue("\"true\""));
-							neq.setRightExpression(new StringValue("\"true\""));
-
-							sqlExpression = neq;
-						}
+//						} else if (bex instanceof NotEqualsTo){
+//							NotEqualsTo neq = new NotEqualsTo();
+//							neq.setLeftExpression(new StringValue("\"true\""));
+//							neq.setRightExpression(new StringValue("\"true\""));
+//
+//							sqlExpression = neq;
+//						}
 
 					// fallback, if everything was eleminated
 
@@ -542,8 +609,18 @@ public class FilterUtil {
 				}
 
 			}
+			
+			if(bex instanceof NotEqualsTo){
+				
+				sqlExpression = new Parenthesis(sqlExpression);
+				((Parenthesis)sqlExpression).setNot();
+				
+			}
 
 		}
+		
+		
+		
 
 		// TODO Auto-generated method stub
 		return sqlExpression;
@@ -562,12 +639,12 @@ public class FilterUtil {
 
 	private Expression getBestExpression(Expr expr,
 			BiMap<String, String> colstring2var,
-			Map<String, TermCreator> colstring2col) {
+			Map<String, TermMap> colstring2col) {
 		Expression expression = null;
 
 		if (expr.isVariable()) {
 
-			TermCreator tc = colstring2col.get(colstring2var.inverse().get(
+			TermMap tc = colstring2col.get(colstring2var.inverse().get(
 					expr.getVarName()));
 
 			expression = tc.getExpression();
@@ -606,8 +683,8 @@ public class FilterUtil {
 
 		}  else {
 			expression = getSQLExpression(expr, colstring2var, colstring2col);
-			log.warn("encountered unknown variable data type: "
-					+ expr.getClass().getCanonicalName());
+//			log.warn("encountered unknown variable data type: "
+//					+ expr.getClass().getCanonicalName());
 		}
 
 		// just to be sure:
@@ -684,7 +761,7 @@ public class FilterUtil {
 
 	public List<OrderByElement> convert(OpOrder opo,
 			BiMap<String, String> colstring2var,
-			Map<String, TermCreator> colstring2col) {
+			Map<String, TermMap> colstring2col) {
 
 		List<OrderByElement> obys = new ArrayList<OrderByElement>();
 		for (SortCondition soCond : opo.getConditions()) {
@@ -694,7 +771,7 @@ public class FilterUtil {
 			if (expr instanceof ExprVar) {
 				
 				String var = expr.getVarName();
-				TermCreator tc  = colstring2col.get(colstring2var.inverse().get(var));
+				TermMap tc  = colstring2col.get(colstring2var.inverse().get(var));
 
 				for(Expression exp :tc.getExpressions()){
 					OrderByExpressionElement ob = new OrderByExpressionElement(exp);
@@ -789,7 +866,9 @@ public class FilterUtil {
 	
 	
 	private String getDataType(Expression expr){
-		DataTypeHelper dth = mconf.getR2rconf().getDbConn().getDataTypeHelper();
+		
+		log.warn("Called getDataType. Refactor to not use direct col access");
+		
 		
 		if(expr instanceof Column){
 			String colname = ((Column) expr).getColumnName();
@@ -803,7 +882,7 @@ public class FilterUtil {
 //				//remove the variable part
 //				tablename = tablename.substring(0,tablename.lastIndexOf("_"));
 				
-				return dth.getCastTypeString(mconf.getColumnForName(tablename, colname).getSqldataType());
+				return dth.getCastTypeString(r2rmodel.getSqlDataType(tablename, colname));
 			}
 			
 		}

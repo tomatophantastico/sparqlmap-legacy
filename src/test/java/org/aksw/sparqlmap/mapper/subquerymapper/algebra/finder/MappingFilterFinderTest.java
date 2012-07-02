@@ -15,7 +15,7 @@ import org.aksw.sparqlmap.BSBMTest;
 import org.aksw.sparqlmap.BaseTest;
 import org.aksw.sparqlmap.beautifier.SparqlBeautifier;
 import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.R2RConfiguration;
+import org.aksw.sparqlmap.config.syntax.SparqlMapConfiguration;
 import org.aksw.sparqlmap.config.syntax.SimpleConfigParser;
 import org.aksw.sparqlmap.db.SQLAccessFacade;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.AlgebraBasedMapper;

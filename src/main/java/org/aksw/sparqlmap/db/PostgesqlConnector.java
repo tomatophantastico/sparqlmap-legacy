@@ -11,9 +11,11 @@ import java.util.Map;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,18 +26,15 @@ import com.jolbox.bonecp.BoneCPConfig;
 public class PostgesqlConnector implements Connector {
 	
 	
-
 	private BoneCP connectionPool = null;
 	
 	private static Logger log = LoggerFactory.getLogger(MySQLConnector.class);
 	
 	private DBConnectionConfiguration dbconf;
 	
-	public PostgesqlConnector(DBConnectionConfiguration dbconf) {
+	public PostgesqlConnector(String dbConnectionString, String username, String password, int minConnections, int maxConnections) {
 		
 		
-
-		this.dbconf = dbconf;
 
  
 		try {
@@ -43,11 +42,11 @@ public class PostgesqlConnector implements Connector {
 
 			// setup the connection pool
 			BoneCPConfig config = new BoneCPConfig();
-			config.setJdbcUrl(dbconf.getDbConnString()); // jdbc url specific to your database, eg jdbc:mysql://127.0.0.1/yourdb
-			config.setUsername(dbconf.getUsername()); 
-			config.setPassword(dbconf.getPassword());
-			config.setMinConnectionsPerPartition(1);
-			config.setMaxConnectionsPerPartition(5);
+			config.setJdbcUrl(dbConnectionString); // jdbc url specific to your database, eg jdbc:mysql://127.0.0.1/yourdb
+			config.setUsername(username); 
+			config.setPassword(password);
+			config.setMinConnectionsPerPartition(minConnections);
+			config.setMaxConnectionsPerPartition(maxConnections);
 			config.setPartitionCount(1);
 			connectionPool = new BoneCP(config); // setup the connection pool
 			
@@ -149,6 +148,7 @@ public class PostgesqlConnector implements Connector {
 		connectionPool.close();
 		
 	}
+
 	
 	
 	

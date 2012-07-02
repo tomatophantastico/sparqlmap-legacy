@@ -1,11 +1,11 @@
-package org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder;
+package org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 
 import com.hp.hpl.jena.sparql.algebra.Op;
@@ -25,7 +25,7 @@ import com.hp.hpl.jena.sparql.expr.Expr;
 
 public class MappingFilterFinder {
 
-	private MappingConfiguration mconf;
+	private R2RMLModel mconf;
 	private Op query;
 	
 	private OpSlice slice;
@@ -34,7 +34,7 @@ public class MappingFilterFinder {
 	private OpDistinct distinct;
 	private OpReduced reduced;
 
-	public MappingFilterFinder(MappingConfiguration mconf, Op query) {
+	public MappingFilterFinder(R2RMLModel mconf, Op query) {
 		super();
 		this.mconf = mconf;
 		this.query = query;

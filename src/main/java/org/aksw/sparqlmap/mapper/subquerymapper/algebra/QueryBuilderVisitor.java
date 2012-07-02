@@ -20,21 +20,19 @@ import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.Union;
 
-import org.aksw.sparqlmap.config.syntax.ColumDefinition;
-import org.aksw.sparqlmap.config.syntax.Mapping;
-import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.r2rml.ColumnTermCreator;
-import org.aksw.sparqlmap.config.syntax.r2rml.ConstantResourceCreator;
-import org.aksw.sparqlmap.config.syntax.r2rml.TermCreator;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.MappingFilterFinder;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.SBlockNodeMapping;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.ScopeBlock;
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingFilterFinder;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.PlainSelectWrapper;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.SBlockNodeMapping;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.ScopeBlock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.BiMap;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.graph.query.Mapping;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.sparql.algebra.OpVisitorBase;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
@@ -52,24 +50,22 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	private static Logger log = LoggerFactory
 			.getLogger(QueryBuilderVisitor.class);
 
-	private MappingConfiguration mappingConfiguration;
+	private R2RMLModel mappingConfiguration;
 
 	private MappingFilterFinder mappingFilterFinder;
 
 	private Map<SelectBody, Wrapper> selectBody2Wrapper = new HashMap<SelectBody, Wrapper>();
 	private Stack<SelectBody> selects = new Stack<SelectBody>();
-	ColumnTermCreator crc;
+	TermMapColumn crc;
 
 
 	private DataTypeHelper dataTypeHelper;
 
-	public QueryBuilderVisitor(MappingConfiguration mappingConfiguration,
-			MappingFilterFinder mappingFilterFinder) {
+	public QueryBuilderVisitor(R2RMLModel mappingConfiguration,
+			MappingFilterFinder mappingFilterFinder, DataTypeHelper dataTypeHelper) {
 		this.mappingConfiguration = mappingConfiguration;
 		this.mappingFilterFinder = mappingFilterFinder;
-
-		dataTypeHelper = mappingConfiguration.getR2rconf().getDbConn()
-				.getDataTypeHelper();
+		this.dataTypeHelper =dataTypeHelper;
 	}
 
 	@Override
@@ -145,7 +141,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 				if (e_e.getArg1() instanceof ExprVar && e_e.getArg2() instanceof NodeValue) {
 					ExprVar leftVar = (ExprVar) e_e.getArg1();
 					NodeValue rightVar = (NodeValue) e_e.getArg2();
-					if(leftVar.asVar().getVarName().endsWith(ColumnHelper.COL_INTERNAL)){
+					if(leftVar.asVar().getVarName().endsWith(ColumnHelper.COL_NAME_INTERNAL)){
 						break;
 					}
 
@@ -165,7 +161,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	public void visit(OpBGP opBGP) {
 		ScopeBlock scope = mappingFilterFinder.getScopeBlock(opBGP);
 
-		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper, mappingConfiguration);
+		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper, mappingConfiguration, dataTypeHelper);
 
 		// PlainSelect bgpSelect = new PlainSelect();
 

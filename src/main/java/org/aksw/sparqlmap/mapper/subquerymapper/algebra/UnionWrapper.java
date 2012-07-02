@@ -15,14 +15,15 @@ import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.Union;
 
-import org.aksw.sparqlmap.config.syntax.Mapping;
-import org.aksw.sparqlmap.config.syntax.MaterializedColumn;
-import org.aksw.sparqlmap.config.syntax.r2rml.TermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
+import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.PlainSelectWrapper;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.hp.hpl.jena.graph.query.Mapping;
 
 public class UnionWrapper implements Wrapper {
 	
@@ -33,7 +34,7 @@ public class UnionWrapper implements Wrapper {
 	private Set<String> variablesMentioned = new HashSet<String>();
 	
 	private BiMap<String, String> colstring2var;
-	private Map<String, TermCreator> colstring2Col;
+	private Map<String, TermMap> colstring2Col;
 
 	/**
 	 * creates a new sql Union and registers it the the wrapper2body map
@@ -118,7 +119,7 @@ public class UnionWrapper implements Wrapper {
 		 }
 	}
 	
-	public Map<String,TermCreator> getColString2Col(String subselectName){
+	public Map<String,TermMap> getColString2Col(String subselectName){
 		if(colstring2Col==null){
 			createMappingCols(subselectName);
 		}

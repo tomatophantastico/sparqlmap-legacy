@@ -7,7 +7,7 @@ import java.util.Set;
 
 import org.aksw.sparqlmap.BSBMAlgebra;
 import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.R2RConfiguration;
+import org.aksw.sparqlmap.config.syntax.SparqlMapConfiguration;
 import org.aksw.sparqlmap.config.syntax.SimpleConfigParser;
 import org.aksw.sparqlmap.db.SQLAccessFacade;
 import org.apache.log4j.spi.LoggerFactory;
@@ -28,7 +28,7 @@ public class FilterFinderTest {
 	static Logger log = org.slf4j.LoggerFactory.getLogger(FilterFinderTest.class);
 	private SQLAccessFacade db;
 	private AlgebraBasedMapper mapper;
-	private R2RConfiguration config;
+	private SparqlMapConfiguration config;
 	private MappingConfiguration mconfig;
 	
 	

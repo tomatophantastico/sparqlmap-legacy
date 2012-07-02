@@ -202,7 +202,7 @@ public class SelectDeParser implements SelectVisitor, OrderByVisitor, SelectItem
 	public void visit(SubSelect subSelect) {
 		buffer.append("(");
 		subSelect.getSelectBody().accept(this);
-		buffer.append(") ");//AS " + subSelect.getAlias());
+		buffer.append(") AS " + subSelect.getAlias());
 	}
 
 	public void visit(Table tableName) {

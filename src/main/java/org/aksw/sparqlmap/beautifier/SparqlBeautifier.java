@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ColumnHelper;
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Node_Variable;
@@ -88,15 +88,15 @@ public class SparqlBeautifier extends TransformCopy {
 		Node o = triple.getObject();
 		
 		if(p.isVariable() && p.equals(s)){
-			p = Var.alloc(i++ + ColumnHelper.COL_INTERNAL);
+			p = Var.alloc(i++ + org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper.COL_NAME_INTERNAL);
 			exprList.add(new E_Equals(new ExprVar(s),new ExprVar(p)));
 		}
 		if (o.isVariable() && o.equals(s)) {
-			o = Var.alloc(i++ + ColumnHelper.COL_INTERNAL);
+			o = Var.alloc(i++ + ColumnHelper.COL_NAME_INTERNAL);
 			exprList.add(new E_Equals(new ExprVar(s),new ExprVar(o)));
 		}
 		if (o.isVariable() && o.equals(p)) {
-			o = Var.alloc(i++ + ColumnHelper.COL_INTERNAL);
+			o = Var.alloc(i++ + ColumnHelper.COL_NAME_INTERNAL);
 			exprList.add(new E_Equals(new ExprVar(p),new ExprVar(o)));
 		}
 		
@@ -113,7 +113,7 @@ public class SparqlBeautifier extends TransformCopy {
 			
 			Node nNew = termToVariable.get(n.toString()); 
 			if(nNew==null){
-				nNew = new Node_Variable(i++ + ColumnHelper.COL_INTERNAL);
+				nNew = new Node_Variable(i++ + ColumnHelper.COL_NAME_INTERNAL);
 				termToVariable.put(n.toString(), nNew);
 			}
 			

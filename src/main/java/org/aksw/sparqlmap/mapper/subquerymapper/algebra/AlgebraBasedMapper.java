@@ -8,11 +8,10 @@ import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
 import org.aksw.sparqlmap.beautifier.SparqlBeautifier;
-import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.R2RConfiguration;
-import org.aksw.sparqlmap.db.SQLAccessFacade;
+import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.mapper.Mapper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.MappingFilterFinder;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingFilterFinder;
 
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.sparql.algebra.Op;
@@ -22,9 +21,9 @@ public class AlgebraBasedMapper implements Mapper {
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AlgebraBasedMapper.class);
 
-	private MappingConfiguration mappingConf;
+	private R2RMLModel mappingConf;
 
-	private SQLAccessFacade conn;
+	private DBConnectionConfiguration dbconf;
 	
 	private SparqlBeautifier beautifier = new SparqlBeautifier();
 	
@@ -32,27 +31,14 @@ public class AlgebraBasedMapper implements Mapper {
 		return beautifier;
 	}
 
-	public AlgebraBasedMapper(R2RConfiguration mainConf) {
-		this.mappingConf = mainConf.getMappingConfiguration();
-	}
+
 	
-	public AlgebraBasedMapper(MappingConfiguration mappingConf){
+	public AlgebraBasedMapper(R2RMLModel mappingConf, DBConnectionConfiguration dbconf){
 		this.mappingConf = mappingConf;
+		this.dbconf = dbconf;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.aksw.r2rj.mapper.Mapper#setConn(org.aksw.r2rj.db.Connector)
-	 */
-	public void setConn(SQLAccessFacade conn) {
-		this.conn = conn;
-	}
 
-	/* (non-Javadoc)
-	 * @see org.aksw.r2rj.mapper.Mapper#setMappingConf(org.aksw.r2rj.config.syntax.MappingConfiguration)
-	 */
-	public void setMappingConf(MappingConfiguration mappingConf) {
-		this.mappingConf = mappingConf;
-	}
 
 
 	public String rewrite(Query sparql) {
@@ -70,7 +56,7 @@ public class AlgebraBasedMapper implements Mapper {
 		
 
 		
-		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mappingConf, mff);
+		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mappingConf, mff,dbconf.getDataTypeHelper());
 		
 		
 		OpWalker.walk(op, builderVisitor);
@@ -79,11 +65,11 @@ public class AlgebraBasedMapper implements Mapper {
 		// prepare deparse select
 		StringBuffer out = new StringBuffer();
 		Select select = builderVisitor.getSqlQuery();
-		SelectDeParser selectDeParser  = mappingConf.getR2rconf().getDbConn().getSelectDeParser();
+		SelectDeParser selectDeParser  = dbconf.getSelectDeParser(out);
 		
 		selectDeParser.setBuffer(out);
-		ExpressionDeParser expressionDeParser =  mappingConf.getR2rconf().getDbConn().getExpressionDeParser(selectDeParser, out);
-		selectDeParser.setExpressionVisitor(expressionDeParser);
+//		ExpressionDeParser expressionDeParser =  mappingConf.getR2rconf().getDbConn().getExpressionDeParser(selectDeParser, out);
+//		selectDeParser.setExpressionVisitor(expressionDeParser);
 		if (select.getWithItemsList() != null && !select.getWithItemsList().isEmpty()) {
 			out.append("WITH ");
 			for (Iterator iter = select.getWithItemsList().iterator(); iter.hasNext();) {

@@ -1,11 +1,9 @@
-package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
+package org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml;
 
-import java.io.ObjectInputStream.GetField;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +13,6 @@ import java.util.TreeMap;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 import net.sf.jsqlparser.schema.Column;
@@ -28,10 +25,14 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
-import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.r2rml.ColumnTermCreator;
-import org.aksw.sparqlmap.config.syntax.r2rml.SubSelectTermCreator;
-import org.aksw.sparqlmap.config.syntax.r2rml.TermCreator;
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
+import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.MappingUtils;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.Wrapper;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BiMap;
@@ -55,7 +56,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 	private FilterUtil filterUtil;
 
-	private ColumnTermCreator crc;
+	private TermMap crc;
 
 	// private Multimap<String, Mapping> ldpMappings = HashMultimap.create();
 
@@ -63,51 +64,52 @@ public class PlainSelectWrapper implements Wrapper {
 
 	private BiMap<String, String> colstring2var = HashBiMap.create();
 
-	private Map<String, TermCreator> colstring2Col = new HashMap<String, TermCreator>();
+	private Map<String, TermMap> colstring2Col = new HashMap<String, TermMap>();
 	
-	private MappingConfiguration mappingConfiguration;
+	private R2RMLModel mappingConfiguration;
 
 	public PlainSelectWrapper(Map<SelectBody, Wrapper> registerTo,
-			MappingConfiguration mappingConfiguration) {
+			R2RMLModel mappingConfiguration, DataTypeHelper dth) {
 
 		
 		super();
 		this.mappingConfiguration = mappingConfiguration;
-		this.dataTypeHelper = mappingConfiguration.getR2rconf().getDbConn()
-				.getDataTypeHelper();
-		this.filterUtil = mappingConfiguration.getFilterUtil();
+		this.dataTypeHelper = dth;
+		this.filterUtil = new FilterUtil(dataTypeHelper,mappingConfiguration) ;
+				
+				
 
 		plainSelect.setSelectItems(new ArrayList<SelectExpressionItem>());
 		plainSelect.setJoins(new ArrayList());
 		registerTo.put(plainSelect, this);
 	}
 
-	public void addTripleQuery(TermCreator subject, String subjectAlias,
-			TermCreator object, String objectAlias, boolean isOptional) {
+	public void addTripleQuery(TermMap subject, String subjectAlias,
+			TermMap object, String objectAlias, boolean isOptional) {
 		addTripleQuery(subject, subjectAlias, null, null, object, objectAlias,
 				isOptional);
 	}
 
-	public void addTripleQuery(TermCreator origSubject, String subjectAlias,
-			TermCreator origPredicate, String predicateAlias,
-			TermCreator origObject, String objectAlias, boolean isOptional) {
+	public void addTripleQuery(TermMap origSubject, String subjectAlias,
+			TermMap origPredicate, String predicateAlias,
+			TermMap origObject, String objectAlias, boolean isOptional) {
 
 		String suffix = "_" + subjectAlias;
-		TermCreator subject = origSubject.clone(suffix);
+		TermMap subject = origSubject.clone(suffix);
 		addColumn(subject, subjectAlias,  isOptional);
-		TermCreator object = origObject.clone(suffix);
+		TermMap object = origObject.clone(suffix);
 		addColumn(object, objectAlias,  isOptional);
 		if(origPredicate!=null){
-			TermCreator predicate = origPredicate.clone(suffix);
+			TermMap predicate = origPredicate.clone(suffix);
 			addColumn(predicate, predicateAlias,  isOptional);	
 		}
 		
 
 	}
 
-	private void addColumn(TermCreator tc, String tcAlias,
+	private void addColumn(TermMap tc, String tcAlias,
 			boolean isOptional) {
-		TermCreator term = tc;
+		TermMap term = tc;
 
 		// we check if the column is already in use.
 		// if the column then is used to be bound to another variable
@@ -149,7 +151,7 @@ public class PlainSelectWrapper implements Wrapper {
 				// }
 
 				if (!alreadyInJoinCond) {
-					TermCreator oldTc = colstring2Col.get(colstring2var
+					TermMap oldTc = colstring2Col.get(colstring2var
 							.inverse().get(tcAlias));
 					List<EqualsTo> eqs = FilterUtil.createEqualsTos(
 							oldTc.getExpressions(), term.getExpressions());
@@ -194,11 +196,11 @@ public class PlainSelectWrapper implements Wrapper {
 		addMappingstoQuery(term);
 	}
 
-	private TermCreator cloneColOnDuplicateUsage(TermCreator term,
+	private TermMap cloneColOnDuplicateUsage(TermMap term,
 			String tcAlias) {
 		// same col used for an other variable, so we have to clone
 
-		TermCreator cloneTerm = term.clone("_dupVar_" + dupcounter++);
+		TermMap cloneTerm = term.clone("_dupVar_" + dupcounter++);
 
 	
 		Set<EqualsTo> newEqs = new HashSet<EqualsTo>();
@@ -254,7 +256,7 @@ public class PlainSelectWrapper implements Wrapper {
 	
 	
 
-	private void createNotNull(TermCreator term, String termAlias) {
+	private void createNotNull(TermMap term, String termAlias) {
 
 		for (Expression colExpr : term.getExpressions()) {
 			colExpr = FilterUtil.uncast(colExpr);
@@ -292,10 +294,10 @@ public class PlainSelectWrapper implements Wrapper {
 			
 			for(String var: ps.getVarsMentioned()){
 				
-				TermCreator rightVarTc = ps.getColstring2Col().get( ps.getColstring2Var().inverse().get(var));
+				TermMap rightVarTc = ps.getColstring2Col().get( ps.getColstring2Var().inverse().get(var));
 				//variables already there and equal can be ignored
 				// if not equal, we cannot use this optimization
-				TermCreator thisVarTc = colstring2Col.get(this.colstring2var.inverse().get(var));
+				TermMap thisVarTc = colstring2Col.get(this.colstring2var.inverse().get(var));
 				if(thisVarTc!=null){
 					//compare it
 					
@@ -416,7 +418,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 		for(String var: newColGroups.keySet()){
 			List<Expression> expressions  = (List) newColGroups.get(var);
-			SubSelectTermCreator sstc = new SubSelectTermCreator(dataTypeHelper, expressions);
+			TermMap sstc = new SubSelectTermCreator(dataTypeHelper, expressions);
 			colstring2Col.put(sstc.toString(), sstc);
 			colstring2var.put(sstc.toString(), var);
 		}
@@ -498,7 +500,7 @@ public class PlainSelectWrapper implements Wrapper {
 	 * 
 	 * @param expression
 	 */
-	private void addMappingstoQuery(TermCreator tc) {
+	private void addMappingstoQuery(TermMap tc) {
 
 		
 		for(EqualsTo eq : tc.getFromJoins()){
@@ -692,7 +694,7 @@ public class PlainSelectWrapper implements Wrapper {
 						List<Expression> simplified = new ArrayList<Expression>();
 						
 						for (EqualsTo equalsTo : eqsWeCanUse) {
-							simplified.add(filterUtil.shortCutFilter(equalsTo));
+							simplified.add(FilterUtil.shortCut((Expression)equalsTo));
 						}
 		
 						join.setOnExpression(FilterUtil.conjunctFilters(new ArrayList<Expression>(
@@ -850,7 +852,7 @@ public class PlainSelectWrapper implements Wrapper {
 		return colstring2var;
 	}
 
-	public Map<String, TermCreator> getColstring2Col() {
+	public Map<String, TermMap> getColstring2Col() {
 		return colstring2Col;
 	}
 

@@ -13,7 +13,7 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 import org.aksw.sparqlmap.BaseTest;
 import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-import org.aksw.sparqlmap.config.syntax.R2RConfiguration;
+import org.aksw.sparqlmap.config.syntax.SparqlMapConfiguration;
 import org.aksw.sparqlmap.config.syntax.SimpleConfigParser;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,7 +27,7 @@ public class MySQLConnectorTest {
 		
 		SimpleConfigParser parser = new SimpleConfigParser();
 
-		R2RConfiguration config = parser.parse(new InputStreamReader(
+		SparqlMapConfiguration config = parser.parse(new InputStreamReader(
 				ClassLoader.getSystemResourceAsStream("bsbm.r2rml")));
 
 	

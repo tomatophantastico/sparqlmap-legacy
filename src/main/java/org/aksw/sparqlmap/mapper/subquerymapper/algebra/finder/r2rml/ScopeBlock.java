@@ -1,4 +1,4 @@
-package org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder;
+package org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,15 +10,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.aksw.sparqlmap.config.syntax.ColumDefinition;
-import org.aksw.sparqlmap.config.syntax.Mapping;
-import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.MappingUtils;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.graph.query.Mapping;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
@@ -43,9 +42,9 @@ public class ScopeBlock {
 	private Set<Expr> pushedInFilters = new HashSet<Expr>();
 	private Map<Node, SBlockNodeMapping> node2sBlock = new HashMap<Node, SBlockNodeMapping>();
 	private Set<Op> ops = new HashSet<Op>();
-	private MappingConfiguration mappingConf;
+	private R2RMLModel mappingConf;
 
-	public ScopeBlock(ScopeBlock parent, MappingConfiguration mappingConf) {
+	public ScopeBlock(ScopeBlock parent, R2RMLModel mappingConf) {
 		super();
 		this.mappingConf  = mappingConf;
 		if (parent!=null){

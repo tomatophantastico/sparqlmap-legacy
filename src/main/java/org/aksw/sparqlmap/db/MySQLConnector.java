@@ -14,6 +14,7 @@ import javax.xml.datatype.DatatypeConstants;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
@@ -30,13 +31,11 @@ public class MySQLConnector implements Connector {
 	
 	private static Logger log = LoggerFactory.getLogger(MySQLConnector.class);
 	
-	private DBConnectionConfiguration dbconf;
 	
-	public MySQLConnector(DBConnectionConfiguration dbconf) {
+	public MySQLConnector(String dbConnectionString, String username, String password, int minConnections, int maxConnections) {
 		
 		
 
-		this.dbconf = dbconf;
 
  
 		try {
@@ -44,11 +43,11 @@ public class MySQLConnector implements Connector {
 
 			// setup the connection pool
 			BoneCPConfig config = new BoneCPConfig();
-			config.setJdbcUrl(dbconf.getDbConnString()); // jdbc url specific to your database, eg jdbc:mysql://127.0.0.1/yourdb
-			config.setUsername(dbconf.getUsername()); 
-			config.setPassword(dbconf.getPassword());
-			config.setMinConnectionsPerPartition(5);
-			config.setMaxConnectionsPerPartition(20);
+			config.setJdbcUrl(dbConnectionString); // jdbc url specific to your database, eg jdbc:mysql://127.0.0.1/yourdb
+			config.setUsername(username); 
+			config.setPassword(password);
+			config.setMinConnectionsPerPartition(minConnections);
+			config.setMaxConnectionsPerPartition(maxConnections);
 			config.setPartitionCount(1);
 			connectionPool = new BoneCP(config); // setup the connection pool
 			
@@ -150,9 +149,7 @@ public class MySQLConnector implements Connector {
 		connectionPool.close();
 		
 	}
-	
-	
-	
+
 	
 	
 

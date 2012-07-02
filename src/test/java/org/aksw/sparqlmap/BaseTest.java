@@ -2,7 +2,7 @@ package org.aksw.sparqlmap;
 
 import java.io.InputStreamReader;
 
-import org.aksw.sparqlmap.config.syntax.R2RConfiguration;
+import org.aksw.sparqlmap.config.syntax.SparqlMapConfiguration;
 import org.aksw.sparqlmap.config.syntax.SimpleConfigParser;
 import org.aksw.sparqlmap.db.SQLAccessFacade;
 import org.junit.After;
@@ -12,7 +12,7 @@ public abstract class BaseTest {
 	
 	protected SQLAccessFacade db = null;
 	
-	protected R2RConfiguration config;
+	protected SparqlMapConfiguration config;
 	
 
 	

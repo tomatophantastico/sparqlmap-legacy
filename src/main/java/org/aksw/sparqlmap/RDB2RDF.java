@@ -1,5 +1,6 @@
 package org.aksw.sparqlmap;
 
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
@@ -11,9 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.aksw.sparqlmap.config.syntax.R2RConfiguration;
-import org.aksw.sparqlmap.config.syntax.SimpleConfigParser;
-import org.aksw.sparqlmap.db.SQLAccessFacade;
+import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.mapper.Mapper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.AlgebraBasedMapper;
@@ -28,40 +28,76 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.syntax.Template;
 import com.hp.hpl.jena.sparql.util.ModelUtils;
+import com.hp.hpl.jena.util.FileManager;
 import com.hp.hpl.jena.xmloutput.impl.Basic;
 
 public class RDB2RDF {
 
 	public Mapper mapper;
 	
-	private R2RConfiguration config;
+	private R2RMLModel mapping;
 	
-	private SQLAccessFacade db;
+	private DBConnectionConfiguration dbConf;
 	
+
 	private Logger log = LoggerFactory.getLogger(RDB2RDF.class);
 	
 	
 	public RDB2RDF(String configLocation ){
 		
-		SimpleConfigParser parser = new SimpleConfigParser();
+		if(configLocation ==null){
+			configLocation = "./conf/";
+		}
+		File confFolder  = new File(configLocation);
+		if(!confFolder.isDirectory()||!confFolder.exists()){
+			log.error("no valid conf folder location given.");
+			System.exit(0);
+		}
+		
 
 		try {
-			String configName = "bsbm.r2rml";
-			ClassLoader cl = this.getClass().getClassLoader();
-			URL u = cl.getResource(configName);
-			if (u == null) u = ClassLoader.getSystemResource(configName);
-						
-			config = parser.parse(new InputStreamReader(u.openStream()));
-			mapper = new AlgebraBasedMapper(config);
+			
+			//First check the database connection
+			
+			File dbConfFile = new File(confFolder.getAbsolutePath() + "db.properties");
+			
+			
+			if(dbConfFile.isDirectory()||!dbConfFile.exists()){
+				log.error("no file db.properties found in conf folder: " + confFolder.getAbsolutePath());
+				System.exit(0);
+			}
+			
+			this.dbConf = new  DBConnectionConfiguration(dbConfFile);
+			
+			
+			//we now take the first ttl file in the folder as our mapping
+			Model model = ModelFactory.createDefaultModel();
+			for(File file: confFolder.listFiles()){
+				if(file.getName().endsWith(".ttl")){
+				//we now load all ttl files into a model. We assume, they are all mappings to be loaded
+				log.info("Loading file: " + file.getAbsolutePath());
+				FileManager.get().readModel(model, file.getAbsolutePath());
+				}
+			}
+			
+			//we now read the r2rml schema file
+			
+			Model schema = ModelFactory.createDefaultModel();
+			FileManager.get().readModel(schema, confFolder.getAbsolutePath()+ "r2rml.rdf");
+			
+			R2RMLModel mappingConfig = new R2RMLModel(model, schema, dbConf);
+			
+			mapper = new AlgebraBasedMapper(mapping,dbConf);
 
-			db = new SQLAccessFacade(config.getDbConn());
 		} catch (Exception e) {
 			log.error("Error setting up the app", e);
+			System.exit(0);
 		}
 
 		
@@ -185,7 +221,7 @@ public class RDB2RDF {
 		
 
 		
-		return db.executeSQL(sql);
+		return dbConf.executeSQL(sql);
 		
 	}
 

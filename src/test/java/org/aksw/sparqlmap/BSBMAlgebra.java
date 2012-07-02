@@ -3,7 +3,7 @@ package org.aksw.sparqlmap;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-import org.aksw.sparqlmap.config.syntax.R2RConfiguration;
+import org.aksw.sparqlmap.config.syntax.SparqlMapConfiguration;
 import org.aksw.sparqlmap.config.syntax.SimpleConfigParser;
 import org.aksw.sparqlmap.db.SQLAccessFacade;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.AlgebraBasedMapper;
@@ -28,7 +28,7 @@ public class BSBMAlgebra extends BSBMTest {
 
 		SimpleConfigParser parser = new SimpleConfigParser();
 
-		R2RConfiguration config = parser.parse(new InputStreamReader(
+		SparqlMapConfiguration config = parser.parse(new InputStreamReader(
 				ClassLoader.getSystemResourceAsStream("bsbm.r2rml")));
 
 		mapper = new AlgebraBasedMapper(config);

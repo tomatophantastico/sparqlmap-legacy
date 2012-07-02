@@ -1,12 +1,12 @@
 package org.aksw.sparqlmap.config.syntax;
 
-public class R2RConfiguration {
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
+
+public class SparqlMapConfiguration {
 
 	private String endpoint;
 
-	private MappingConfiguration mappingConfiguration = new MappingConfiguration(this);
-
-	private NameSpaceConfig nameSpaceConfig = new NameSpaceConfig();
+	private R2RMLModel mappingConfiguration;
 
 	private DBConnectionConfiguration dbConn;
 	
@@ -36,21 +36,7 @@ public class R2RConfiguration {
 		this.dbConn = dbConn;
 	}
 
-	public MappingConfiguration getMappingConfiguration() {
-		return mappingConfiguration;
-	}
 
-	public void setMappingConfiguration(
-			MappingConfiguration mappingConfiguration) {
-		this.mappingConfiguration = mappingConfiguration;
-	}
 
-	public NameSpaceConfig getNameSpaceConfig() {
-		return nameSpaceConfig;
-	}
-
-	public void setNameSpaceConfig(NameSpaceConfig nsconvert) {
-		this.nameSpaceConfig = nsconvert;
-	}
 
 }

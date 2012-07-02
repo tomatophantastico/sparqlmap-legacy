@@ -11,10 +11,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ColumnHelper;
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.SBlockNodeMapping;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -73,12 +72,12 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 			String colname = rs.getMetaData().getColumnName(i);
 			colNames.add(colname);
 			
-			if (colname.endsWith(ColumnHelper.TYPE_COL)) {
+			if (colname.endsWith(ColumnHelper.COL_NAME_RDFTYPE)) {
 				vars.add(colname.substring(0, colname.length()
-						- ColumnHelper.TYPE_COL.length()));
+						- ColumnHelper.COL_NAME_RDFTYPE.length()));
 			}
 			
-			if(colname.contains(ColumnHelper.RESOURCE_COL_SEGMENT)){
+			if(colname.contains(ColumnHelper.COL_NAME_RESOURCE_COL_SEGMENT)){
 				//we extract the var name
 				String var = ColumnHelper.colnameBelongsToVar(colname);
 				var2ResourceCols.put(var,colname);
@@ -141,8 +140,8 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 				Node node;
 				// create the binding here
 				// first check for type
-				int type = rs.getInt(var + ColumnHelper.TYPE_COL);
-				if (type == ColumnHelper.COL_TYPE_RESOURCE) {
+				int type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
+				if (type == ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE) {
 					StringBuffer uri = new StringBuffer();
 					for(String colname : this.var2ResourceCols.get(var)){
 						String segment =rs.getString(colname);
@@ -157,15 +156,15 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 						node = Node.createURI(uri.toString());
 					}
 					
-				} else if (type == ColumnHelper.COL_TYPE_LITERAL) {
+				} else if (type == ColumnHelper.COL_VAL_TYPE_LITERAL) {
 					
-					String litType = rs.getString(var + ColumnHelper.LIT_TYPE_COL);
+					String litType = rs.getString(var + ColumnHelper.COL_NAME_RDFTYPE);
 					RDFDatatype dt = null;
 					if(litType!=null&&!litType.isEmpty()){
 						dt = new BaseDatatype(litType);
 					}
 					
-					String lang =  rs.getString(var + ColumnHelper.LIT_LANG_COL);
+					String lang =  rs.getString(var + ColumnHelper.COL_NAME_LITERAL_LANG);
 					
 					
 					
@@ -174,18 +173,18 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 
 					// determine the data type
 					int sqldatatype = rs.getInt(var
-							+ ColumnHelper.SQL_TYPE_COL);
+							+ ColumnHelper.COL_NAME_SQL_TYPE);
 						
 					String literalVal = null;
 					if(dth.getCastTypeString(sqldatatype) == dth.getStringCastType()&&
-							rs.getString(var + ColumnHelper.LITERAL_COL_STRING)!=null){
-						literalVal = rs.getString(var + ColumnHelper.LITERAL_COL_STRING);
+							rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING)!=null){
+						literalVal = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
 					}else if(dth.getCastTypeString(sqldatatype) == dth.getDateCastType()&&
-							rs.getDate(var+ColumnHelper.LITERAL_COL_DATE)!=null){
-						literalVal = formatter.format(rs.getDate(var+ColumnHelper.LITERAL_COL_DATE));
+							rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE)!=null){
+						literalVal = formatter.format(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE));
 					}else if(dth.getCastTypeString(sqldatatype) == dth.getNumericCastType() &&
-							rs.getBigDecimal(var + ColumnHelper.LITERAL_COL_NUM) != null){
-						literalVal = rs.getBigDecimal(var + ColumnHelper.LITERAL_COL_NUM).toString();
+							rs.getBigDecimal(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC) != null){
+						literalVal = rs.getBigDecimal(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC).toString();
 					}else if(dth.getCastTypeString(sqldatatype) == dth.getBooleanCastType()){
 						throw new ImplementationException("No Boolean support here.");
 					}

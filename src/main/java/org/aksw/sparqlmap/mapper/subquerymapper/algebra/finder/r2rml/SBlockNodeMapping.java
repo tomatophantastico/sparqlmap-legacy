@@ -1,16 +1,15 @@
-package org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder;
+package org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.aksw.sparqlmap.config.syntax.ColumDefinition;
-import org.aksw.sparqlmap.config.syntax.Mapping;
-import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.hp.hpl.jena.graph.query.Mapping;
 
 /**
  * this class contains all the information to what mappings a node will map.
@@ -20,7 +19,7 @@ import com.google.common.collect.Multimap;
  */
 public class SBlockNodeMapping {
 
-	public SBlockNodeMapping(String s, MappingConfiguration mapConf) {
+	public SBlockNodeMapping(String s, R2RMLModel mapConf) {
 		this.mapconf = mapConf;
 		this.s = s;
 		init();
@@ -39,7 +38,7 @@ public class SBlockNodeMapping {
 	}
 
 	private String s;
-	private MappingConfiguration mapconf;
+	private R2RMLModel mapconf;
 
 	private Set<Mapping> mappings = new HashSet<Mapping>();
 	private Set<String> ldps;
@@ -90,34 +89,7 @@ public class SBlockNodeMapping {
 		return s;
 	}
 
-//	private void cleanUpMappingsCols(Collection<String> retainLdps) {
-//		// remove all non-covered mappings
-//		Collection<Mapping> mapsToRemove = new HashSet<Mapping>();
-//		for (Mapping map : mappings) {
-//			if (!retainLdps.contains(map.getLinkedDataPath())) {
-//				mapsToRemove.add(map);
-//			}
-//		}
-//		mappings.removeAll(mapsToRemove);
-//		Multimap<Node_Variable, ColumDefinition> colsToRemove = HashMultimap
-//				.create();
-//		// remove all colums whose ldps and mappings are no longer covered.
-//		for (Node_Variable var : var2Column.keys()) {
-//
-//			for (ColumDefinition colDef : var2Column.get(var)) {
-//				if (!mappings.contains(colDef.getMapp())) {
-//					colsToRemove.put(var, colDef);
-//				}
-//			}
-//		}
-//		for (Node_Variable var : colsToRemove.keySet()) {
-//			Collection<ColumDefinition> cols = var2Column.get(var);
-//			Collection<ColumDefinition> colsToRemoveCollection = colsToRemove
-//					.get(var);
-//			cols.removeAll(colsToRemoveCollection);
-//
-//		}
-//	}
+
 	
 	
 	public boolean retainMappings(Collection<Mapping> retainMaps){
