@@ -19,12 +19,10 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
-import org.aksw.sparqlmap.config.syntax.Mapping;
-import org.aksw.sparqlmap.config.syntax.MappingConfiguration;
-
 import com.google.common.collect.LinkedHashMultimap;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.graph.query.Mapping;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.op.Op0;
 import com.hp.hpl.jena.sparql.algebra.op.Op1;
