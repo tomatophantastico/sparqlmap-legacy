@@ -3,7 +3,6 @@ package net.sf.jsqlparser.util.deparser;
 import java.util.Iterator;
 import java.util.List;
 
-
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitor;
 import net.sf.jsqlparser.schema.Column;
@@ -21,7 +20,6 @@ import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 import net.sf.jsqlparser.statement.select.OrderByVisitor;
 import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SelectItemVisitor;
@@ -202,7 +200,7 @@ public class SelectDeParser implements SelectVisitor, OrderByVisitor, SelectItem
 	public void visit(SubSelect subSelect) {
 		buffer.append("(");
 		subSelect.getSelectBody().accept(this);
-		buffer.append(") AS " + subSelect.getAlias());
+		buffer.append(")");// AS " + subSelect.getAlias());
 	}
 
 	public void visit(Table tableName) {

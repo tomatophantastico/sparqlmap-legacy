@@ -31,7 +31,6 @@ import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.MappingUtils;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.Wrapper;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -394,7 +393,7 @@ public class PlainSelectWrapper implements Wrapper {
 				} else {
 					EqualsTo eq = new EqualsTo();
 					eq.setLeftExpression(alias2expression.get(right_alias));
-					eq.setRightExpression(MappingUtils.createCol(
+					eq.setRightExpression(ColumnHelper.createCol(
 							subsell.getAlias(), right_alias));
 					joinon.add(eq);
 				}
@@ -404,7 +403,7 @@ public class PlainSelectWrapper implements Wrapper {
 				SelectExpressionItem sei = new SelectExpressionItem();
 				sei.setAlias(right_alias);
 
-				Column columnProjection = MappingUtils.createCol(
+				Column columnProjection = ColumnHelper.createCol(
 						subsell.getAlias(), right_alias);
 				sei.setExpression(columnProjection);
 				newSeis.add(sei);
@@ -418,7 +417,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 		for(String var: newColGroups.keySet()){
 			List<Expression> expressions  = (List) newColGroups.get(var);
-			TermMap sstc = new SubSelectTermCreator(dataTypeHelper, expressions);
+			TermMap sstc = new TermMap(dataTypeHelper,expressions);
 			colstring2Col.put(sstc.toString(), sstc);
 			colstring2var.put(sstc.toString(), var);
 		}

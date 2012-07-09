@@ -81,7 +81,7 @@ public abstract  class DataTypeHelper {
 			return getNumericCastType();
 		}else if(XSDDatatype.XSDstring == datatype|| datatype ==null){
 			return getStringCastType();
-		}else if(XSDDatatype.XSDdateTime == datatype|| XSDDatatype.XSDtime == datatype ||  XSDDatatype.XSDtime == datatype){
+		}else if(XSDDatatype.XSDdateTime == datatype|| XSDDatatype.XSDdate == datatype ||  XSDDatatype.XSDtime == datatype){
 			return getDateCastType();
 		}else if(XSDDatatype.XSDboolean == datatype){
 			return getBooleanCastType();

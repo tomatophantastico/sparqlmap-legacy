@@ -21,6 +21,7 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
+import org.aksw.sparqlmap.columnanalyze.CompatibilityChecker;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
@@ -38,6 +39,12 @@ public class TermMap{
 	protected TripleMap trm;
 		
 	private TermMap original;
+	
+	private CompatibilityChecker cchecker;
+	
+	
+	
+
 		
 	/**
 	 * the expressions that create a term.
@@ -49,17 +56,28 @@ public class TermMap{
 
 	
 
-	protected TermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions, List<FromItem> fromItems, List<EqualsTo> joinConditions, TripleMap trm) {
+	public TermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions, List<FromItem> fromItems, List<EqualsTo> joinConditions, TripleMap trm) {
 			this.dataTypeHelper= dataTypeHelper;
 			this.trm = trm;		
 			this.expressions = expressions;
 			for(FromItem fi: fromItems){
 				alias2fromItem.put(fi.getAlias(), fi);
 			}
+			if(joinConditions!=null){
 			this.joinConditions = joinConditions;
+			}else{
+				this.joinConditions = new ArrayList<EqualsTo>();
+			}
 			//expressions = new ArrayList<Expression>();
 		
 		}
+	
+	
+	public TermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions) {
+		this.dataTypeHelper= dataTypeHelper;
+		this.expressions = expressions;
+			
+	}
 
 
 	public List<SelectExpressionItem> getSelectExpressionItems( String colalias){
@@ -146,7 +164,7 @@ public class TermMap{
 	}
 	
 	
-	public List<FromItem> getFromItems(){
+	public List<FromItem> getFromIte(){
 		List<FromItem> fis = new ArrayList<FromItem>();
 		for (Expression expr: getExpressions()) {
 			expr = FilterUtil.uncast(expr);
@@ -156,6 +174,11 @@ public class TermMap{
 		}
 		return fis;
 	}
+	
+	public List<FromItem> getFromItems(){
+		return new ArrayList(this.alias2fromItem.values());
+	}
+	
 	
 	public Set<EqualsTo> getFromJoins(){
 		if(joinConditions!=null){
@@ -452,7 +475,10 @@ public class TermMap{
 				
 				@Override
 				public void visit(SubSelect subSelect) {
-					throw new ImplementationException("clone of subselect view not supported yet.");
+					SubSelect fItem = new SubSelect();
+					fItem.setAlias(subSelect.getAlias() + suffix);
+					fItem.setSelectBody(subSelect.getSelectBody());
+					clonedFromItems.add(fItem);
 					
 				}
 				
@@ -473,9 +499,22 @@ public class TermMap{
 	public void toTtl(StringBuffer sb){
 		sb.append("<this> <is> <noTTl>");
 	}
+
+
+	public TripleMap getTripleMap() {
+		// TODO Auto-generated method stub
+		return trm;
+	}
+	
+	
+	public CompatibilityChecker getCompChecker() {
+		return cchecker;
+	}
 	
 
-	
+	public void setCompChecker(CompatibilityChecker cchecker) {
+		this.cchecker = cchecker;
+	}
 	
 	
 		

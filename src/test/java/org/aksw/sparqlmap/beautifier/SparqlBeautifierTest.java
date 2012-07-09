@@ -1,10 +1,7 @@
 package org.aksw.sparqlmap.beautifier;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
 
-import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.sparql.algebra.AlgebraGenerator;
 import com.hp.hpl.jena.sparql.algebra.Op;

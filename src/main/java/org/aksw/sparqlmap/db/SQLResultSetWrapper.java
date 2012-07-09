@@ -1,21 +1,17 @@
 package org.aksw.sparqlmap.db;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 import com.hp.hpl.jena.datatypes.BaseDatatype;
@@ -141,7 +137,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 				// create the binding here
 				// first check for type
 				int type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
-				if (type == ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE) {
+				if (type == ColumnHelper.COL_VAL_TYPE_RESOURCE) {
 					StringBuffer uri = new StringBuffer();
 					for(String colname : this.var2ResourceCols.get(var)){
 						String segment =rs.getString(colname);

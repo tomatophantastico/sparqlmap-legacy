@@ -8,9 +8,7 @@ import java.util.Map;
 
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-import net.sf.jsqlparser.statement.select.SelectItem;
 
 public interface Connector {
 
@@ -24,8 +22,7 @@ public interface Connector {
 
 	public List<SelectExpressionItem> getSelectItemsForTable(Table table);
 	
-	public ResultSet executeSQL(String sql) throws SQLException;
-
+	
 
 
 	public Map<String,Integer> getDataTypeForView(Statement viewStatement);

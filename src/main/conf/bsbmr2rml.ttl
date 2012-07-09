@@ -154,7 +154,8 @@
               [ rr:class ex:productfeature ;
                 rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/ProductFeature/{nr}"
               ] .
-
+              
+             
 <http://localhost/bsbmMapping/TriplesMap6>
       rr:logicalTable
               [ rr:sqlQuery """SELECT p.nr as nr, p.producer as producer , pfp.productfeature as productfeature FROM product p JOIN productfeatureproduct pfp ON (p.nr = pfp.product)"""
@@ -171,4 +172,41 @@
                 rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer{producer}/Product{nr}"
 
               ] .
-
+<http://localhost/bsbmMapping/TriplesMap2>
+      rr:logicalTable
+              [ rr:tableName "person"
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "name"
+                        ] ;
+                rr:predicate foaf:name
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "mbox_sha1sum"
+                        ] ;
+                rr:predicate foaf:mbox_sha1sum
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "publisher"
+                        ] ;
+                rr:predicate dc:publisher
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:template "http://downlode.org/rdf/iso-3166/countries#{country}"
+                        ] ;
+                rr:predicate ex:country
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "publishDate"
+                        ] ;
+                rr:predicate ex:publishDate
+              ] ;
+      rr:subjectMap
+              [ rr:class ex:person ;
+                rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite{publisher}/Reviewer{nr}"
+              ] .

@@ -2,7 +2,6 @@ package org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,13 +10,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.MappingUtils;
+import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.graph.query.Mapping;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
@@ -40,7 +37,7 @@ public class ScopeBlock {
 	private Set<Triple> pushedInTriples = new HashSet<Triple>();
 	private Set<Expr> filters = new HashSet<Expr>();
 	private Set<Expr> pushedInFilters = new HashSet<Expr>();
-	private Map<Node, SBlockNodeMapping> node2sBlock = new HashMap<Node, SBlockNodeMapping>();
+	private Map<Node, Binding> node2sBlock = new HashMap<Node, Binding>();
 	private Set<Op> ops = new HashSet<Op>();
 	private R2RMLModel mappingConf;
 
@@ -52,8 +49,6 @@ public class ScopeBlock {
 			
 			parent.children.add(this);
 		}
-		
-
 	}
 
 	public ScopeBlock getParent() {
@@ -166,8 +161,7 @@ public class ScopeBlock {
 		allTriples.addAll(triples);
 
 		// We first separate all triples according to their subjects.
-		Map<Node, Set<Triple>> triplesBySubject = MappingUtils
-				.createSBlock(allTriples);
+		Map<Node, Set<Triple>> triplesBySubject = createSBlock(allTriples);
 
 		// we now iterate over for each s-triple block
 
@@ -184,93 +178,94 @@ public class ScopeBlock {
 	 *            with one subject
 	 */
 	private void findMappings(Node subject, Set<Triple> triples) {
-		SBlockNodeMapping sblockmap = node2sBlock.get(subject);
+		Binding sblockmap = node2sBlock.get(subject);
 		if (sblockmap == null) {
 			// initialize the map
-			sblockmap = new SBlockNodeMapping( subject.getName(),
-					mappingConf);
+			sblockmap = new Binding(mappingConf, triples);
 
 			node2sBlock.put(subject, sblockmap);
 		}
 
-		// add all the triples with their potential mappings to the s-block
-		for (Triple triple : triples) {
-			String pUri = getUri(Var.alloc(triple.getPredicate().getName()));
-			sblockmap.addP( triple.getObject().getName(), pUri);
-		}
+//		// add all the triples with their potential mappings to the s-block
+//		for (Triple triple : triples) {
+//			String pUri = getUri(Var.alloc(triple.getPredicate().getName()));
+//			sblockmap.addP( triple.getObject().getName(), pUri);
+//		}
+//
+//		sblockmap.cleanUp();
+//		throw new ImplementationException("Adopt to R2RML");
+//		// process the subject information
+//		String sUri = getUri(Var.alloc(subject.getName()));
+//		if (sUri != null) {
+//			Collection<String> ldps = mappingConf.getPathForInstanceUri(sUri);
+//			sblockmap.retainLdps(ldps);
+//		}
 
-		sblockmap.cleanUp();
 
-		// process the subject information
-		String sUri = getUri(Var.alloc(subject.getName()));
-		if (sUri != null) {
-			Collection<String> ldps = mappingConf.getPathForInstanceUri(sUri);
-			sblockmap.retainLdps(ldps);
-		}
-
-
-
-		for (Triple triple : triples) {
-			String oUri = getUri(Var.alloc(triple.getObject().getName()));
-			if (oUri != null) {
-				Collection<String> targetLdpsOfObject = mappingConf
-						.getPathForInstanceUri(oUri);
-
-				Multimap<String,ColumDefinition> toRetain = HashMultimap.create();
-
-				// we check if the mappings we already got.
-				for (String ldp : sblockmap.getLdps()) {
-
-					Set<Mapping> mappings = sblockmap.getMappings(ldp);
-					for (Mapping mapping : mappings) {
-
-						for (ColumDefinition coldef : mapping
-								.getColDefinitions()) {
-							//do not take the id column into account, as it cannot be in the object position.
-							if(!coldef.isIdColumn()){
-							// now check if they got anything in common
-							if (coldef.getJoinsAlias() != null) {
-								for (Mapping joinswithMapping : mappingConf.getJoinsWith(coldef)) {
-									String joinswithldp = joinswithMapping
-											.getIdColumn().getLinkedDataPath();
-									if (targetLdpsOfObject
-											.contains(joinswithldp)) {
-										// seems so
-										toRetain.put(triple.getObject().getName(),coldef);
-										break;
-
-									}
-								}
-							}
-							}
-							if(coldef.getUriTemplate()!=null){
-								String template = coldef.getLinkedDataPath();
-								// we check if the uri template is able to produce such an uri
-								
-								if(template.equals("*")){
-									//the generic template, this always matches
-									toRetain.put(triple.getObject().getName(),coldef);
-								}else if(oUri.startsWith(template)){
-									toRetain.put(triple.getObject().getName(),coldef);
-								}
-								
-							}
-
-						}
-
-					}
-
-				}
-				sblockmap.retainColDefs(toRetain);
-			}
-		}
-
-		sblockmap.cleanUp();
+		//TODO "Adopt to R2RML");
+		
+		
+//		for (Triple triple : triples) {
+//			String oUri = getUri(Var.alloc(triple.getObject().getName()));
+//			if (oUri != null) {
+//				Collection<String> targetLdpsOfObject = mappingConf
+//						.getPathForInstanceUri(oUri);
+//
+//				Multimap<String,TripleMap> toRetain = HashMultimap.create();
+//
+//				// we check if the mappings we already got.
+//				for (String ldp : sblockmap.getLdps()) {
+//
+//					Set<Mapping> mappings = sblockmap.getMappings(ldp);
+//					for (Mapping mapping : mappings) {
+//
+//						for (TripleMap coldef : mapping
+//								.getColDefinitions()) {
+//							//do not take the id column into account, as it cannot be in the object position.
+//							if(!coldef.isIdColumn()){
+//							// now check if they got anything in common
+//							if (coldef.getJoinsAlias() != null) {
+//								for (Mapping joinswithMapping : mappingConf.getJoinsWith(coldef)) {
+//									String joinswithldp = joinswithMapping
+//											.getIdColumn().getLinkedDataPath();
+//									if (targetLdpsOfObject
+//											.contains(joinswithldp)) {
+//										// seems so
+//										toRetain.put(triple.getObject().getName(),coldef);
+//										break;
+//
+//									}
+//								}
+//							}
+//							}
+//							if(coldef.getUriTemplate()!=null){
+//								String template = coldef.getLinkedDataPath();
+//								// we check if the uri template is able to produce such an uri
+//								
+//								if(template.equals("*")){
+//									//the generic template, this always matches
+//									toRetain.put(triple.getObject().getName(),coldef);
+//								}else if(oUri.startsWith(template)){
+//									toRetain.put(triple.getObject().getName(),coldef);
+//								}
+//								
+//							}
+//
+//						}
+//
+//					}
+//
+//				}
+//				sblockmap.retainColDefs(toRetain);
+//			}
+//		}
+//
+//		sblockmap.cleanUp();
 
 
 	}
 
-	public List<ColumDefinition> getColumnDefinition(Var var) {
+	public List<TripleMap> getColumnDefinition(Var var) {
 		return null;
 	}
 
@@ -315,8 +310,8 @@ public class ScopeBlock {
 
 		// print out filters
 		sb.append(pre + "Mapping Candidates: ");
-		for (SBlockNodeMapping sblockmap : node2sBlock.values()) {
-			sb.append(sblockmap.toString(indent));
+		for (Binding sblockmap : node2sBlock.values()) {
+			sb.append(sblockmap.toString());
 		}
 
 		sb.append("\n");
@@ -373,59 +368,87 @@ public class ScopeBlock {
 
 	}
 
-	public SBlockNodeMapping getsBlock(Node s) {
+	public Binding getsBlock(Node s) {
 		return node2sBlock.get(s);
 	}
 
-	public void optimize() {
+	public void joinThem() {
+		
+		
+		
+		
+		
+		
+		
+		
 
-		Set<Triple> allTriples = new HashSet<Triple>();
-		allTriples.addAll(pushedInTriples);
-		allTriples.addAll(triples);
-		boolean hasChanged = false;
-		do {
+//		Set<Triple> allTriples = new HashSet<Triple>();
+//		allTriples.addAll(pushedInTriples);
+//		allTriples.addAll(triples);
+//		boolean hasChanged = false;
+//		do {
+//
+//			// we check if any variable is used in different s-blocks as subject
+//			// and object.
+//
+//			
+//
+//			for (Triple triple : allTriples) {
+//				if (node2sBlock.containsKey(triple.getObject())) {
+//					// triple is the triple, where the object is used somewhere
+//					// else as subject
+//
+//					SBlockNodeMapping sbmapIsSubject = node2sBlock.get(triple
+//							.getObject());
+//					SBlockNodeMapping sbmapIsOjbect = node2sBlock.get(triple
+//							.getSubject());
+//					// we now get all Columns, where the
+//					// var is in the object position and check where they are
+//					// pointing to
+//
+//					// we create a set of all the ldps, that can be reached
+//					// where sbmapisobkect is pointing
+//					
+//					throw new ImplementationException("Adopt to R2RML");
+//
+////					Collection<TripleMap> pointingCols = sbmapIsOjbect
+////							.getColumn(triple.getObject().getName());
+////					Set<String> ldps = new HashSet<String>();
+////					for (TripleMap coldef : pointingCols) {
+////						if (coldef.getJoinsAlias() != null) {
+////
+////							for (Mapping map : mappingConf.getJoinsWith(coldef)) {
+////								ldps.add(map.getIdColumn().getLinkedDataPath());
+////							}
+////						}
+////					}
+//
+//					// as only the ldps that these cols point to can be sensibly
+//					// joined, we can throw away the rest
+////					hasChanged = sbmapIsSubject.retainLdps(ldps);
+//
+//				}
+//			}
+//		} while (hasChanged);
 
-			// we check if any variable is used in different s-blocks as subject
-			// and object.
+	}
+	
+	public static Map<Node, Set<Triple>> createSBlock(List<Triple> triples) {
+		return createSBlock(new HashSet(triples));
+	}
+	
+	public static Map<Node, Set<Triple>> createSBlock(Set<Triple> triples) {
+		Map<Node, Set<Triple>> triplesBySubject = new HashMap<Node, Set<Triple>>();
 
-			
-
-			for (Triple triple : allTriples) {
-				if (node2sBlock.containsKey(triple.getObject())) {
-					// triple is the triple, where the object is used somewhere
-					// else as subject
-
-					SBlockNodeMapping sbmapIsSubject = node2sBlock.get(triple
-							.getObject());
-					SBlockNodeMapping sbmapIsOjbect = node2sBlock.get(triple
-							.getSubject());
-					// we now get all Columns, where the
-					// var is in the object position and check where they are
-					// pointing to
-
-					// we create a set of all the ldps, that can be reached
-					// where sbmapisobkect is pointing
-
-					Collection<ColumDefinition> pointingCols = sbmapIsOjbect
-							.getColumn(triple.getObject().getName());
-					Set<String> ldps = new HashSet<String>();
-					for (ColumDefinition coldef : pointingCols) {
-						if (coldef.getJoinsAlias() != null) {
-
-							for (Mapping map : mappingConf.getJoinsWith(coldef)) {
-								ldps.add(map.getIdColumn().getLinkedDataPath());
-							}
-						}
-					}
-
-					// as only the ldps that these cols point to can be sensibly
-					// joined, we can throw away the rest
-					hasChanged = sbmapIsSubject.retainLdps(ldps);
-
-				}
+		for (Triple triple : triples) {
+			Node subject = triple.getSubject();
+			if (!triplesBySubject.containsKey(subject)) {
+				triplesBySubject.put(subject, new HashSet<Triple>());
 			}
-		} while (hasChanged);
+			triplesBySubject.get(subject).add(triple);
 
+		}
+		return triplesBySubject;
 	}
 
 }

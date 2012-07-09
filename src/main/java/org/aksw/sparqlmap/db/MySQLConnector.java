@@ -1,7 +1,6 @@
 package org.aksw.sparqlmap.db;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -9,15 +8,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.datatype.DatatypeConstants;
-
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
-import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

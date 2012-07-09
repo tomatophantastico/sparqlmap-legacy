@@ -1,7 +1,6 @@
 package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertTrue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;

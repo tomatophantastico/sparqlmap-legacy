@@ -3,20 +3,23 @@ package org.aksw.sparqlmap.config.syntax.r2rml;
 import static org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil.cast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
-
-import com.hp.hpl.jena.rdf.model.RDFNode;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
+
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+
+import com.hp.hpl.jena.rdf.model.Literal;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 
 public class ColumnHelper {
 	public static String R2R_COL_SUFFIX = "_R2R";
@@ -42,6 +45,7 @@ public class ColumnHelper {
 	public static Integer COL_VAL_TYPE_BLANK = 3;
 
 	public static Integer COL_VAL_SQL_TYPE_RESOURCE = -9999;
+	public static Integer COL_VAL_SQL_TYPE_CONSTLIT = -9998;
 	public static Integer COL_VAL_RES_LENGTH_LITERAL = 0;
 
 	public static String colnameBelongsToVar(String colalias) {
@@ -100,9 +104,15 @@ public class ColumnHelper {
 			texprs.add(asExpression(node.asResource().getURI(), dth));
 		} else if (node.isLiteral()) {
 			texprs.addAll(getBaseExpressions(COL_VAL_TYPE_LITERAL, 0,
-					COL_VAL_SQL_TYPE_RESOURCE, dth, node.asLiteral()
+					COL_VAL_SQL_TYPE_CONSTLIT, dth, node.asLiteral()
 							.getDatatypeURI(), node.asLiteral().getLanguage(),
 					null));
+			
+			//get the cast type
+			
+			Literal nodeL = (Literal) node.asLiteral();
+
+			texprs.add(FilterUtil.cast(new StringValue("\"" + nodeL.getLexicalForm() + "\""), dth.getCastTypeString(nodeL.getDatatype())));
 		} else {
 			throw new ImplementationException(
 					"No support for constant blank nodes in SparqlMap");
@@ -139,7 +149,7 @@ public class ColumnHelper {
 
 			texprs.addAll(getBaseExpressions(rdfType,
 					COL_VAL_RES_LENGTH_LITERAL, sqlType, dth, datatype, lang,
-					lanColumn));
+					null));
 			dth.getCastTypeString(sqlType);
 			texprs.add(FilterUtil.cast(col, dth.getCastTypeString(sqlType)));
 
@@ -153,10 +163,21 @@ public class ColumnHelper {
 	}
 
 	public static List<Expression> getExpression(String template,
-			Integer rdfType, Integer sqlType, String datatype, String lang,
+			Integer rdfType, Integer sqlType, String datatype, String lang, Column lanColumn, 
 			DataTypeHelper dth, FromItem fi) {
 		List<Expression> texprs = new ArrayList<Expression>();
-
+		
+	
+		
+		List<String>  altSeq = Arrays.asList(template.split("((?<!\\\\)\\{)|(\\})"));
+		
+		
+		
+		if(template.startsWith("{") && rdfType != COL_VAL_TYPE_LITERAL){
+			altSeq.add(0, "");
+		}
+		
+		
 		if (rdfType == COL_VAL_TYPE_LITERAL) {
 			// if datatype not declared, we check, if we got a default
 			// conversion
@@ -164,15 +185,42 @@ public class ColumnHelper {
 					&& DataTypeHelper.getRDFDataType(sqlType) != null) {
 				datatype = DataTypeHelper.getRDFDataType(sqlType).getURI();
 			}
+			texprs.addAll(getBaseExpressions(rdfType,
+					COL_VAL_RES_LENGTH_LITERAL, sqlType, dth, datatype, lang,
+					lanColumn));
 
-			throw new ImplementationException(
-					"no Literal templates now, but should not be much of a problem");
+			// now create a big concat statement.
+			List<Expression> toConcat = new ArrayList<Expression>();
+			for (int i = 0; i < altSeq.size(); i++) {
+				if (i % 2 == 1) {
+					toConcat.add(FilterUtil.cast(ColumnHelper.createCol(fi.getAlias(), altSeq.get(i)),dth.getStringCastType()));
+				} else {
+					toConcat.add(FilterUtil.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
+				}
+			}
+			
+			Expression concat = FilterUtil.concat(toConcat.toArray(new Expression[0]));
+			texprs.add(concat);	
+
+			
 
 		} else if (rdfType == COL_VAL_TYPE_RESOURCE) {
+			texprs.addAll(getBaseExpressions(COL_VAL_TYPE_RESOURCE, altSeq.size(),
+					COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null));
+			for (int i = 0; i < altSeq.size(); i++) {
+				if (i % 2 == 1) {
+					texprs.add(FilterUtil.cast(ColumnHelper.createCol(fi.getAlias(), altSeq.get(i)),dth.getStringCastType()));
+				} else {
+					texprs.add(FilterUtil.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
+				}
+			}
+			
 
 		} else if (rdfType == COL_VAL_TYPE_BLANK) {
-
+			throw new ImplementationException("Blank nodes not implemented");
 		}
+		
+		// we go now for all unescapeded "{"
 
 		return texprs;
 
@@ -200,6 +248,19 @@ public class ColumnHelper {
 	public static Expression asExpression(String string, DataTypeHelper dth) {
 		return FilterUtil.cast(new StringValue("\"" + string + "\""),
 				dth.getStringCastType());
+	}
+	
+	
+	public static Column createCol(String tablename, String colname) {
+		Column col = new Column();
+		col.setColumnName(colname);
+		Table tab = new Table();
+		tab.setName(tablename);
+		tab.setAlias(tablename);
+		col.setTable(tab);
+
+		return col;
+
 	}
 
 }

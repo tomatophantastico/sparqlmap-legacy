@@ -1,7 +1,5 @@
 package org.aksw.sparqlmap;
 
-import static org.junit.Assert.*;
-
 import java.io.ByteArrayOutputStream;
 import java.sql.SQLException;
 
@@ -18,7 +16,7 @@ import com.hp.hpl.jena.vocabulary.RDF;
 public class QueryTests {
 
 	private Logger log = LoggerFactory.getLogger(QueryTests.class);
-	RDB2RDF r2r = new RDB2RDF("bsbm.r2rml");
+	RDB2RDF r2r = new RDB2RDF("src/main/conf");
 
 	@Before
 	public void setUp() throws Exception {
@@ -31,6 +29,16 @@ public class QueryTests {
 
 		processQuery("querybytype", query);
 	}
+	
+	
+	@Test
+	public void testS_P_String() {
+		String query = "SELECT * {?s ?p \"Caryn\" } LIMIT 100";
+		log.info(r2r.mapper.rewrite(QueryFactory.create(query)));
+
+		processQuery("querybytype", query);
+	}
+	
 	
 	
 	public String processQuery(String queryShortname, String queryString) {

@@ -1,16 +1,17 @@
-package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
+package org.aksw.sparqlmap.mapper;
 
 import java.util.Iterator;
 
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.WithItem;
-import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
 import org.aksw.sparqlmap.beautifier.SparqlBeautifier;
 import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
-import org.aksw.sparqlmap.mapper.Mapper;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.QueryBuilderVisitor;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.Binding;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingFilterFinder;
 
 import com.hp.hpl.jena.query.Query;
@@ -52,11 +53,13 @@ public class AlgebraBasedMapper implements Mapper {
 		Op op = this.beautifier.compileToBeauty(origQuery); // new  AlgebraGenerator().compile(beautified);
 		log.debug(op.toString());
 		
-		MappingFilterFinder mff = new MappingFilterFinder(mappingConf, op);
+		MappingFilterFinder mff = new MappingFilterFinder(mappingConf);
+		
+		Binding queryBinding = mff.createBindnings(op);
 		
 
 		
-		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mappingConf, mff,dbconf.getDataTypeHelper());
+		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mappingConf, mff,queryBinding,dbconf.getDataTypeHelper(), new FilterUtil(dbconf.getDataTypeHelper(), mappingConf));
 		
 		
 		OpWalker.walk(op, builderVisitor);

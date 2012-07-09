@@ -3,7 +3,6 @@ package org.aksw.sparqlmap;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
-import org.aksw.sparqlmap.RDB2RDF;
 import org.aksw.sparqlmap.RDB2RDF.ReturnType;
 import org.junit.Test;
 import org.slf4j.Logger;

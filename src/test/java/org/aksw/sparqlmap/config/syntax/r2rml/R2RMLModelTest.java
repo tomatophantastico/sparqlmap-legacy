@@ -1,15 +1,14 @@
 package org.aksw.sparqlmap.config.syntax.r2rml;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Set;
 
 import net.sf.jsqlparser.JSQLParserException;
 
-import org.aksw.sparqlmap.RDB2RDF;
 import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.AlgebraBasedMapper;
+import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap.PO;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,6 +78,30 @@ public class R2RMLModelTest {
 	public void test() throws R2RMLValidationException, JSQLParserException {
 		
 	Set<TripleMap> maps  = r2rmodel.getTripleMaps();
+	
+	
+	//get the prouct triple map
+	
+	for (TripleMap tripleMap : maps) {
+		
+		if(tripleMap.getSubject().getFromItems().iterator().next().getAlias().equals("product")){
+			for (PO po : tripleMap.getPos()) {
+				if(po.getObject().toString().equals(tripleMap.getSubject().toString())){
+					assertTrue(false);
+				}
+			}
+		}
+		
+		if(tripleMap.getSubject().getFromItems().iterator().next().getAlias().contains("query")){
+			for (PO po : tripleMap.getPos()) {
+				po.getPredicate();
+			}
+		}
+		
+	}
+	
+	
+	
 		
 	assertTrue(maps.size()==10);	
 	}

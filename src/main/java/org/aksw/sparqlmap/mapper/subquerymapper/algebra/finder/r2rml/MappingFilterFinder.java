@@ -1,18 +1,23 @@
 package org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 
+import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.op.Op0;
 import com.hp.hpl.jena.sparql.algebra.op.Op1;
 import com.hp.hpl.jena.sparql.algebra.op.Op2;
+import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpDistinct;
+import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
 import com.hp.hpl.jena.sparql.algebra.op.OpLeftJoin;
 import com.hp.hpl.jena.sparql.algebra.op.OpN;
 import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
@@ -22,6 +27,15 @@ import com.hp.hpl.jena.sparql.algebra.op.OpSlice;
 import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
+
+
+
+/**
+ * Creates the query binding and collects some other useful information about the query.
+ * 
+ * @author joerg
+ *
+ */
 
 public class MappingFilterFinder {
 
@@ -34,11 +48,9 @@ public class MappingFilterFinder {
 	private OpDistinct distinct;
 	private OpReduced reduced;
 
-	public MappingFilterFinder(R2RMLModel mconf, Op query) {
-		super();
+	public MappingFilterFinder(R2RMLModel mconf) {
 		this.mconf = mconf;
-		this.query = query;
-		createScopeBlocks(query);
+
 	}
 
 	/**
@@ -48,125 +60,79 @@ public class MappingFilterFinder {
 	 * we further merge all the triples an
 	 * 
 	 * @param query
+	 * @return 
 	 */
-	private void createScopeBlocks(Op query) {
+	public Binding createBindnings(Op query) {
 
-		ScopeBlock block = new ScopeBlock(null,mconf);
-		createScopeBlocks(query, block);
-		pushDownTheTriples();
-		pushDownTheFilters();
-		findMappingsForScopeBlocks();
-		dothestarlikeanalysis();
-
-	}
-	private void pushDownTheTriples() {
-		op2ScopeBlock.get(query).pushDownTriples();
-
-	}
-
-	private void pushDownTheFilters() {
-		op2ScopeBlock.get(query).pushDownFilters();
-
-	}
-
-	/**
-	 * here we check for variables that are used in different positions in
-	 * triple patterns we pass this
-	 * 
-	 */
-	private void dothestarlikeanalysis() {
-		for(ScopeBlock sb: new HashSet<ScopeBlock>(op2ScopeBlock.values())){
-			sb.optimize();
-		}
 		
-		
-	}
-
-	private void findMappingsForScopeBlocks() {
-		// for each of the scope-blocks we now find the mappings for each triple
-		// block.
-		
-		Set<ScopeBlock> scopeblocks = new HashSet(op2ScopeBlock.values());
-		for(ScopeBlock sb : scopeblocks){
-			sb.mapToMappingConfiguration();
-		}
-		
-		
+		Binding queryBindning = createScopeBlocks(query);
+		queryBindning.mapIt();
+		return queryBindning;
 		
 
 	}
+	
+	
 
-	private void createScopeBlocks(Op query, ScopeBlock block) {
-		op2ScopeBlock.put(query, block);
-		block.addOp(query);
+	private Binding createScopeBlocks(Op query) {
 		
 		
+				
 		if(query instanceof OpProject){
 			this.project = ((OpProject) query);
-		}
-		
-		if(query instanceof OpReduced){
+			return createScopeBlocks(((OpProject) query).getSubOp());
+		} else 	if(query instanceof OpReduced){
 			this.reduced = ((OpReduced) query);
-		}
-		
-		if (query instanceof OpSlice) {
+			return createScopeBlocks(((OpReduced) query).getSubOp());
+		} else if (query instanceof OpSlice) {
 			OpSlice slice = (OpSlice) query;
 			this.slice = slice;
+			return createScopeBlocks(((OpSlice) query).getSubOp());
 			
-		}
-		if (query instanceof OpOrder) {
+		} else if (query instanceof OpOrder) {
 			OpOrder order = (OpOrder) query;
 			this.order = order;
+			return createScopeBlocks(( (OpOrder) query).getSubOp());
 			
-		}
-		
-		if(query instanceof OpDistinct){
+		} else if(query instanceof OpDistinct){
 			this.distinct = (OpDistinct) query;
-		}
-		
-
-		// check for the children
-		// i do not use the OpVisitorBase class here, because the overloaded
-		// methods of it do not go well along with polymorphism
-
-		if (query instanceof OpLeftJoin) {
-			// the left part of the query contributes to the block
+			return createScopeBlocks(( (OpDistinct) query).getSubOp());
+		} else  if (query instanceof OpFilter) {
+			
+			OpFilter filter = (OpFilter) query;
+			
+			
+			
+			Binding bind = createScopeBlocks(filter.getSubOp());
+			bind.addFilter(filter.getExprs().getList());
+			
+			return bind;
+			
+		} else if (query instanceof OpLeftJoin) {
+			
 			OpLeftJoin oplj = (OpLeftJoin) query;
-			createScopeBlocks(oplj.getLeft(), block);
-			createScopeBlocks(oplj.getRight(), new ScopeBlock(block,mconf));
+			return new Binding(createScopeBlocks(oplj.getLeft()), createScopeBlocks(oplj.getRight()),true);
 
-			// the right part not
 
-			;
+			
 		} else if (query instanceof OpUnion) {
 			OpUnion opUnion = (OpUnion) query;
-			createScopeBlocks(opUnion.getLeft(), new ScopeBlock(block,mconf));
-			createScopeBlocks(opUnion.getRight(), new ScopeBlock(block,mconf));
+			Set<Binding> bindings = new HashSet<Binding>();
+		
+			bindings.add(createScopeBlocks(opUnion.getLeft()));
+			bindings.add(createScopeBlocks(opUnion.getRight()));
 
-		} else if (query instanceof Op1) {
-			Op1 op1 = (Op1) query;
-			createScopeBlocks(op1.getSubOp(), block);
+			return new Binding(bindings);
+			
 
-		} else if (query instanceof Op2) {
 
-			// all other Op2, except for union and left join contribute fully to
-			// the scope block.
-			Op2 op2 = (Op2) query;
-			createScopeBlocks(op2.getLeft(), block);
-			createScopeBlocks(op2.getRight(), block);
 
-		} else if (query instanceof OpN) {
-			OpN opn = (OpN) query;
+		} else if (query instanceof OpBGP) {
+			
+			
+			return new Binding(mconf, new HashSet<Triple>(((OpBGP)query).getPattern().getList()));
 
-			for (Op op : opn.getElements()) {
-				createScopeBlocks(op, block);
-			}
-
-		} else if (query instanceof Op0) {
-			// no need to do anythin, leaf node
-			;
-
-		}else
+		} else
 		{
 
 			throw new ImplementationException(
@@ -195,15 +161,15 @@ public class MappingFilterFinder {
 		return str;
 	}
 
-	public Set<Expr> getFilterForVariables(Op op, Var... var) {
-
-		return op2ScopeBlock.get(op).getFilterFor(var);
-	}
-	
-	
-	public ScopeBlock getScopeBlock(Op op){
-		return op2ScopeBlock.get(op);
-	}
+//	public Set<Expr> getFilterForVariables(Op op, Var... var) {
+//
+//		return op2ScopeBlock.get(op).getFilterFor(var);
+//	}
+//	
+//	
+//	public ScopeBlock getScopeBlock(Op op){
+//		return op2ScopeBlock.get(op);
+//	}
 	
 	
 	

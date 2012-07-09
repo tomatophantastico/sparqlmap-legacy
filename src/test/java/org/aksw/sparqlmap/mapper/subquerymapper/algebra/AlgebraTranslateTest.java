@@ -6,16 +6,7 @@ import java.sql.SQLException;
 import org.aksw.sparqlmap.BaseTest;
 import org.aksw.sparqlmap.RDB2RDF;
 import org.aksw.sparqlmap.RDB2RDF.ReturnType;
-import org.aksw.sparqlmap.db.SQLResultSetWrapper;
-import org.junit.Before;
 import org.junit.Test;
-
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.ResultSetFormatter;
-import com.hp.hpl.jena.sparql.algebra.AlgebraGenerator;
-import com.hp.hpl.jena.sparql.algebra.Op;
-import com.hp.hpl.jena.sparql.algebra.OpWalker;
-import com.hp.hpl.jena.sparql.algebra.Transformer;
 
 
 public class AlgebraTranslateTest extends BaseTest{

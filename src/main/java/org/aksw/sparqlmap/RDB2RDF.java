@@ -1,11 +1,8 @@
 package org.aksw.sparqlmap;
 
 import java.io.File;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.URL;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,8 +12,8 @@ import java.util.Set;
 import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.db.SQLResultSetWrapper;
+import org.aksw.sparqlmap.mapper.AlgebraBasedMapper;
 import org.aksw.sparqlmap.mapper.Mapper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.AlgebraBasedMapper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 import org.openjena.riot.system.JenaWriterRdfJson;
 import org.slf4j.Logger;
@@ -65,7 +62,7 @@ public class RDB2RDF {
 			
 			//First check the database connection
 			
-			File dbConfFile = new File(confFolder.getAbsolutePath() + "db.properties");
+			File dbConfFile = new File(confFolder.getAbsolutePath() + "/db.properties");
 			
 			
 			if(dbConfFile.isDirectory()||!dbConfFile.exists()){
@@ -89,9 +86,9 @@ public class RDB2RDF {
 			//we now read the r2rml schema file
 			
 			Model schema = ModelFactory.createDefaultModel();
-			FileManager.get().readModel(schema, confFolder.getAbsolutePath()+ "r2rml.rdf");
+			FileManager.get().readModel(schema, confFolder.getAbsolutePath()+ "/r2rml.rdf");
 			
-			R2RMLModel mappingConfig = new R2RMLModel(model, schema, dbConf);
+			mapping = new R2RMLModel(model, schema, dbConf);
 			
 			mapper = new AlgebraBasedMapper(mapping,dbConf);
 

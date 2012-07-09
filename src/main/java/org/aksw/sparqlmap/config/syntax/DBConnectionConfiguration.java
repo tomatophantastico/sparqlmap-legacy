@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,10 @@ import java.util.Properties;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.FromItemVisitor;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SubJoin;
+import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
@@ -24,8 +28,6 @@ import org.aksw.sparqlmap.db.PostgesqlConnector;
 import org.aksw.sparqlmap.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
-
-import com.hp.hpl.jena.query.ResultSet;
 
 
 public class DBConnectionConfiguration {
@@ -182,19 +184,47 @@ public class DBConnectionConfiguration {
 	 */
 
 	public String validateFromItem(FromItem fromItem) {
-		StringBuffer fromItemSb = new StringBuffer();
-		SelectDeParser sdp  = getSelectDeParser(fromItemSb);
+		final StringBuffer fromItemSb = new StringBuffer();
+		final SelectDeParser sdp  = getSelectDeParser(fromItemSb);
 		
 		sdp.setBuffer(fromItemSb);
 		
-		fromItem.accept(sdp);
+		final StringBuffer selectString = new StringBuffer();
+		fromItem.accept(new FromItemVisitor() {
+			
+			@Override
+			public void visit(SubJoin subjoin) {
+				throw new ImplementationException("Not implemented");
+				
+			}
+			
+			@Override
+			public void visit(SubSelect subSelect) {
+				subSelect.getSelectBody().accept(sdp);
+				selectString.append("( ");
+				selectString.append(fromItemSb.toString());
+				selectString.append(")  ");
+				selectString.append(" AS test ");
+				
+			}
+			
+			@Override
+			public void visit(Table tableName) {
+				selectString.append(tableName.getName());
+				
+			}
+		});
 		
 		
 		
-		String query = "SELECT * FROM " + fromItemSb.toString() + " LIMIT 1";
+		String query = "SELECT * FROM " +selectString.toString() +  "  LIMIT 1";
 		
 		try {
-			executeSQL(query);
+			Connection conn = dbConnector.getConnection();
+			ResultSet rs =  conn.createStatement().executeQuery(query);
+			rs.close();
+			conn.close();
+			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			log.error("Error:",e);
@@ -207,14 +237,19 @@ public class DBConnectionConfiguration {
 
 	public Integer getDataType(FromItem fromItem, String colname) {
 		StringBuffer fromItemSb = new StringBuffer();
-		getExpressionDeParser(fromItemSb);
+		SelectDeParser sdp = getSelectDeParser(fromItemSb);
 		
+		fromItem.accept(sdp);
 		
 		String query = "SELECT \"" +colname+"\" FROM " + fromItemSb.toString() + " LIMIT 1";
 		
 		try {
-			java.sql.ResultSet rs = dbConnector.executeSQL(query);
-			return rs.getMetaData().getColumnType(1);
+			Connection conn = dbConnector.getConnection();
+			java.sql.ResultSet rs = conn.createStatement().executeQuery(query);
+			Integer resInteger = rs.getMetaData().getColumnType(1);
+			rs.close();
+			conn.close();
+			return  resInteger;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			log.error("Querying for the datatype of " + colname  + ", from " + fromItemSb.toString() + " the following error was thrown: ",e);
@@ -224,6 +259,12 @@ public class DBConnectionConfiguration {
 	public ExpressionDeParser getExpressionDeParser(StringBuffer fromItemSb) {
 		return getExpressionDeParser(getSelectDeParser(fromItemSb), fromItemSb);
 		
+	}
+	
+	
+	public Connection getConenction() throws SQLException {
+		return this.dbConnector.getConnection();
+
 	}
 	
 	

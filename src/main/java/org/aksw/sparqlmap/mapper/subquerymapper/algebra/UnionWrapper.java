@@ -8,22 +8,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.Union;
 
-import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.PlainSelectWrapper;
 
 import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
-import com.hp.hpl.jena.graph.query.Mapping;
 
 public class UnionWrapper implements Wrapper {
 	
@@ -142,30 +136,34 @@ public class UnionWrapper implements Wrapper {
 	
 	
 	private void createMappingCols(String subselectName){
-		colstring2Col = new HashMap();
-		colstring2var = HashBiMap.create();
-		Mapping mapp = new Mapping();
-	
-		mapp.setName(subselectName);
 		
-		Multimap<String, String> varname2col = LinkedListMultimap.create();
-		for (String  colname : this.seiTreeMap.keySet()) {
-			varname2col.put(ColumnHelper.colnameBelongsToVar(colname),colname);
-		}
+		throw new ImplementationException("Rework to match R2RML Implementation");
 		
-		for(String varname: varname2col.keySet()){
-			//create the expressions backing the column
-			List<Expression> colExpressions = new ArrayList<Expression>();
-			for(String colname :varname2col.get(varname)){
-				colExpressions.add(MappingUtils.createCol(subselectName, colname));
-			}
-			MaterializedColumn col = new MaterializedColumn(colExpressions);
-			col.setSqldataType(1);
-			col.setMapp(mapp);
+		
+//		colstring2Col = new HashMap();
+//		colstring2var = HashBiMap.create();
+//		Mapping mapp = new Mapping();
+//	
+//		mapp.setName(subselectName);
+//		
+//		Multimap<String, String> varname2col = LinkedListMultimap.create();
+//		for (String  colname : this.seiTreeMap.keySet()) {
+//			varname2col.put(ColumnHelper.colnameBelongsToVar(colname),colname);
+//		}
+//		
+//		for(String varname: varname2col.keySet()){
+//			//create the expressions backing the column
+//			List<Expression> colExpressions = new ArrayList<Expression>();
+//			for(String colname :varname2col.get(varname)){
+//				colExpressions.add(MappingUtils.createCol(subselectName, colname));
+//			}
+//			MaterializedColumn col = new MaterializedColumn(colExpressions);
+//			col.setSqldataType(1);
+//			col.setMapp(mapp);
 //			colstring2Col.put(col.toString(), col);
-			colstring2var.put(col.toString(),varname);
-		}
-		
+//			colstring2var.put(col.toString(),varname);
+//		}
+//		
 		
 		
 				

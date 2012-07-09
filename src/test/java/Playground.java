@@ -1,16 +1,8 @@
 import java.util.HashSet;
 import java.util.Set;
 
-import net.sourceforge.sqlunit.Assertions;
-
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.sparql.algebra.Algebra;
-import com.hp.hpl.jena.sparql.algebra.AlgebraGenerator;
-import com.hp.hpl.jena.sparql.algebra.Op;
 
 
 

@@ -10,18 +10,11 @@ import java.util.Set;
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 
 import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.Node_Variable;
 import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.graph.query.Expression;
-import com.hp.hpl.jena.graph.query.ExpressionSet;
 import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.QueryVisitor;
 import com.hp.hpl.jena.sparql.algebra.AlgebraGenerator;
 import com.hp.hpl.jena.sparql.algebra.Op;
-import com.hp.hpl.jena.sparql.algebra.OpAsQuery;
 import com.hp.hpl.jena.sparql.algebra.OpVars;
-import com.hp.hpl.jena.sparql.algebra.OpVisitorBase;
 import com.hp.hpl.jena.sparql.algebra.TransformCopy;
 import com.hp.hpl.jena.sparql.algebra.Transformer;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
@@ -31,12 +24,12 @@ import com.hp.hpl.jena.sparql.core.BasicPattern;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.E_Datatype;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
-import com.hp.hpl.jena.sparql.expr.E_Lang;
 import com.hp.hpl.jena.sparql.expr.E_LangMatches;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprList;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
 import com.hp.hpl.jena.sparql.expr.NodeValue;
+import com.hp.hpl.jena.sparql.util.VarUtils;
 
 
 /**
@@ -113,7 +106,7 @@ public class SparqlBeautifier extends TransformCopy {
 			
 			Node nNew = termToVariable.get(n.toString()); 
 			if(nNew==null){
-				nNew = new Node_Variable(i++ + ColumnHelper.COL_NAME_INTERNAL);
+				nNew = Var.alloc(i++ + ColumnHelper.COL_NAME_INTERNAL);
 				termToVariable.put(n.toString(), nNew);
 			}
 			
