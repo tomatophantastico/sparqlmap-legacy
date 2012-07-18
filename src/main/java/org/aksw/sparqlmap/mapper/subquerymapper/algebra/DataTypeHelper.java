@@ -3,11 +3,14 @@ package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
 import java.sql.Types;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
+import org.openjena.atlas.logging.Log;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 
 public abstract  class DataTypeHelper {
+	
+	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DataTypeHelper.class);
 	
 	
 	public static RDFDatatype getRDFDataType(int sdt) {
@@ -20,7 +23,7 @@ public abstract  class DataTypeHelper {
 		if(sdt== Types.BIGINT || sdt == Types.INTEGER || sdt == Types.SMALLINT){
 			return XSDDatatype.XSDinteger;
 		}
-		if( sdt == Types.FLOAT || sdt == Types.DOUBLE ){
+		if( sdt == Types.FLOAT || sdt == Types.DOUBLE || sdt ==Types.REAL ){
 			return XSDDatatype.XSDdouble;
 		}
 		if(sdt == Types.VARCHAR || sdt == Types.CHAR || sdt == Types.CLOB){
@@ -43,11 +46,19 @@ public abstract  class DataTypeHelper {
 		}
 		
 		if(sdt == Types.BINARY || sdt ==  Types.VARBINARY ||sdt ==  Types.BLOB){
-			return XSDDatatype.XSDbase64Binary;
+			return XSDDatatype.XSDhexBinary;
 		}
 		
-		//fallback ;-)
-		throw new ImplementationException("Encountered unknown sql type, spec says, i sould use string, but me throw error");
+		
+		if(sdt == ColumnHelper.COL_VAL_SQL_TYPE_CONSTLIT){
+			return null;
+		}
+	
+		
+		
+			log.info("encountered non-explicitly mapped sql type:" + sdt );
+			return null; //XSDDatatype.XSDstring;
+	
 	}
 	
 	public String getCastTypeString(int sdt){
@@ -55,7 +66,7 @@ public abstract  class DataTypeHelper {
 	}
 	
 	public String getColumnString(int sdt){
-		if(sdt == Types.DECIMAL || sdt == Types.NUMERIC || sdt== Types.BIGINT || sdt == Types.INTEGER || sdt == Types.SMALLINT ||  sdt == Types.FLOAT || sdt == Types.DOUBLE ){
+		if(sdt == Types.DECIMAL || sdt == Types.NUMERIC || sdt== Types.BIGINT || sdt == Types.INTEGER || sdt == Types.SMALLINT ||  sdt == Types.FLOAT || sdt == Types.DOUBLE  || sdt == Types.REAL){
 			return ColumnHelper.COL_NAME_LITERAL_NUMERIC;
 		}
 		if(sdt == Types.VARCHAR || sdt == Types.CHAR || sdt == Types.CLOB){
@@ -85,6 +96,8 @@ public abstract  class DataTypeHelper {
 			return getDateCastType();
 		}else if(XSDDatatype.XSDboolean == datatype){
 			return getBooleanCastType();
+		}else if(XSDDatatype.XSDhexBinary == datatype){
+			return getBinaryDataType();
 		}else{
 			throw new ImplementationException("Cannot map " + datatype.toString());
 		}
@@ -94,6 +107,8 @@ public abstract  class DataTypeHelper {
 	
 	
 	
+	public abstract String getBinaryDataType();
+
 	public abstract String getStringCastType();
 	
 	public abstract String getNumericCastType();

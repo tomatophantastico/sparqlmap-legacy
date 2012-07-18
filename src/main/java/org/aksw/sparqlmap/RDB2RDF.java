@@ -1,7 +1,9 @@
 package org.aksw.sparqlmap;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,16 +11,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jsqlparser.JSQLParserException;
+
 import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
+import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLValidationException;
 import org.aksw.sparqlmap.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.mapper.AlgebraBasedMapper;
 import org.aksw.sparqlmap.mapper.Mapper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.openjena.riot.out.NTriplesWriter;
 import org.openjena.riot.system.JenaWriterRdfJson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hp.hpl.jena.graph.Factory;
+import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
@@ -97,6 +105,14 @@ public class RDB2RDF {
 			System.exit(0);
 		}
 
+	}
+	
+	
+	public RDB2RDF(DBConnectionConfiguration dbconf, Model mapping, Model schema) throws R2RMLValidationException, JSQLParserException {
+		
+		this.dbConf = dbconf;
+		this.mapping = new R2RMLModel(mapping, schema, dbConf);
+		mapper = new AlgebraBasedMapper(this.mapping,dbConf);
 		
 		
 	}
@@ -207,6 +223,39 @@ public class RDB2RDF {
 		}
 		
 		return model;
+		
+		
+	}
+	
+	/**
+	 * dumps into the whole config into the writer.
+	 * @param writer
+	 * @throws SQLException 
+	 */
+
+	public void dump(OutputStream out) throws SQLException{
+		PrintStream writer = new PrintStream(out);
+		
+		List<String> queries = mapper.dump();
+		for (String query : queries) {
+			log.info("SQL: " + query);
+			SQLResultSetWrapper rs = dbConf.executeSQL(query);	
+			Graph graph = Factory.createGraphMem();
+			int i = 0;
+			while(rs.hasNext()){
+				Binding bind = rs.nextBinding();
+				graph.add(new Triple(bind.get(Var.alloc("s")), bind.get(Var.alloc("p")), bind.get(Var.alloc("o"))))	;
+				if(++i%1000==0){
+					NTriplesWriter.write(writer, graph);
+				}
+			}
+			rs.close();
+			NTriplesWriter.write(writer, graph);
+			writer.flush();
+			
+		}
+		
+	
 		
 		
 	}

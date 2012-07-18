@@ -30,6 +30,12 @@ public class PostgresDataTypeHandler extends DataTypeHelper {
 		return "INT";
 	}
 
+	@Override
+	public String getBinaryDataType() {
+	
+		return "BYTEA";
+	}
+
 
 
 }

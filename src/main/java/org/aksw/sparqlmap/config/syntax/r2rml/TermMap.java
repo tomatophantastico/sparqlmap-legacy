@@ -279,7 +279,7 @@ public class TermMap{
 				return expr;
 			}
 		
-			if(((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_STRING)){
+			if(FilterUtil.uncast(expr)instanceof Column &&((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_STRING)){
 				return expr;
 			}
 		}
@@ -292,7 +292,7 @@ public class TermMap{
 			if(type != null && type.equals(dataTypeHelper.getNumericCastType())){
 				return expr;
 			}
-			if(((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_NUMERIC)){
+			if(FilterUtil.uncast(expr)instanceof Column &&((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_NUMERIC)){
 				return expr;
 			}
 		}
@@ -305,7 +305,7 @@ public class TermMap{
 			if(type != null && type.equals(dataTypeHelper.getDateCastType())){
 				return expr;
 			}
-			if(((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_DATE)){
+			if(FilterUtil.uncast(expr)instanceof Column &&((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_DATE)){
 				return expr;
 			}
 		}

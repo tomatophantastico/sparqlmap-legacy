@@ -1,6 +1,7 @@
 package org.aksw.sparqlmap.config.syntax.r2rml;
 
 import java.io.StringReader;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,9 +11,11 @@ import java.util.Set;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.ExplicitSelectBody;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SubSelect;
@@ -22,7 +25,11 @@ import org.aksw.sparqlmap.columnanalyze.CompatibilityCheckerFactory;
 import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap.PO;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 
+import com.hp.hpl.jena.datatypes.RDFDatatype;
+import com.hp.hpl.jena.graph.query.regexptrees.Alternatives;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
@@ -34,9 +41,9 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.update.GraphStoreFactory;
 import com.hp.hpl.jena.update.UpdateExecutionFactory;
 import com.hp.hpl.jena.update.UpdateFactory;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 public class R2RMLModel {
-	String r2rmlSchemaLocation = "mapping/r2rml.rdf";
 	
 	
 	
@@ -51,29 +58,37 @@ public class R2RMLModel {
 	
 	private DataTypeHelper dth;
 	
-	public R2RMLModel(Model mapping, Model schema,DBConnectionConfiguration dbconf){
+	public R2RMLModel(Model mapping, Model schema,DBConnectionConfiguration dbconf) throws R2RMLValidationException, JSQLParserException{
 		this.mapping = mapping;
 		this.r2rmlSchema = schema;
 		this.dbconf = dbconf;
 		this.dth = dbconf.getDataTypeHelper();
 
 		reasoningModel = ModelFactory.createRDFSModel(r2rmlSchema,mapping);	
+		resolveRRClassStatements();
 		resolveR2RMLShortcuts();
-		try {
-			loadTripleMaps();
-		} catch (R2RMLValidationException e) {
-			// TODO Auto-generated catch block
-			log.error("Error:",e);
-		} catch (JSQLParserException e) {
-			// TODO Auto-generated catch block
-			log.error("Error:",e);
-		}
+		loadTripleMaps();
+		
+	
 		
 		loadCompatibilityChecker();
 
 	}
 	
 	
+	private void resolveRRClassStatements() {
+		String query = "PREFIX  rr:   <http://www.w3.org/ns/r2rml#> " +
+				"INSERT { ?tm rr:predicateObjectMap  _:newpo. " +
+				"_:newpo rr:predicate <"+RDF.type.getURI()+">." +
+				"_:newpo rr:object ?class } " +
+				"WHERE {?tm a rr:TriplesMap." +
+				"?tm  rr:subjectMap ?sm." +
+				"?sm rr:class ?class }";
+		UpdateExecutionFactory.create(UpdateFactory.create(query),GraphStoreFactory.create(reasoningModel)).execute();
+		
+	}
+
+
 	private void loadCompatibilityChecker() {
 		CompatibilityCheckerFactory ccfac = new CompatibilityCheckerFactory(reasoningModel,dbconf);
 		
@@ -153,7 +168,7 @@ public class R2RMLModel {
 			Resource tmUri= solution.get("tm").asResource();
 			String tablename = solution.get("?tableName")!=null?solution.get("?tableName").asLiteral().getString():null;
 			String query = solution.get("?query")!=null?solution.get("?query").asLiteral().getString():null;
-			String version  = solution.get("?version")!=null?solution.get("?version").asLiteral().getString():null;
+			Resource version  = solution.get("?version")!=null?solution.get("?version").asResource():null;
 			
 			
 			
@@ -161,14 +176,20 @@ public class R2RMLModel {
 			
 			
 			if(tablename!=null&&query==null&&version==null){
+				tablename = unescape(tablename);
+				
+				
 				fromTable = new Table(null,tablename);
 				fromItem = fromTable;
 				fromTable.setAlias(tablename);
 			}else if(tablename ==null && query!=null){
+				query= cleanSql(query);
 				subsel = new SubSelect();
 				subsel.setAlias("query_" + queryCount++);
-				subsel.setSelectBody(((Select)new CCJSqlParserManager().parse(new StringReader(query))).getSelectBody());				
+				//subsel.setSelectBody(((Select)new CCJSqlParserManager().parse(new StringReader(query))).getSelectBody());
+				subsel.setSelectBody(new ExplicitSelectBody(query));
 				fromTable = new Table(null, subsel.getAlias());
+				fromTable.setAlias(subsel.getAlias());
 				fromItem = subsel;
 				
 			}else{
@@ -177,7 +198,11 @@ public class R2RMLModel {
 			
 			//validate fromItem
 			
-			dbconf.validateFromItem(fromItem);
+			try {
+				dbconf.validateFromItem(fromItem);
+			} catch (SQLException e) {
+				throw new R2RMLValidationException("Error validation the virtual table in mapping" + tmUri.getURI(),e);
+			}
 			
 			
 			
@@ -199,10 +224,10 @@ public class R2RMLModel {
 				throw new R2RMLValidationException("Triple map " +tmUri+ " has no subject term map, fix this");
 			}
 			QuerySolution sSoltution = srs.next();
-			TermMapQueryResult sres=  new TermMapQueryResult(sSoltution, "s");
+			TermMapQueryResult sres=  new TermMapQueryResult(sSoltution, "s",fromItem);
 			
 			if(srs.hasNext() == true){
-				throw new R2RMLValidationException("Triple map " +tmUri+ " has more than ob subject term map, fix this");
+				throw new R2RMLValidationException("Triple map " +tmUri+ " has more than one subject term map, fix this");
 			}
 			
 			
@@ -221,14 +246,20 @@ public class R2RMLModel {
 			
 			TermMap stm = null;
 			if(sres.template!=null){
-				List<Expression> stmExpressions = ColumnHelper.getExpression(sres.template, ColumnHelper.COL_VAL_TYPE_RESOURCE, null,null, null,null, dth,fromItem);
+				List<Expression> stmExpressions = ColumnHelper.getExpression(sres.template, sres.termTypeInt, null,null, null,null, dth,fromItem);
 				stm = new TermMap(dth,stmExpressions,Arrays.asList(fromItem), null,triplemap);
 			}else if(sres.column!=null){
 				Column col = new Column();
 				col.setTable(fromTable);
 				col.setColumnName(sres.column);
-				List<Expression> stmExpressions = ColumnHelper.getExpression(col, ColumnHelper.COL_VAL_TYPE_RESOURCE, null, null, null,null, dth);			
+				List<Expression> stmExpressions = ColumnHelper.getExpression(col, sres.termTypeInt, null, null, null,null, dth);			
 				stm = new TermMap(dth,stmExpressions,Arrays.asList(fromItem),null,triplemap);
+			}else if(sres.constant!=null){
+				if(!sres.constant.isURIResource()){
+					throw new R2RMLValidationException("Must IRI in predicate position");
+				}
+				List<Expression> sexprs = ColumnHelper.getExpression(sres.constant, dth);
+				stm = new TermMap(dth, sexprs, Arrays.asList(fromItem), null, triplemap);
 			}
 			
 			triplemap.subject = stm;
@@ -250,7 +281,7 @@ public class R2RMLModel {
 			while(pors.hasNext()){
 				QuerySolution posol = pors.next();
 			
-				TermMapQueryResult p = new TermMapQueryResult(posol,"p");
+				TermMapQueryResult p = new TermMapQueryResult(posol,"p",fromItem);
 				TermMap ptm = null;
 				
 				
@@ -285,7 +316,7 @@ public class R2RMLModel {
 				
 				
 				
-				TermMapQueryResult o = new TermMapQueryResult(posol,"o");
+				TermMapQueryResult o = new TermMapQueryResult(posol,"o",fromItem);
 				Integer otermtype = ColumnHelper.COL_VAL_TYPE_RESOURCE;
 				TermMap otm=  null;
 				
@@ -303,7 +334,7 @@ public class R2RMLModel {
 					Column col = new Column();
 					col.setTable(fromTable);
 					col.setColumnName(o.column);
-					List<Expression> oexprs = ColumnHelper.getExpression(col,otermtype,dbconf.getDataType(fromTable, o.column), null, null, null, dth);
+					List<Expression> oexprs = ColumnHelper.getExpression(col,otermtype,dbconf.getDataType(fromItem, o.column), null, null, null, dth);
 					otm = new TermMap(dth, oexprs, Arrays.asList(fromItem), null, triplemap);
 				}else if(o.constant != null){
 					//use constant term
@@ -348,8 +379,7 @@ public class R2RMLModel {
 		String query = "{?"+p+"m rr:column ?"+p+"column} " +
 				"UNION {?"+p+"m rr:constant ?"+p+"constant} " +
 						"UNION {?"+p+"m rr:template ?"+p+"template} " +
-								"OPTIONAL {?"+p+"m rr:class ?"+p+"tmclass} " +
-										"OPTIONAL {?"+p+"m rr:termType ?"+p+"termtype} " +
+				"OPTIONAL {?"+p+"m rr:termType ?"+p+"termtype} " +
 										"OPTIONAL {?"+p+"m rr:datatype ?"+p+"datatype} " +
 												"OPTIONAL {?"+p+"m <"+R2RML.language+"> ?"+p+"lang} " +
 														"OPTIONAL {?"+p+"m <"+R2RML.inverseExpression+"> ?"+p+"inverseexpression}";
@@ -361,9 +391,11 @@ public class R2RMLModel {
 	
 	private class TermMapQueryResult{
 		
-		public TermMapQueryResult(QuerySolution sol, String prefix) {
-			template = sol.get("?"+prefix+"template")!=null?sol.get("?"+prefix+"template").asLiteral().getString():null;
+		public TermMapQueryResult(QuerySolution sol, String prefix, FromItem fi) {
+			template =  sol.get("?"+prefix+"template")!=null?cleanTemplate(sol.get("?"+prefix+"template").asLiteral().getString(),fi):null;
 			column = sol.get("?"+prefix+"column")!=null?sol.get("?"+prefix+"column").asLiteral().getString():null;
+			column = getRealColumnName(column,fi);
+			
 			lang = sol.get("?"+prefix+"lang")!=null?sol.get("?"+prefix+"lang").asLiteral().getString():null;
 			inverseExpression = sol.get("?"+prefix+"inverseexpression")!=null?sol.get("?"+prefix+"inverseexpression").asLiteral().getString():null;
 			constant = sol.get("?"+prefix+"constant");
@@ -372,7 +404,7 @@ public class R2RMLModel {
 			termType = sol.getResource("?termtype");
 		}
 		
-		String template;
+		String[] template;
 		String column;
 		RDFNode constant;
 		String lang;
@@ -385,19 +417,86 @@ public class R2RMLModel {
 	
 	
 	
-private List<String> splitTemplate(String template) {
-	
-		
-		String[] ldsplits = template.split("\\{|\\}");
-		return Arrays.asList(ldsplits);
-	
 
+
+
+
+
+
+public String getRealColumnName(String unrealColumnName, FromItem fi){
+	if(unrealColumnName==null){
+		return null;
+	}else	if(unrealColumnName.startsWith("\"")&&unrealColumnName.endsWith("\"")){
+		return unrealColumnName.substring(1,unrealColumnName.length()-1);
+	}else{
+		//not escaped, so we need to see how the database handles the string.
+		return dbconf.getColumnName(fi, unrealColumnName);
 	}
+}
+
+public static String unescape(String toUnescape){
+	if(toUnescape!=null&&toUnescape.startsWith("\"")&&toUnescape.endsWith("\"")){
+		return toUnescape.substring(1,toUnescape.length()-1);
+	}else{
+		//not escaped, so we need to see how the database handles the string.
+		return toUnescape;
+	}
+}
+
+/**
+ * removes all apostrophes from the template and ensure they are correctly capitalized.
+ * @return
+ */
+
+public String[] cleanTemplate(String template,FromItem fi){
+	
+	// ((?<!\\\\)\\{)|(\\})
+	List<String>  altSeq = Arrays.asList(template.split( "((?<!\\\\)\\{)|(?<!\\\\)\\}"));
+	List<String> cleaned=  new ArrayList<String>();
+	
+	
+	
+	for (int i = 0; i < altSeq.size(); i++) {
+		if (i % 2 == 1) {
+			
+			
+			cleaned.add(getRealColumnName(altSeq.get(i), fi));
+			
+		} else {
+			//static part, no need to change anything, just remove the escape patterns;
+			
+			
+			cleaned.add( altSeq.get(i).replaceAll("\\\\", ""));
+			
+		}
+	}
+	
+
+	
+	
+	
+	return cleaned.toArray(new String[0]);
+}
 
 
-public Integer getSqlDataType(String tablename, String colname) {
-	// TODO Auto-generated method stub
-	return null;
+public String cleanSql(String toUnescape){
+	if(toUnescape!=null){
+		
+		toUnescape = toUnescape.trim();
+		toUnescape = toUnescape.replaceAll("\r\n", " ").replaceAll("\n", " ");
+		if(toUnescape.endsWith(";")){
+			toUnescape = toUnescape.substring(0, toUnescape.length()-1);
+		}
+		
+		return toUnescape;
+	}else{
+		return toUnescape;
+	}
+}
+
+
+public RDFDatatype getSqlDataType(String tablename, String colname) {
+	throw new ImplementationException("implement sql type table");
 }
 	
 //	public List<Expression> getResourceExpressions(ColumDefinition coldef) {

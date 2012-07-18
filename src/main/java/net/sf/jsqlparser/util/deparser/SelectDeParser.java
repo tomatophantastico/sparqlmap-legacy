@@ -12,6 +12,7 @@ import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.ColumnIndex;
 import net.sf.jsqlparser.statement.select.ColumnReference;
 import net.sf.jsqlparser.statement.select.ColumnReferenceVisitor;
+import net.sf.jsqlparser.statement.select.ExplicitSelectBody;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.FromItemVisitor;
 import net.sf.jsqlparser.statement.select.Join;
@@ -195,6 +196,11 @@ public class SelectDeParser implements SelectVisitor, OrderByVisitor, SelectItem
 			buffer.append(" AS " + selectExpressionItem.getAlias());
 		}
 
+	}
+	
+	public void visit(ExplicitSelectBody eSelect){
+		buffer.append(eSelect.getQuery());
+		
 	}
 
 	public void visit(SubSelect subSelect) {

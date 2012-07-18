@@ -193,4 +193,9 @@ public class MappingFilterFinder {
 		return reduced;
 	}
 
+	public void setProject(OpProject opproj) {
+		this.project = opproj;
+		
+	}
+
 }

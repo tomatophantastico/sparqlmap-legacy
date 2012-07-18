@@ -22,6 +22,7 @@ import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 
 public class ColumnHelper {
+	
 	public static String R2R_COL_SUFFIX = "_R2R";
 	public static String COL_NAME_RDFTYPE = R2R_COL_SUFFIX + "_1_TYPE";
 	public static String COL_NAME_RES_LENGTH = R2R_COL_SUFFIX + "_2_RES_LENGTH";
@@ -37,7 +38,9 @@ public class ColumnHelper {
 	public static String COL_NAME_LITERAL_DATE = R2R_COL_SUFFIX + "_9_LIT_DATE";
 	public static String COL_NAME_LITERAL_BOOL = R2R_COL_SUFFIX
 			+ "_10_LIT_BOOL";
-	public static String COL_NAME_ORDER_BY = R2R_COL_SUFFIX + "_11_OBY";
+	public static String COL_NAME_LITERAL_BINARY = R2R_COL_SUFFIX + "11_LIT_BINARY";
+	public static String COL_NAME_ORDER_BY = R2R_COL_SUFFIX + "_12_OBY";
+
 	public static String COL_NAME_INTERNAL = "BTF";
 
 	public static Integer COL_VAL_TYPE_RESOURCE = 1;
@@ -101,6 +104,7 @@ public class ColumnHelper {
 		if (node.isURIResource()) {
 			texprs.addAll(getBaseExpressions(COL_VAL_TYPE_RESOURCE, 1,
 					COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null));
+			//texprs.add(FilterUtil.cast(new StringValue("\"\""), dth.getStringCastType()));
 			texprs.add(asExpression(node.asResource().getURI(), dth));
 		} else if (node.isLiteral()) {
 			texprs.addAll(getBaseExpressions(COL_VAL_TYPE_LITERAL, 0,
@@ -153,29 +157,31 @@ public class ColumnHelper {
 			dth.getCastTypeString(sqlType);
 			texprs.add(FilterUtil.cast(col, dth.getCastTypeString(sqlType)));
 
-		} else if (rdfType == COL_VAL_TYPE_RESOURCE) {
+		} else if (rdfType == COL_VAL_TYPE_RESOURCE||rdfType == COL_VAL_TYPE_BLANK) {
+			texprs.addAll(getBaseExpressions(rdfType,
+					2, COL_VAL_SQL_TYPE_RESOURCE, dth, datatype, lang,
+					null));
+			texprs.add(FilterUtil.cast(new StringValue("\"\""), dth.getStringCastType()));
+			texprs.add(FilterUtil.cast(col, dth.getStringCastType()));
 
-		} else if (rdfType == COL_VAL_TYPE_BLANK) {
-
-		}
+		} 
 		return texprs;
 
 	}
 
-	public static List<Expression> getExpression(String template,
+	public static List<Expression> getExpression(String[] template,
 			Integer rdfType, Integer sqlType, String datatype, String lang, Column lanColumn, 
 			DataTypeHelper dth, FromItem fi) {
 		List<Expression> texprs = new ArrayList<Expression>();
 		
 	
 		
-		List<String>  altSeq = Arrays.asList(template.split("((?<!\\\\)\\{)|(\\})"));
+		List<String>  altSeq = Arrays.asList(template);
 		
 		
-		
-		if(template.startsWith("{") && rdfType != COL_VAL_TYPE_LITERAL){
-			altSeq.add(0, "");
-		}
+//		if(template.startsWith("{") && rdfType != COL_VAL_TYPE_LITERAL){
+//			altSeq.add(0, "");
+//		}
 		
 		
 		if (rdfType == COL_VAL_TYPE_LITERAL) {
@@ -193,7 +199,9 @@ public class ColumnHelper {
 			List<Expression> toConcat = new ArrayList<Expression>();
 			for (int i = 0; i < altSeq.size(); i++) {
 				if (i % 2 == 1) {
-					toConcat.add(FilterUtil.cast(ColumnHelper.createCol(fi.getAlias(), altSeq.get(i)),dth.getStringCastType()));
+					String colName = altSeq.get(i);
+					
+					toConcat.add(FilterUtil.cast(ColumnHelper.createCol(fi.getAlias(),colName ),dth.getStringCastType()));
 				} else {
 					toConcat.add(FilterUtil.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
 				}
@@ -209,7 +217,9 @@ public class ColumnHelper {
 					COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null));
 			for (int i = 0; i < altSeq.size(); i++) {
 				if (i % 2 == 1) {
-					texprs.add(FilterUtil.cast(ColumnHelper.createCol(fi.getAlias(), altSeq.get(i)),dth.getStringCastType()));
+					String colName = R2RMLModel.unescape(altSeq.get(i));
+					
+					texprs.add(FilterUtil.cast(ColumnHelper.createCol(fi.getAlias(), colName),dth.getStringCastType()));
 				} else {
 					texprs.add(FilterUtil.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
 				}

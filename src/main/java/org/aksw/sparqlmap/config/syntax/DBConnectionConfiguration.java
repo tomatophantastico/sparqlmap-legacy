@@ -29,6 +29,8 @@ import org.aksw.sparqlmap.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 
+import com.ibm.icu.impl.CharTrie.FriendAgent;
+
 
 public class DBConnectionConfiguration {
 	
@@ -93,6 +95,7 @@ public class DBConnectionConfiguration {
 	public String getJdbcDBName(){
 		return dbUrl.split(":")[1];
 	}
+	
 
 	public SelectDeParser getSelectDeParser(StringBuffer sb) {
 		if(getJdbcDBName().equals(MYSQL)){
@@ -181,67 +184,49 @@ public class DBConnectionConfiguration {
 	 * If null is returned, everything went well, otherwise there is the error message.
 	 * @param fromItem
 	 * @return
+	 * @throws SQLException 
 	 */
 
-	public String validateFromItem(FromItem fromItem) {
-		final StringBuffer fromItemSb = new StringBuffer();
-		final SelectDeParser sdp  = getSelectDeParser(fromItemSb);
+	public void validateFromItem(FromItem fromItem) throws SQLException {
+		String query = "SELECT * FROM " + fromItemToString(fromItem) +  "  LIMIT 1";
 		
-		sdp.setBuffer(fromItemSb);
-		
-		final StringBuffer selectString = new StringBuffer();
-		fromItem.accept(new FromItemVisitor() {
-			
-			@Override
-			public void visit(SubJoin subjoin) {
-				throw new ImplementationException("Not implemented");
-				
-			}
-			
-			@Override
-			public void visit(SubSelect subSelect) {
-				subSelect.getSelectBody().accept(sdp);
-				selectString.append("( ");
-				selectString.append(fromItemSb.toString());
-				selectString.append(")  ");
-				selectString.append(" AS test ");
-				
-			}
-			
-			@Override
-			public void visit(Table tableName) {
-				selectString.append(tableName.getName());
-				
-			}
-		});
-		
-		
-		
-		String query = "SELECT * FROM " +selectString.toString() +  "  LIMIT 1";
-		
-		try {
-			Connection conn = dbConnector.getConnection();
+		   Connection conn = dbConnector.getConnection();
 			ResultSet rs =  conn.createStatement().executeQuery(query);
 			rs.close();
-			conn.close();
-			
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			log.error("Error:",e);
-			return e.getMessage();
-		}
+			conn.close();	
+	}
 	
+	
+	/**used to determine the column name, as the db sees it on the interpreted from item.
+	 * 
+	 * used for example, if the sql contains an unsecaped alias for a column
+	 * 
+	 * @param fromItem
+	 * @param unescapedColname
+	 * @return
+	 * @throws SQLException
+	 */
+	public String getColumnName(FromItem fromItem, String unescapedColname) {
+		String query = "SELECT " +unescapedColname+ " FROM " + fromItemToString(fromItem) +  "  LIMIT 1";
+		
+		   try {
+			Connection conn = dbConnector.getConnection();
+				ResultSet rs =  conn.createStatement().executeQuery(query);
+				String name = rs.getMetaData().getColumnName(1);
+				rs.close();
+				conn.close();
 				
-		return null;
+				return name;
+		} catch (SQLException e) {
+			log.error("Error validating the column name, using the query: " + query);
+			throw new R2RMLValidationException("Column name in virtual table mismatching definition in term map.",e);
+		}
 	}
 
 	public Integer getDataType(FromItem fromItem, String colname) {
-		StringBuffer fromItemSb = new StringBuffer();
-		SelectDeParser sdp = getSelectDeParser(fromItemSb);
 		
-		fromItem.accept(sdp);
 		
-		String query = "SELECT \"" +colname+"\" FROM " + fromItemSb.toString() + " LIMIT 1";
+		String query = "SELECT \"" +colname+ "\" FROM " + fromItemToString(fromItem) + " LIMIT 1";
 		
 		try {
 			Connection conn = dbConnector.getConnection();
@@ -252,10 +237,54 @@ public class DBConnectionConfiguration {
 			return  resInteger;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			log.error("Querying for the datatype of " + colname  + ", from " + fromItemSb.toString() + " the following error was thrown: ",e);
-			throw new R2RMLValidationException("\"Querying for the datatype of \" + colname  + \", from \" + fromItemSb.toString() + \" the following error was thrown: " + e.getMessage());
+			log.error("Using the query: " + query);
+			log.error("Querying for the datatype of " + colname  + ", from " + fromItemToString(fromItem) + " the following error was thrown: ",e);
+			
+			throw new R2RMLValidationException("Querying for the datatype of " + colname  + ", from " + fromItemToString(fromItem) + " the following error was thrown: ", e);
 		}
 	}
+	
+	private String fromItemToString(FromItem fromItem){
+		
+		final StringBuffer fromItemSb = new StringBuffer();
+		final SelectDeParser sdp  = getSelectDeParser(fromItemSb);
+		
+		sdp.setBuffer(fromItemSb);
+		
+		fromItem.accept(new FromItemVisitor() {
+			
+			@Override
+			public void visit(SubJoin subjoin) {
+				throw new ImplementationException("Not implemented");
+				
+			}
+			
+			@Override
+			public void visit(SubSelect subSelect) {
+				fromItemSb.append("( ");
+				subSelect.getSelectBody().accept(sdp);
+
+				fromItemSb.append(")  ");
+				fromItemSb.append(" AS test ");
+				
+			}
+			
+			@Override
+			public void visit(Table tableName) {
+				tableName.accept(sdp);
+				
+				//selectString.append(tableName.getName());
+				
+			}
+		});
+		
+		return fromItemSb.toString();
+		
+	}
+	
+	
+	
+	
 	public ExpressionDeParser getExpressionDeParser(StringBuffer fromItemSb) {
 		return getExpressionDeParser(getSelectDeParser(fromItemSb), fromItemSb);
 		

@@ -1,5 +1,7 @@
 package org.aksw.sparqlmap.db;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,11 +13,15 @@ import java.util.List;
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.apache.commons.codec.binary.Base64;
+import org.joda.time.DateTime;
+import org.joda.time.format.ISODateTimeFormat;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 import com.hp.hpl.jena.datatypes.BaseDatatype;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
+import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -139,11 +145,29 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 				int type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
 				if (type == ColumnHelper.COL_VAL_TYPE_RESOURCE) {
 					StringBuffer uri = new StringBuffer();
+					int i = 0;
 					for(String colname : this.var2ResourceCols.get(var)){
-						String segment =rs.getString(colname);
-						if(segment !=null){
-							uri.append(segment);
+						if(i++%2==0){
+							//fix string
+							String segment =rs.getString(colname);
+							if(segment !=null){
+								uri.append(segment);
+							}
+						}else{
+							//column derived valued
+							String segment =rs.getString(colname);
+							if(segment !=null){
+								try {
+									
+									
+									uri.append(URLEncoder.encode(segment, "UTF-8").replaceAll("\\+", "%20"));
+								} catch (UnsupportedEncodingException e) {
+									// TODO Auto-generated catch block
+									log.error("Error:",e);
+								}
+							}
 						}
+						
 					}
 				
 					if(uri.length()==0){
@@ -154,7 +178,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					
 				} else if (type == ColumnHelper.COL_VAL_TYPE_LITERAL) {
 					
-					String litType = rs.getString(var + ColumnHelper.COL_NAME_RDFTYPE);
+					String litType = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_TYPE);
 					RDFDatatype dt = null;
 					if(litType!=null&&!litType.isEmpty()){
 						dt = new BaseDatatype(litType);
@@ -170,27 +194,45 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					// determine the data type
 					int sqldatatype = rs.getInt(var
 							+ ColumnHelper.COL_NAME_SQL_TYPE);
+					
+	
+					String literalValue;
+					
+					if(XSDDatatype.XSDdecimal.getURI().equals(litType)||XSDDatatype.XSDinteger.getURI().equals(litType) || XSDDatatype.XSDdouble.getURI().equals(litType)){
+						literalValue = rs.getBigDecimal(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC).toString();
+					}else if(XSDDatatype.XSDstring.getURI().equals( litType)|| litType ==null){
+						literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
+					}else if(XSDDatatype.XSDdateTime.getURI().equals(litType)){
 						
-					String literalVal = null;
-					if(dth.getCastTypeString(sqldatatype) == dth.getStringCastType()&&
-							rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING)!=null){
-						literalVal = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
-					}else if(dth.getCastTypeString(sqldatatype) == dth.getDateCastType()&&
-							rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE)!=null){
-						literalVal = formatter.format(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE));
-					}else if(dth.getCastTypeString(sqldatatype) == dth.getNumericCastType() &&
-							rs.getBigDecimal(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC) != null){
-						literalVal = rs.getBigDecimal(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC).toString();
-					}else if(dth.getCastTypeString(sqldatatype) == dth.getBooleanCastType()){
-						throw new ImplementationException("No Boolean support here.");
+											
+						literalValue = ISODateTimeFormat.basicDateTime().print(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
+						
+						
+						literalValue = formatter.format(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE));
+					}else if(XSDDatatype.XSDdate.getURI().equals(litType) ){
+						literalValue = ISODateTimeFormat.basicDate().print(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
+						
+					}else if( XSDDatatype.XSDtime.getURI().equals(litType)){
+						literalValue = ISODateTimeFormat.basicTime().print(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
+					}else if(XSDDatatype.XSDboolean.getURI().equals(litType)){
+						literalValue = Boolean.toString(rs.getBoolean(var+ColumnHelper.COL_NAME_LITERAL_BOOL));
+					}else if(XSDDatatype.XSDhexBinary.getURI().equals(litType)){
+						literalValue = XSDDatatype.XSDhexBinary.unparse(rs.getBytes(ColumnHelper.COL_NAME_LITERAL_BINARY));
+					}else{
+						throw new ImplementationException("Cannot map into result set");
 					}
 					
-					if(literalVal !=null){
+					
+						
+					
+					
+					
+					if(literalValue !=null){
 						
 
 					node = Node
 							.createLiteral(
-									literalVal,
+									literalValue,
 									lang, dt
 									);
 					}else{

@@ -133,6 +133,10 @@ public class Binding {
 							.getCompChecker().isCompatible(p) && po.getObject()
 							.getCompChecker().isCompatible(o)){
 						posKeepers.add(po);
+					}else{
+						
+						//just here to set a breakpoint
+						po.getPredicate();
 					}
 				}
 				if(posKeepers.size()>0){

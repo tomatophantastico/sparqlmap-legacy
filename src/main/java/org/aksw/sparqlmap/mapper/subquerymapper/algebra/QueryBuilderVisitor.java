@@ -285,9 +285,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 						.getSubject().getName(), po.getPredicate(),triple
 						.getPredicate().getName(),po.getObject(),triple.getObject().getName(), false);
 
-				if(trm.getSubject().getFromItems().iterator().next().getAlias().contains("query")){
-					plainSelect.getClass();
-				}
+				
 				
 				
 				pselects.add(plainSelect);
