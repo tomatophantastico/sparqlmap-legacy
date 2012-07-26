@@ -3,7 +3,6 @@ package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
 import java.sql.Types;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
-import org.openjena.atlas.logging.Log;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
@@ -41,7 +40,8 @@ public abstract  class DataTypeHelper {
 			return XSDDatatype.XSDdateTime;
 
 		}
-		if(sdt == Types.BOOLEAN){
+		//the jsbc driver makes no differentiation between bit and boolean, so wetake them both here
+		if(sdt == Types.BOOLEAN || sdt == Types.BIT){
 			return XSDDatatype.XSDboolean;
 		}
 		

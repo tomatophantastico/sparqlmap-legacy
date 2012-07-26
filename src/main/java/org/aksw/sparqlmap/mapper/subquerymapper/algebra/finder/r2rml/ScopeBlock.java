@@ -11,7 +11,6 @@ import java.util.Set;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;

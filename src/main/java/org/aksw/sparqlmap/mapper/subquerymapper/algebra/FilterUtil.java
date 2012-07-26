@@ -65,7 +65,7 @@ import com.hp.hpl.jena.sparql.expr.E_Subtract;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprFunction;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
-import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueDateTime;
+import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueDT;
 import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueDouble;
 import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueInteger;
 import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueNode;
@@ -660,11 +660,10 @@ public class FilterUtil {
 			expression = new StringValue("'" + nodeU.getURI() + "'");
 			// }
 
-		} else if (expr instanceof NodeValueDateTime) {
-			NodeValueDateTime nvdt = (NodeValueDateTime) expr;
+		} else if (expr instanceof NodeValueDT) {
+			NodeValueDT nvdt = (NodeValueDT) expr;
 
-			Timestamp ts = new Timestamp(nvdt.getDateTime().asCalendar()
-					.getTime().getTime());
+			Timestamp ts = new Timestamp(nvdt.getDateTime().toGregorianCalendar().getTime().getTime());
 			expression = new TimestampValue("'" + ts.toString() + "'");
 
 		} else if (expr instanceof NodeValueInteger) {
@@ -692,10 +691,12 @@ public class FilterUtil {
 		return expression;
 
 	}
+	
+	public static String CONCAT = "CONCAT";
 
 	public static Function concat(Expression... expr) {
 		Function concat = new Function();
-		concat.setName("CONCAT");
+		concat.setName(CONCAT);
 		ExpressionList explist = new ExpressionList();
 		explist.setExpressions(Arrays.asList(expr));
 		concat.setParameters(explist);

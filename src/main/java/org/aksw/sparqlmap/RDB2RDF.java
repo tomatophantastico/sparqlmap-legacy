@@ -1,6 +1,5 @@
 package org.aksw.sparqlmap;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -20,13 +19,12 @@ import org.aksw.sparqlmap.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.mapper.AlgebraBasedMapper;
 import org.aksw.sparqlmap.mapper.Mapper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.openjena.riot.out.NQuadsWriter;
 import org.openjena.riot.out.NTriplesWriter;
 import org.openjena.riot.system.JenaWriterRdfJson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.hp.hpl.jena.graph.Factory;
-import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
@@ -35,6 +33,9 @@ import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.sparql.core.DatasetGraph;
+import com.hp.hpl.jena.sparql.core.DatasetGraphFactory;
+import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.syntax.Template;
@@ -49,6 +50,7 @@ public class RDB2RDF {
 	private R2RMLModel mapping;
 	
 	private DBConnectionConfiguration dbConf;
+	private String baseUri = "http://localhost/sparqlmap";
 	
 
 	private Logger log = LoggerFactory.getLogger(RDB2RDF.class);
@@ -239,18 +241,29 @@ public class RDB2RDF {
 		List<String> queries = mapper.dump();
 		for (String query : queries) {
 			log.info("SQL: " + query);
-			SQLResultSetWrapper rs = dbConf.executeSQL(query);	
-			Graph graph = Factory.createGraphMem();
+			SQLResultSetWrapper rs = dbConf.executeSQL(query);
+			rs.setBaseUri(baseUri);
+			DatasetGraph graph = DatasetGraphFactory.createMem();
+			boolean usesGraph = false;
 			int i = 0;
 			while(rs.hasNext()){
-				Binding bind = rs.nextBinding();
-				graph.add(new Triple(bind.get(Var.alloc("s")), bind.get(Var.alloc("p")), bind.get(Var.alloc("o"))))	;
+				Binding bind = rs.nextBinding();	
+				if(bind.get(Var.alloc("g"))!=null){
+					
+					usesGraph =true;
+				}
+				graph.add(new Quad(bind.get(Var.alloc("g")),bind.get(Var.alloc("s")), bind.get(Var.alloc("p")), bind.get(Var.alloc("o"))))	;
 				if(++i%1000==0){
-					NTriplesWriter.write(writer, graph);
+					NQuadsWriter.write(out, graph);
 				}
 			}
 			rs.close();
-			NTriplesWriter.write(writer, graph);
+			if(usesGraph){
+				NQuadsWriter.write(writer, graph);
+			}else{
+				NTriplesWriter.write(writer, graph.getGraph(null));
+			}
+			
 			writer.flush();
 			
 		}

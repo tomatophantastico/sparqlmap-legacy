@@ -1,6 +1,5 @@
 package org.aksw.sparqlmap.config.syntax.r2rml;
 
-import java.sql.SQLException;
 
 
 

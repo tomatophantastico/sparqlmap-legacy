@@ -6,7 +6,6 @@ public class MysqlDataTypeHelper extends DataTypeHelper {
 
 	@Override
 	public String getStringCastType() {
-	
 		return "CHAR";
 	}
 
@@ -32,6 +31,11 @@ public class MysqlDataTypeHelper extends DataTypeHelper {
 	public String getIntCastType() {
 		// TODO Auto-generated method stub
 		return "INT";
+	}
+
+	@Override
+	public String getBinaryDataType() {
+		return "VARBINARY";
 	}
 
 

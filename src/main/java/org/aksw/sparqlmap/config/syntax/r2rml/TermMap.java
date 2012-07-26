@@ -13,6 +13,7 @@ import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
@@ -111,19 +112,25 @@ public class TermMap{
 		seis.add(sqlTypeSei);
 		
 		//read the litypefield
-				Expression litTypeExpr = exprs.remove(0);
-				SelectExpressionItem litTypeSei  = new SelectExpressionItem();
-				litTypeSei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_TYPE);
-				litTypeSei.setExpression(litTypeExpr);
-				seis.add(litTypeSei);
+		Expression litTypeExpr = exprs.remove(0);
+		SelectExpressionItem litTypeSei  = new SelectExpressionItem();
+		litTypeSei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_TYPE);
+		litTypeSei.setExpression(litTypeExpr);
+		seis.add(litTypeSei);
+
+		//read the lang
+		Expression litlangExpr = exprs.remove(0);
+		SelectExpressionItem litnangSei  = new SelectExpressionItem();
+		litnangSei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_LANG);
+		litnangSei.setExpression(litlangExpr);
+		seis.add(litnangSei);
 		
-				//read the lang
-				Expression litlangExpr = exprs.remove(0);
-				SelectExpressionItem litnangSei  = new SelectExpressionItem();
-				litnangSei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_LANG);
-				litnangSei.setExpression(litlangExpr);
-				seis.add(litnangSei);
-				
+		//read the graph
+		Expression graphExpr = exprs.remove(0);
+		SelectExpressionItem graphSei  = new SelectExpressionItem();
+		graphSei.setAlias(colalias + ColumnHelper.COL_NAME_GRAPH);
+		graphSei.setExpression(graphExpr);
+		seis.add(graphSei);		
 		
 		
 		
@@ -156,7 +163,13 @@ public class TermMap{
 				dateSei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_DATE);
 				dateSei.setExpression(expr);
 				seis.add(dateSei);
-			}else{
+			}else if(castType.equals(dataTypeHelper.getBooleanCastType())){
+				SelectExpressionItem boolsei = new SelectExpressionItem();
+				boolsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_BOOL);
+				boolsei.setExpression(expr);
+				seis.add(boolsei);
+			}else
+			{
 				throw new ImplementationException("Cast type not supported: " + castType);
 			}			
 		}	
@@ -246,15 +259,35 @@ public class TermMap{
 		List<Expression> copied = new ArrayList<Expression>();
 		
 		for (Expression expression : expressions) {
-			if(FilterUtil.uncast(expression) instanceof Column){
-				Column origCol = (Column) FilterUtil.uncast(expression);
-				Column copyCol = cloneColumn(origCol, suffix);
-				copied.add(FilterUtil.cast(copyCol,FilterUtil.getCastType(expression)));
-			}else{
-				copied.add(expression);
-			}
+			copied.add(cloneExpr(suffix, expression));
 		}
 		return copied;
+	}
+
+
+	private Expression cloneExpr(String suffix, Expression expression) {
+		if(FilterUtil.uncast(expression) instanceof Column){
+			Column origCol = (Column) FilterUtil.uncast(expression);
+			Column copyCol = cloneColumn(origCol, suffix);
+			return (FilterUtil.cast(copyCol,FilterUtil.getCastType(expression)));
+		}else if(FilterUtil.uncast(expression) instanceof Function ){
+			Function func = (Function) FilterUtil.uncast(expression);
+			List<Expression> copiedConcat  = new ArrayList<Expression>(); 
+			if(func.getName().equals(FilterUtil.CONCAT)){
+				for(Object obj: func.getParameters().getExpressions()){
+					Expression concExpr = (Expression) obj;
+					copiedConcat.add(cloneExpr(suffix, concExpr));
+				}
+			}
+			Function newFunc = new Function();
+			newFunc.setName(func.getName());
+			newFunc.setParameters(new ExpressionList(copiedConcat));
+			return FilterUtil.cast(newFunc,FilterUtil.getCastType(expression));
+			
+
+		} else{
+			return (expression);
+		}
 	}
 	
 	protected Column cloneColumn(Column origCol,String suffix){
@@ -280,6 +313,20 @@ public class TermMap{
 			}
 		
 			if(FilterUtil.uncast(expr)instanceof Column &&((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_STRING)){
+				return expr;
+			}
+		}
+		return null;
+	}
+	
+	private Expression getLiteralBoolExpression() {
+		for(Expression expr: getLiteralExpressions()){
+			String type = FilterUtil.getCastType(expr);
+			if(type != null && type.equals(dataTypeHelper.getBooleanCastType())){
+				return expr;
+			}
+		
+			if(FilterUtil.uncast(expr)instanceof Column &&((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BOOL)){
 				return expr;
 			}
 		}
@@ -316,7 +363,7 @@ public class TermMap{
 		List<Expression> expressions = new ArrayList<Expression>();
 		int length = getLength();
 		for(int i = 0; i < length; i++){
-			expressions.add(getExpressions().get(i+5));
+			expressions.add(getExpressions().get(i+6));
 		}
 		return expressions;
 	}
@@ -343,6 +390,9 @@ public class TermMap{
 		if (getLiteralStringExpression()!=null){
 			lits.add(getLiteralStringExpression());
 		}
+		if (getLiteralBoolExpression()!=null){
+			lits.add(getLiteralBoolExpression());
+		}
 		
 		if(lits.size()>1){
 			return FilterUtil.coalesce(lits.toArray(new Expression[0]));
@@ -355,11 +405,14 @@ public class TermMap{
 	
 	
 	
+	
+
+
 	public List<Expression> getLiteralExpressions(){
 		//jump to the literals
 				List<Expression> expressions = new ArrayList<Expression>(getExpressions());
 				int length = getLength();
-				for(int i = 0; i< length+5; i++){
+				for(int i = 0; i< length+6; i++){
 					expressions.remove(0);
 				}
 				return expressions;		

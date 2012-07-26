@@ -1,8 +1,6 @@
 package org.aksw.sparqlmap.mapper;
 
-import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -12,7 +10,6 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.WithItem;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
-import org.aksw.sparqlmap.RDB2RDF.ReturnType;
 import org.aksw.sparqlmap.beautifier.SparqlBeautifier;
 import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
@@ -29,9 +26,8 @@ import com.hp.hpl.jena.sparql.algebra.AlgebraGenerator;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.OpWalker;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
+import com.hp.hpl.jena.sparql.algebra.op.OpGraph;
 import com.hp.hpl.jena.sparql.algebra.op.OpProject;
-import com.hp.hpl.jena.sparql.core.BasicPattern;
-import com.hp.hpl.jena.sparql.core.Var;
 
 public class AlgebraBasedMapper implements Mapper {
 	
@@ -114,12 +110,12 @@ public class AlgebraBasedMapper implements Mapper {
 		
 		List<String> queries = new ArrayList<String>();
 		
-		Query spo = QueryFactory.create("SELECT ?s ?p ?o {?s ?p ?o}");
+		Query spo = QueryFactory.create("SELECT ?g ?s ?p ?o {GRAPH ?g {?s ?p ?o}}");
 		
 		AlgebraGenerator gen = new AlgebraGenerator();
 		Op qop = gen.compile(spo);
 		
-		Triple triple = ((OpBGP)((OpProject)qop).getSubOp()).getPattern().get(0);
+		Triple triple = ((OpBGP)((OpGraph)((OpProject)qop).getSubOp()).getSubOp()).getPattern().get(0);
 		
 		
 		

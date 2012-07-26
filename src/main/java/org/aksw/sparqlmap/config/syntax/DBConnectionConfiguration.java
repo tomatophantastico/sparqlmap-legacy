@@ -29,8 +29,6 @@ import org.aksw.sparqlmap.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 
-import com.ibm.icu.impl.CharTrie.FriendAgent;
-
 
 public class DBConnectionConfiguration {
 	

@@ -482,7 +482,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 	private Map<String, Expression> filters = new HashMap<String, Expression>();
 
-	private void addSQLFilter(Expression sqlEx) {
+	public void addSQLFilter(Expression sqlEx) {
 
 		if (!filters.containsKey(sqlEx.toString())) {
 			filters.put(sqlEx.toString(), sqlEx);

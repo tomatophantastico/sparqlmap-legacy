@@ -5,17 +5,19 @@ import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
-import org.apache.commons.codec.binary.Base64;
-import org.joda.time.DateTime;
-import org.joda.time.format.ISODateTimeFormat;
+import org.apache.jena.iri.IRI;
+import org.apache.jena.iri.IRIException;
+import org.apache.jena.iri.IRIFactory;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
@@ -24,6 +26,7 @@ import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.rdf.model.AnonId;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.ResultBinding;
 import com.hp.hpl.jena.sparql.core.Var;
@@ -33,7 +36,15 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 
 public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	
-	DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz");
+
+	DateTimeFormatter dateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+	DateTimeFormatter timeFormatter = DateTimeFormat.forPattern("HH:mm:ss.SSS");
+	DateTimeFormatter datetimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+	
+	String iriPattern = " ^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?";
+	
+	String baseUri = null;
+	DecimalFormat doubleFormatter = new DecimalFormat("0.0##########################E0");
 
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory
 			.getLogger(SQLResultSetWrapper.class);
@@ -58,6 +69,14 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		this.dth = dth;
 		initVars();
 
+	}
+	
+	/**
+	 * if baseUri is set, than it is used to make relative uris from a column absolute.
+	 * @param baseUri
+	 */
+	public void setBaseUri(String baseUri) {
+		this.baseUri = baseUri;
 	}
 	
 	private Multimap< String, String> var2ResourceCols = TreeMultimap.create();
@@ -143,7 +162,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 				// create the binding here
 				// first check for type
 				int type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
-				if (type == ColumnHelper.COL_VAL_TYPE_RESOURCE) {
+				if (type == ColumnHelper.COL_VAL_TYPE_RESOURCE || type == ColumnHelper.COL_VAL_TYPE_BLANK) {
 					StringBuffer uri = new StringBuffer();
 					int i = 0;
 					for(String colname : this.var2ResourceCols.get(var)){
@@ -160,7 +179,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 								try {
 									
 									
-									uri.append(URLEncoder.encode(segment, "UTF-8").replaceAll("\\+", "%20"));
+									uri.append(URLEncoder.encode(segment, "US-ASCII").replaceAll("\\+", "%20"));
 								} catch (UnsupportedEncodingException e) {
 									// TODO Auto-generated catch block
 									log.error("Error:",e);
@@ -173,7 +192,32 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					if(uri.length()==0){
 						node = null; 
 					}else{
-						node = Node.createURI(uri.toString());
+						if(type == ColumnHelper.COL_VAL_TYPE_RESOURCE){
+							
+							if(baseUri!=null){
+								try{
+									IRI iri = IRIFactory.semanticWebImplementation().construct(uri.toString());
+									node = Node.createURI(uri.toString());
+								}catch(IRIException e){
+									try {
+										IRI iri = IRIFactory.semanticWebImplementation().construct(baseUri + uri.toString());
+										node = Node.createURI(uri.toString());
+									} catch (IRIException e1) {
+										log.warn("Trying to create invalid IRIs, using :" + uri.toString());
+										node = null;
+									}
+								}
+								
+								
+							}else{
+								node = Node.createURI(uri.toString());
+							}
+							
+							
+						}else{
+							node = Node.createAnon(new AnonId(uri.toString()));
+						}
+						
 					}
 					
 				} else if (type == ColumnHelper.COL_VAL_TYPE_LITERAL) {
@@ -198,22 +242,23 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	
 					String literalValue;
 					
-					if(XSDDatatype.XSDdecimal.getURI().equals(litType)||XSDDatatype.XSDinteger.getURI().equals(litType) || XSDDatatype.XSDdouble.getURI().equals(litType)){
+					if(XSDDatatype.XSDdecimal.getURI().equals(litType)||XSDDatatype.XSDinteger.getURI().equals(litType)){
 						literalValue = rs.getBigDecimal(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC).toString();
+					}else if( XSDDatatype.XSDdouble.getURI().equals(litType)){
+						literalValue = doubleFormatter.format(rs.getDouble(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC));
+					
+						new DecimalFormat();
 					}else if(XSDDatatype.XSDstring.getURI().equals( litType)|| litType ==null){
 						literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
 					}else if(XSDDatatype.XSDdateTime.getURI().equals(litType)){
 						
-											
-						literalValue = ISODateTimeFormat.basicDateTime().print(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
 						
-						
-						literalValue = formatter.format(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE));
+						literalValue = datetimeFormatter.print( (rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE)).getTime());
 					}else if(XSDDatatype.XSDdate.getURI().equals(litType) ){
-						literalValue = ISODateTimeFormat.basicDate().print(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
+						literalValue = dateFormatter.print(rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
 						
 					}else if( XSDDatatype.XSDtime.getURI().equals(litType)){
-						literalValue = ISODateTimeFormat.basicTime().print(rs.getDate(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
+						literalValue = timeFormatter.print(rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
 					}else if(XSDDatatype.XSDboolean.getURI().equals(litType)){
 						literalValue = Boolean.toString(rs.getBoolean(var+ColumnHelper.COL_NAME_LITERAL_BOOL));
 					}else if(XSDDatatype.XSDhexBinary.getURI().equals(litType)){
@@ -239,8 +284,9 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 						node = null; 
 					}
 
-				} else {
-					node = null;
+				} else{
+					
+					throw new ImplementationException("Unidentifiable rdf type encountered.");
 				}
 				binding.add(Var.alloc(var), node);
 
@@ -285,5 +331,41 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 			log.error("Error:", e);
 		}
 	}
+	
+	
+//	static String percentEncode(String toencode)
+//			{
+//
+//
+//		byte[] bytes = encodeBytes(source.getBytes("UTF-8"));
+//		return new String(bytes, "");
+//	}
+//
+//	private static byte[] encodeBytes(byte[] source, Type type) {
+//		Assert.notNull(source, "'source' must not be null");
+//        Assert.notNull(type, "'type' must not be null");
+//
+//        ByteArrayOutputStream bos = new ByteArrayOutputStream(source.length);
+//        for (int i = 0; i < source.length; i++) {
+//            int b = source[i];
+//            if (b < 0) {
+//                b += 256;
+//            }
+//            if (type.isAllowed(b)) {
+//                bos.write(b);
+//            }
+//            else {
+//                bos.write('%');
+//
+//                char hex1 = Character.toUpperCase(Character.forDigit((b >> 4) & 0xF, 16));
+//                char hex2 = Character.toUpperCase(Character.forDigit(b & 0xF, 16));
+//
+//                bos.write(hex1);
+//                bos.write(hex2);
+//            }
+//        }
+//        return bos.toByteArray();
+//    }
+
 
 }

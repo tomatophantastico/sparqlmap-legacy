@@ -8,6 +8,12 @@ import java.util.Map;
 import java.util.Stack;
 
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Parenthesis;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.Distinct;
 import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.OrderByElement;
@@ -23,10 +29,9 @@ import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap.PO;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.Binding;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingFilterFinder;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.PlainSelectWrapper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.Binding;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.ScopeBlock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,13 +40,11 @@ import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.sparql.algebra.OpVisitorBase;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
+import com.hp.hpl.jena.sparql.algebra.op.OpGraph;
 import com.hp.hpl.jena.sparql.algebra.op.OpLeftJoin;
 import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
 import com.hp.hpl.jena.sparql.core.Var;
-import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.Expr;
-import com.hp.hpl.jena.sparql.expr.ExprVar;
-import com.hp.hpl.jena.sparql.expr.NodeValue;
 
 public class QueryBuilderVisitor extends OpVisitorBase {
 
@@ -98,14 +101,78 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			union.addPlainSelectWrapper(ps2);
 			selects.push(union.getSelectBody());
 		}
+	}
+	
+	
+	@Override
+	public void visit(OpGraph opGraph) {
+		PlainSelectWrapper wrap = (PlainSelectWrapper) selectBody2Wrapper.get(selects.peek());
+		
+		if(opGraph.getNode() instanceof Var){
+			Var gvar = (Var) opGraph.getNode();
+			
+			List<SelectExpressionItem> newGraphSeis = new	ArrayList<SelectExpressionItem>();
+//			newGraphSeis.addAll();
+//			
+//			ColumnHelper.getExpression(col, rdfType, sqlType, datatype, lang, lanColumn, dth, graph)
+//			
+//			new TermMap(dataTypeHelper, ColumnHelper.getBaseExpressions(ColumnHelper.COL_VAL_TYPE_RESOURCE, 2, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, dataTypeHelper, null, null, null, null));
+			
+			
+			
+			//new Select Item, using the first 
+			SelectExpressionItem graph_sei = new SelectExpressionItem();
+			graph_sei.setAlias(gvar.getName() + ColumnHelper.COL_NAME_GRAPH);
+			List<Expression> additionalFilters = new ArrayList<Expression>();
+			
+			for(SelectExpressionItem sei : wrap.getSelectExpressionItems()){
+				if(sei.getAlias().endsWith("_R2R_6_GRAPH") && sei.getExpression() instanceof Column){
+					if(graph_sei.getExpression()==null){
+						List<Expression> graphExprs = new ArrayList<Expression>();
+						
+						TermMap tm = new TermMap(dataTypeHelper, ColumnHelper.getExpression((Column)sei.getExpression(), ColumnHelper.COL_VAL_TYPE_RESOURCE, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, null, null, null, dataTypeHelper, null,null));
+						newGraphSeis.addAll(tm.getSelectExpressionItems(opGraph.getNode().getName()));
+						
+						
+						
+						graph_sei.setExpression(sei.getExpression());
+					}else{
+						IsNullExpression seiGraphIsNull = new IsNullExpression();
+						seiGraphIsNull.setNot(false);
+						seiGraphIsNull.setLeftExpression(graph_sei.getExpression());
+						
+						IsNullExpression thisGRaphIsNull = new IsNullExpression();
+						thisGRaphIsNull.setNot(false);
+						thisGRaphIsNull.setLeftExpression(sei.getExpression());
+						
+						AndExpression andNull = new AndExpression(seiGraphIsNull, thisGRaphIsNull);
+						
+						
+						EqualsTo eq = new EqualsTo();
+						
+						eq.setLeftExpression(graph_sei.getExpression());
+						eq.setRightExpression(sei.getExpression());
+						
+						
+						OrExpression or = new OrExpression(new Parenthesis(andNull), new Parenthesis(eq));
+						
+						
+						additionalFilters.add(or);
+					}
+				}
+			}
+			
+			
+			wrap.getSelectExpressionItems().addAll(newGraphSeis);
+			
+			
+			wrap.addSQLFilter(FilterUtil.conjunctFilters(additionalFilters));
+			
+			
+		}
 		
 		
 		
-		
-		
-
-		
-
 	}
 
 	@Override
