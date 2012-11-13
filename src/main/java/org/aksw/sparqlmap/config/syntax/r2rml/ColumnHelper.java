@@ -1,6 +1,5 @@
 package org.aksw.sparqlmap.config.syntax.r2rml;
 
-import static org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil.cast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,13 +13,20 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
 
+import org.aksw.sparqlmap.config.syntax.IDBAccess;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import com.hp.hpl.jena.datatypes.RDFDatatype;
+import com.hp.hpl.jena.datatypes.TypeMapper;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 
+
+@Component
 public class ColumnHelper {
 	
 	public static String R2R_COL_SUFFIX = "_R2R";
@@ -55,26 +61,32 @@ public class ColumnHelper {
 	public static String colnameBelongsToVar(String colalias) {
 		return colalias.substring(0, colalias.indexOf(R2R_COL_SUFFIX));
 	}
+	
+	@Autowired
+	IDBAccess dbaccess;
+	
+	@Autowired
+	DataTypeHelper dth;
 
-	public static List<Expression> getBaseExpressions(Integer type,
+	public List<Expression> getBaseExpressions(Integer type,
 			Integer resLength, Integer sqlType, DataTypeHelper dth,
 			String datatype, String lang, Column langColumn, Expression graph) {
 		List<Expression> baseExpressions = new ArrayList<Expression>();
 		LongValue typeVal = new LongValue(Integer.toString(type));
-		baseExpressions.add(FilterUtil.cast(typeVal, dth.getNumericCastType()));
+		baseExpressions.add(dth.cast(typeVal, dth.getNumericCastType()));
 		LongValue lengthVal = new LongValue(Integer.toString(resLength));
 		baseExpressions
-				.add(FilterUtil.cast(lengthVal, dth.getNumericCastType()));
+				.add(dth.cast(lengthVal, dth.getNumericCastType()));
 		LongValue sqlTypeVal = new LongValue(Integer.toString(sqlType));
-		baseExpressions.add(FilterUtil.cast(sqlTypeVal,
+		baseExpressions.add(dth.cast(sqlTypeVal,
 				dth.getNumericCastType()));
 		if (datatype == null) {
-			baseExpressions.add(cast(
+			baseExpressions.add(dth.cast(
 					new net.sf.jsqlparser.expression.NullValue(),
 					dth.getStringCastType()));
 		} else {
-			baseExpressions.add(cast(
-					new net.sf.jsqlparser.expression.StringValue("\""
+			baseExpressions.add(dth.cast(
+					new StringValue("\""
 							+ datatype + "\""), dth.getStringCastType()));
 		}
 
@@ -82,16 +94,16 @@ public class ColumnHelper {
 			if(lang.length()!=2&&!lang.toLowerCase().equals(lang)){
 				throw new R2RMLValidationException("language string must be a two letter code in lower cases");
 			}
-			baseExpressions.add(cast(
-					new net.sf.jsqlparser.expression.StringValue("\"" + lang
+			baseExpressions.add(dth.cast(
+					new StringValue("\"" + lang
 							+ "\""), dth.getStringCastType()));
 		} else if (langColumn != null) {
-			baseExpressions.add(cast(langColumn, dth.getStringCastType()));
+			baseExpressions.add(dth.cast(langColumn, dth.getStringCastType()));
 		} else {
-			baseExpressions.add(cast(new NullValue(), dth.getStringCastType()));
+			baseExpressions.add(dth.cast(new NullValue(), dth.getStringCastType()));
 		}
 		if (graph == null) {
-			baseExpressions.add(cast(
+			baseExpressions.add(dth.cast(
 					new net.sf.jsqlparser.expression.NullValue(),
 					dth.getStringCastType()));
 		} else {
@@ -112,14 +124,14 @@ public class ColumnHelper {
 	 * @param dth
 	 * @return
 	 */
-	public static List<Expression> getExpression(RDFNode node,
+	public List<Expression> getExpression(RDFNode node,
 			DataTypeHelper dth,Expression graph) {
 		List<Expression> texprs = new ArrayList<Expression>();
 
 		if (node.isURIResource()) {
 			texprs.addAll(getBaseExpressions(COL_VAL_TYPE_RESOURCE, 1,
 					COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null,graph));
-			//texprs.add(FilterUtil.cast(new StringValue("\"\""), dth.getStringCastType()));
+			//texprs.add(dth.cast(new StringValue("\"\""), dth.getStringCastType()));
 			texprs.add(asExpression(node.asResource().getURI(), dth));
 		} else if (node.isLiteral()) {
 			texprs.addAll(getBaseExpressions(COL_VAL_TYPE_LITERAL, 0,
@@ -131,7 +143,7 @@ public class ColumnHelper {
 			
 			Literal nodeL = (Literal) node.asLiteral();
 
-			texprs.add(FilterUtil.cast(new StringValue("\"" + nodeL.getLexicalForm() + "\""), dth.getCastTypeString(nodeL.getDatatype())));
+			texprs.add(dth.cast(new StringValue("\"" + nodeL.getLexicalForm() + "\""), dth.getCastTypeString(nodeL.getDatatype())));
 		} else {
 			throw new ImplementationException(
 					"No support for constant blank nodes in SparqlMap");
@@ -154,7 +166,7 @@ public class ColumnHelper {
 	 * @param dth
 	 * @return
 	 */
-	public static List<Expression> getExpression(Column col, Integer rdfType,
+	public List<Expression> getExpression(Column col, Integer rdfType,
 			Integer sqlType, String datatype, String lang, Column lanColumn,
 			DataTypeHelper dth, Expression graph, String baseUri) {
 		List<Expression> texprs = new ArrayList<Expression>();
@@ -171,25 +183,31 @@ public class ColumnHelper {
 			texprs.addAll(getBaseExpressions(rdfType,
 					COL_VAL_RES_LENGTH_LITERAL, sqlType, dth, datatype, lang,
 					null,graph));
-			dth.getCastTypeString(sqlType);
-			texprs.add(FilterUtil.cast(col, dth.getCastTypeString(sqlType)));
+			RDFDatatype rdfdt = tm.getTypeByName(datatype); 
+			if(datatype==null||rdfdt==null){
+				texprs.add(dth.cast(col, dth.getCastTypeString(sqlType)));
+			}else{
+				texprs.add(dth.cast(col, dth.getCastTypeString(rdfdt)));
+			}
 
 		} else if (rdfType == COL_VAL_TYPE_RESOURCE||rdfType == COL_VAL_TYPE_BLANK) {
 			texprs.addAll(getBaseExpressions(rdfType,
 					1, COL_VAL_SQL_TYPE_RESOURCE, dth, datatype, lang,
 					null,graph));
-			//texprs.add(FilterUtil.cast(new StringValue("\"\""), dth.getStringCastType()));
-			texprs.add(FilterUtil.cast(col, dth.getStringCastType()));
+			//texprs.add(dth.cast(new StringValue("\"\""), dth.getStringCastType()));
+			texprs.add(dth.cast(col, dth.getStringCastType()));
 
 		} 
 		return texprs;
 
 	}
 	
+	TypeMapper tm = TypeMapper.getInstance();
+	
 	
 
 
-	public static List<Expression> getExpression(String[] template,
+	public  List<Expression> getExpression(String[] template,
 			Integer rdfType, int sqlType, String datatype, String lang, Column lanColumn, 
 			DataTypeHelper dth, FromItem fi,Expression graph,String baseUri) {
 		List<Expression> texprs = new ArrayList<Expression>();
@@ -220,14 +238,15 @@ public class ColumnHelper {
 			for (int i = 0; i < altSeq.size(); i++) {
 				if (i % 2 == 1) {
 					String colName = altSeq.get(i);
-					
-					toConcat.add(FilterUtil.cast(ColumnHelper.createCol(fi.getAlias(),colName ),dth.getStringCastType()));
+					//validate and register the colname first
+					dbaccess.getDataType(fi,colName);
+					toConcat.add(dth.cast(ColumnHelper.createCol(fi.getAlias(),colName ),dth.getStringCastType()));
 				} else {
-					toConcat.add(FilterUtil.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
+					toConcat.add(dth.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
 				}
 			}
 			
-			Expression concat = FilterUtil.cast(FilterUtil.concat(toConcat.toArray(new Expression[0])),dth.getStringCastType());
+			Expression concat = dth.cast(FilterUtil.concat(toConcat.toArray(new Expression[0])),dth.getStringCastType());
 			texprs.add(concat);	
 
 			
@@ -244,10 +263,11 @@ public class ColumnHelper {
 			for (int i = 0; i < altSeq.size(); i++) {
 				if (i % 2 == 1) {
 					String colName = R2RMLModel.unescape(altSeq.get(i));
-					
-					texprs.add(FilterUtil.cast(ColumnHelper.createCol(fi.getAlias(), colName),dth.getStringCastType()));
+					//validate and register the colname first
+					dbaccess.getDataType(fi,colName);
+					texprs.add(dth.cast(ColumnHelper.createCol(fi.getAlias(), colName),dth.getStringCastType()));
 				} else {
-					texprs.add(FilterUtil.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
+					texprs.add(dth.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
 				}
 			}
 			
@@ -280,8 +300,8 @@ public class ColumnHelper {
 		return rdfType;
 	}
 
-	public static Expression asExpression(String string, DataTypeHelper dth) {
-		return FilterUtil.cast(new StringValue("\"" + string + "\""),
+	public Expression asExpression(String string, DataTypeHelper dth) {
+		return dth.cast(new StringValue("\"" + string + "\""),
 				dth.getStringCastType());
 	}
 	
@@ -299,13 +319,13 @@ public class ColumnHelper {
 	}
 	
 	
-	public static Expression getGraphExpression(RDFNode graph,DataTypeHelper dth){
+	public Expression getGraphExpression(RDFNode graph,DataTypeHelper dth){
 		if(graph.isURIResource()){
 			if(graph.asResource().getURI().equals(R2RML.defaultGraph)){
 				return null;
 			}
 			
-			return FilterUtil.cast(new StringValue("\"" + graph.asResource().getURI() + "\""), dth.getStringCastType());
+			return dth.cast(new StringValue("\"" + graph.asResource().getURI() + "\""), dth.getStringCastType());
 		}else{
 			throw new R2RMLValidationException("only URI-Resources allowed for graphs");
 		}
@@ -313,7 +333,7 @@ public class ColumnHelper {
 		
 		
 	}
-	public static Expression getGraphExpression(String[] template, FromItem fi, DataTypeHelper dth){
+	public Expression getGraphExpression(String[] template, FromItem fi, DataTypeHelper dth){
 		
 		
 	
@@ -327,9 +347,9 @@ public class ColumnHelper {
 				if (i % 2 == 1) {
 					String colName = altSeq.get(i);
 					
-					toConcat.add(FilterUtil.cast(ColumnHelper.createCol(fi.getAlias(),colName ),dth.getStringCastType()));
+					toConcat.add(dth.cast(ColumnHelper.createCol(fi.getAlias(),colName ),dth.getStringCastType()));
 				} else {
-					toConcat.add(FilterUtil.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
+					toConcat.add(dth.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
 				}
 			}
 			
@@ -337,6 +357,26 @@ public class ColumnHelper {
 				
 			
 		}
+	
+	public static Column createColumn(String table, String column) {
+		return createColumn(null, table, column);
+	}
+
+	public static Column createColumn(String schema, String table, String column) {
+		Column col = new Column();
+		col.setColumnName(column);
+		Table tab = new Table();
+		tab.setName(table);
+		tab.setAlias(table);
+		if (schema != null) {
+			tab.setSchemaName(schema);
+
+		}
+		col.setTable(tab);
+
+		return col;
+
+	}
 
 
 }

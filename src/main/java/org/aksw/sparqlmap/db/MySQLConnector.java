@@ -38,6 +38,8 @@ public class MySQLConnector implements Connector {
 
 			// setup the connection pool
 			BoneCPConfig config = new BoneCPConfig();
+			
+			
 			config.setJdbcUrl(dbConnectionString); // jdbc url specific to your database, eg jdbc:mysql://127.0.0.1/yourdb
 			config.setUsername(username); 
 			config.setPassword(password);
@@ -95,7 +97,6 @@ public class MySQLConnector implements Connector {
 		log.error("getSelectItemsforViewnotImplemented");
 		return null;
 	}
-	
 	
 	
 	public ResultSet executeSQL(String sql) throws SQLException{

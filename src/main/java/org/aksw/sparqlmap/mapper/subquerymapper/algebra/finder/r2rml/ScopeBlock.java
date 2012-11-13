@@ -36,7 +36,7 @@ public class ScopeBlock {
 	private Set<Triple> pushedInTriples = new HashSet<Triple>();
 	private Set<Expr> filters = new HashSet<Expr>();
 	private Set<Expr> pushedInFilters = new HashSet<Expr>();
-	private Map<Node, Binding> node2sBlock = new HashMap<Node, Binding>();
+	private Map<Node, MappingBinding> node2sBlock = new HashMap<Node, MappingBinding>();
 	private Set<Op> ops = new HashSet<Op>();
 	private R2RMLModel mappingConf;
 
@@ -177,10 +177,10 @@ public class ScopeBlock {
 	 *            with one subject
 	 */
 	private void findMappings(Node subject, Set<Triple> triples) {
-		Binding sblockmap = node2sBlock.get(subject);
+		MappingBinding sblockmap = node2sBlock.get(subject);
 		if (sblockmap == null) {
 			// initialize the map
-			sblockmap = new Binding(mappingConf, triples);
+			sblockmap = new MappingBinding(mappingConf, triples);
 
 			node2sBlock.put(subject, sblockmap);
 		}
@@ -309,7 +309,7 @@ public class ScopeBlock {
 
 		// print out filters
 		sb.append(pre + "Mapping Candidates: ");
-		for (Binding sblockmap : node2sBlock.values()) {
+		for (MappingBinding sblockmap : node2sBlock.values()) {
 			sb.append(sblockmap.toString());
 		}
 
@@ -367,7 +367,7 @@ public class ScopeBlock {
 
 	}
 
-	public Binding getsBlock(Node s) {
+	public MappingBinding getsBlock(Node s) {
 		return node2sBlock.get(s);
 	}
 

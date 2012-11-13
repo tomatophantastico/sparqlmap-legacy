@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jsqlparser.expression.CastExpression;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.ExpressionWithString;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
@@ -29,24 +31,20 @@ import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 
 public class TermMap{
 	
-	DataTypeHelper dataTypeHelper;
+	DataTypeHelper dth;
 	
 	// column alias from the 
 	private Map<String,FromItem>  alias2logicalTable;
 	
 	//  for each fromItem 
-	protected List<EqualsTo> joinConditions;
+	protected Set<EqualsTo> joinConditions;
 	
 	protected TripleMap trm;
 		
 	private TermMap original;
 	
 	private CompatibilityChecker cchecker;
-	
-	
-	
 
-		
 	/**
 	 * the expressions that create a term.
 	 */
@@ -57,17 +55,17 @@ public class TermMap{
 
 	
 
-	public TermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions, List<FromItem> fromItems, List<EqualsTo> joinConditions, TripleMap trm) {
-			this.dataTypeHelper= dataTypeHelper;
+	public TermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions, List<FromItem> fromItems, Set<EqualsTo> joinConditions, TripleMap trm) {
+			this.dth= dataTypeHelper;
 			this.trm = trm;		
 			this.expressions = expressions;
 			for(FromItem fi: fromItems){
 				alias2fromItem.put(fi.getAlias(), fi);
 			}
 			if(joinConditions!=null){
-			this.joinConditions = joinConditions;
+				this.joinConditions = joinConditions;
 			}else{
-				this.joinConditions = new ArrayList<EqualsTo>();
+				this.joinConditions = new HashSet<EqualsTo>();
 			}
 			//expressions = new ArrayList<Expression>();
 		
@@ -75,7 +73,7 @@ public class TermMap{
 	
 	
 	public TermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions) {
-		this.dataTypeHelper= dataTypeHelper;
+		this.dth= dataTypeHelper;
 		this.expressions = expressions;
 			
 	}
@@ -88,7 +86,7 @@ public class TermMap{
 		//read the header
 		
 		Expression typeExpr =exprs.remove(0);
-		Long type = ((LongValue) FilterUtil.uncast(typeExpr)).getValue();
+		Long type = ((LongValue) dth.uncast(typeExpr)).getValue();
 		SelectExpressionItem typeSei = new SelectExpressionItem();
 		typeSei.setExpression(typeExpr);
 		typeSei.setAlias(colalias + ColumnHelper.COL_NAME_RDFTYPE);
@@ -97,7 +95,7 @@ public class TermMap{
 		
 		//read the lengthfield
 		Expression resLength=exprs.remove(0);
-		Long length = ((LongValue) FilterUtil.uncast(resLength)).getValue();
+		Long length = ((LongValue) dth.uncast(resLength)).getValue();
 		SelectExpressionItem resLengthSei = new SelectExpressionItem();
 		resLengthSei.setAlias(colalias + ColumnHelper.COL_NAME_RES_LENGTH);
 		resLengthSei.setExpression(resLength);
@@ -146,7 +144,7 @@ public class TermMap{
 			
 		//Literal, the rest must be literal expressions, decide upon the cast type
 		for (Expression expr : exprs) {
-			String castType = FilterUtil.getCastType(expr);
+			String castType = dth.getCastType(expr);
 			if(castType.equals(dataTypeHelper.getStringCastType())){
 				SelectExpressionItem stringsei = new SelectExpressionItem();
 				stringsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_STRING);
@@ -168,6 +166,11 @@ public class TermMap{
 				boolsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_BOOL);
 				boolsei.setExpression(expr);
 				seis.add(boolsei);
+			}else if(castType.equals(dataTypeHelper.getBinaryDataType())){
+				SelectExpressionItem binsei = new SelectExpressionItem();
+				binsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_BINARY);
+				binsei.setExpression(expr);
+				seis.add(binsei);
 			}else
 			{
 				throw new ImplementationException("Cast type not supported: " + castType);
@@ -177,28 +180,17 @@ public class TermMap{
 	}
 	
 	
-	public List<FromItem> getFromIte(){
-		List<FromItem> fis = new ArrayList<FromItem>();
-		for (Expression expr: getExpressions()) {
-			expr = FilterUtil.uncast(expr);
-			if(expr instanceof Column){
-				fis.add(((Column) expr).getTable());
-			}
-		}
-		return fis;
-	}
 	
 	public List<FromItem> getFromItems(){
 		return new ArrayList(this.alias2fromItem.values());
 	}
 	
-	
+	/**
+	 * the join conditions that need to be added to the query for multiple from items.
+	 * @return
+	 */
 	public Set<EqualsTo> getFromJoins(){
-		if(joinConditions!=null){
-			return new HashSet<EqualsTo>(joinConditions);
-		}else{
-			return new HashSet<EqualsTo>();
-		}
+		return joinConditions;
 		
 	}
 	
@@ -234,7 +226,7 @@ public class TermMap{
 	
 	
 	protected DataTypeHelper getDataTypeHelper(){
-		return dataTypeHelper;
+		return dth;
 	}
 	
 	public String toString(){
@@ -259,44 +251,78 @@ public class TermMap{
 		List<Expression> copied = new ArrayList<Expression>();
 		
 		for (Expression expression : expressions) {
-			copied.add(cloneExpr(suffix, expression));
+			copied.add(cloneExpression( expression,suffix));
 		}
 		return copied;
 	}
 
 
-	private Expression cloneExpr(String suffix, Expression expression) {
-		if(FilterUtil.uncast(expression) instanceof Column){
-			Column origCol = (Column) FilterUtil.uncast(expression);
-			Column copyCol = cloneColumn(origCol, suffix);
-			return (FilterUtil.cast(copyCol,FilterUtil.getCastType(expression)));
-		}else if(FilterUtil.uncast(expression) instanceof Function ){
-			Function func = (Function) FilterUtil.uncast(expression);
-			List<Expression> copiedConcat  = new ArrayList<Expression>(); 
-			if(func.getName().equals(FilterUtil.CONCAT)){
-				for(Object obj: func.getParameters().getExpressions()){
-					Expression concExpr = (Expression) obj;
-					copiedConcat.add(cloneExpr(suffix, concExpr));
-				}
-			}
-			Function newFunc = new Function();
-			newFunc.setName(func.getName());
-			newFunc.setParameters(new ExpressionList(copiedConcat));
-			return FilterUtil.cast(newFunc,FilterUtil.getCastType(expression));
-			
-
-		} else{
-			return (expression);
-		}
-	}
+//	private Expression cloneExpr(String suffix, Expression expression) {
+//		if(dth.uncast(expression) instanceof Column){
+//			Column origCol = (Column) dth.uncast(expression);
+//			Column copyCol = cloneExpression(origCol, suffix);
+//			return (dth.cast(copyCol,FilterUtil.getCastType(expression)));
+//		}else if(dth.uncast(expression) instanceof Function ){
+//			Function func = (Function) dth.uncast(expression);
+//			List<Expression> copiedConcat  = new ArrayList<Expression>(); 
+//			if(func.getName().equals(FilterUtil.CONCAT)){
+//				for(Object obj: func.getParameters().getExpressions()){
+//					Expression concExpr = (Expression) obj;
+//					copiedConcat.add(cloneExpr(suffix, concExpr));
+//				}
+//			}
+//			Function newFunc = new Function();
+//			newFunc.setName(func.getName());
+//			newFunc.setParameters(new ExpressionList(copiedConcat));
+//			return dth.cast(newFunc,FilterUtil.getCastType(expression));
+//			
+//
+//		} else{
+//			return (expression);
+//		}
+//	}
 	
-	protected Column cloneColumn(Column origCol,String suffix){
-		Column copyCol = new Column();
-		copyCol.setColumnName(origCol.getColumnName());
-		Table copyTable = new Table(origCol.getTable().getSchemaName(), origCol.getTable().getName());
-		copyTable.setAlias(origCol.getTable().getAlias() + suffix);
-		copyCol.setTable(copyTable);
-		return copyCol;
+	protected Expression cloneExpression(Expression origExpr,String suffix){
+		if(origExpr instanceof net.sf.jsqlparser.schema.Column){
+			Column origColumn = (Column) origExpr;
+			Column copyCol = new Column();
+			copyCol.setColumnName(origColumn.getColumnName());
+			Table copyTable = new Table(origColumn.getTable().getSchemaName(), origColumn.getTable().getName());
+			copyTable.setAlias(origColumn.getTable().getAlias() + suffix);
+			copyCol.setTable(copyTable);
+			return copyCol;
+		}else if(origExpr instanceof CastExpression){
+			CastExpression cast = (CastExpression) origExpr;
+			
+			CastExpression clone = new CastExpression(cloneExpression(cast.getCastedExpression(),suffix), cast.getTypeName()); 
+			
+			return clone; 
+		}else if(origExpr instanceof Function){
+			Function origFunction = (Function) origExpr;
+			Function clonedFunction = new Function();
+			clonedFunction.setAllColumns(origFunction.isAllColumns());
+			clonedFunction.setEscaped(origFunction.isEscaped());
+			clonedFunction.setName(origFunction.getName());
+			List<Expression> cloneExprList = new ArrayList<Expression>();
+			for(Object expObj : origFunction.getParameters().getExpressions()){
+				cloneExprList.add(cloneExpression((Expression) expObj, suffix));
+			}
+			
+			clonedFunction.setParameters(new ExpressionList(cloneExprList));
+				
+			return clonedFunction;
+		}else if(origExpr instanceof CastExpression){
+			CastExpression origCastExpression = (CastExpression) origExpr;
+			CastExpression clonedCastExpression = new CastExpression(cloneExpression(origCastExpression.getCastedExpression(),suffix), origCastExpression.getTypeName());
+			return clonedCastExpression;
+			
+		}else if (origExpr instanceof ExpressionWithString){
+			ExpressionWithString orig = (ExpressionWithString) origExpr;
+			ExpressionWithString clone = new ExpressionWithString(cloneExpression(orig.getExpression(),suffix),orig.getString());
+			return clone;
+		}else {
+			return origExpr;
+		}
 	}
 	
 	
@@ -307,12 +333,12 @@ public class TermMap{
 	public Expression getLiteralStringExpression(){
 		
 		for(Expression expr: getLiteralExpressions()){
-			String type = FilterUtil.getCastType(expr);
-			if(type != null && type.equals(dataTypeHelper.getStringCastType())){
+			String type = dth.getCastType(expr);
+			if(type != null && type.equals(dth.getStringCastType())){
 				return expr;
 			}
 		
-			if(FilterUtil.uncast(expr)instanceof Column &&((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_STRING)){
+			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_STRING)){
 				return expr;
 			}
 		}
@@ -321,12 +347,12 @@ public class TermMap{
 	
 	private Expression getLiteralBoolExpression() {
 		for(Expression expr: getLiteralExpressions()){
-			String type = FilterUtil.getCastType(expr);
-			if(type != null && type.equals(dataTypeHelper.getBooleanCastType())){
+			String type = dth.getCastType(expr);
+			if(type != null && type.equals(dth.getBooleanCastType())){
 				return expr;
 			}
 		
-			if(FilterUtil.uncast(expr)instanceof Column &&((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BOOL)){
+			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BOOL)){
 				return expr;
 			}
 		}
@@ -335,11 +361,24 @@ public class TermMap{
 	
 	public Expression getLiteralNumericExpression(){
 		for(Expression expr: getLiteralExpressions()){
-			String type = FilterUtil.getCastType(expr);
-			if(type != null && type.equals(dataTypeHelper.getNumericCastType())){
+			String type = dth.getCastType(expr);
+			if(type != null && type.equals(dth.getNumericCastType())){
 				return expr;
 			}
-			if(FilterUtil.uncast(expr)instanceof Column &&((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_NUMERIC)){
+			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_NUMERIC)){
+				return expr;
+			}
+		}
+		return null;
+	}
+	
+	public Expression getLiteralBinaryExpression(){
+		for(Expression expr: getLiteralExpressions()){
+			String type = dth.getCastType(expr);
+			if(type != null && type.equals(dth.getBinaryDataType())){
+				return expr;
+			}
+			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BINARY)){
 				return expr;
 			}
 		}
@@ -348,11 +387,11 @@ public class TermMap{
 	
 	public Expression getLiteralDateExpression(){
 		for(Expression expr: getLiteralExpressions()){
-			String type = FilterUtil.getCastType(expr);
-			if(type != null && type.equals(dataTypeHelper.getDateCastType())){
+			String type = dth.getCastType(expr);
+			if(type != null && type.equals(dth.getDateCastType())){
 				return expr;
 			}
-			if(FilterUtil.uncast(expr)instanceof Column &&((Column)FilterUtil.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_DATE)){
+			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_DATE)){
 				return expr;
 			}
 		}
@@ -393,6 +432,9 @@ public class TermMap{
 		if (getLiteralBoolExpression()!=null){
 			lits.add(getLiteralBoolExpression());
 		}
+		if (getLiteralBinaryExpression()!=null){
+			lits.add(getLiteralBinaryExpression());
+		}
 		
 		if(lits.size()>1){
 			return FilterUtil.coalesce(lits.toArray(new Expression[0]));
@@ -421,8 +463,8 @@ public class TermMap{
 	
 	
 	public Integer getLength(){
-		if(FilterUtil.uncast(getExpressions().get(1)) instanceof LongValue){
-			return  (int) ((LongValue)FilterUtil.uncast(getExpressions().get(1))).getValue();			
+		if(dth.uncast(getExpressions().get(1)) instanceof LongValue){
+			return  (int) ((LongValue)dth.uncast(getExpressions().get(1))).getValue();			
 		}else{
 			int i = 0;
 			for (Expression exp : getExpressions()) {
@@ -438,8 +480,8 @@ public class TermMap{
 	}
 	
 	public Integer getType(){
-		if(FilterUtil.uncast(getExpressions().get(0)) instanceof LongValue){
-			return  (int) ((LongValue)FilterUtil.uncast(getExpressions().get(0))).getValue();
+		if(dth.uncast(getExpressions().get(0)) instanceof LongValue){
+			return  (int) ((LongValue)dth.uncast(getExpressions().get(0))).getValue();
 		}else{
 			return null;
 		}
@@ -448,8 +490,8 @@ public class TermMap{
 	}
 	
 	public Integer getSqlType(){
-		if(FilterUtil.uncast(getExpressions().get(2)) instanceof LongValue){
-			return  (int) ((LongValue)FilterUtil.uncast(getExpressions().get(2))).getValue();
+		if(dth.uncast(getExpressions().get(2)) instanceof LongValue){
+			return  (int) ((LongValue)dth.uncast(getExpressions().get(2))).getValue();
 		}else{
 			return null;
 		}
@@ -457,12 +499,12 @@ public class TermMap{
 	}
 	public Expression getLanguage(){
 		
-		return FilterUtil.uncast(getExpressions().get(4));
+		return dth.uncast(getExpressions().get(4));
 
 	}
 	public String  getDataType(){
-		if(FilterUtil.uncast(getExpressions().get(5)) instanceof StringValue){
-			return  (String) ((StringValue)FilterUtil.uncast(getExpressions().get(3))).getValue();
+		if(dth.uncast(getExpressions().get(5)) instanceof net.sf.jsqlparser.expression.StringValue){
+			return  (String) ((StringValue)dth.uncast(getExpressions().get(3))).getValue();
 		}else{
 			return null;
 		}
@@ -471,7 +513,7 @@ public class TermMap{
 	
 	
 	
-	public TermMap clone(final String suffix) {
+	public TermMap clone(String suffix) {
 		
 		List<Expression> clonedExpressions = cloneColumnExpressions(this.expressions, suffix);
 		
@@ -485,25 +527,26 @@ public class TermMap{
 		
 		Collection<EqualsTo> origjoinConditions = this.joinConditions;
 		
-		List<EqualsTo> clonedJoinConditions = cloneJoinsCondition(suffix,
+		Set<EqualsTo> clonedJoinConditions = cloneJoinsCondition(suffix,
 				origjoinConditions);
 		
 		
-		TermMap clone = new TermMap(this.dataTypeHelper, clonedExpressions,clonedFromItems,clonedJoinConditions,trm);
+		TermMap clone = new TermMap(this.dth, clonedExpressions,clonedFromItems,clonedJoinConditions,trm);
 		clone.original = this;
 		
 		return clone;
 	}
 
-	private List<EqualsTo> cloneJoinsCondition(final String suffix,
+	private Set<EqualsTo> cloneJoinsCondition(final String suffix,
 			Collection<EqualsTo> origjoinConditions) {
-		List<EqualsTo> clonedJoinConditions = new ArrayList();
+		Set<EqualsTo> clonedJoinConditions = new HashSet<EqualsTo>();
 		for(Expression origJoinCon : origjoinConditions){
 			
 			EqualsTo cloneEq = new EqualsTo();
-			Expression leftClone = cloneColumn(((Column)((EqualsTo)origJoinCon).getLeftExpression()), suffix);
+			Expression leftClone = cloneExpression((((EqualsTo)origJoinCon).getLeftExpression()), suffix);
+			 
 			cloneEq.setLeftExpression(leftClone);
-			Expression rightClone = cloneColumn(((Column)((EqualsTo)origJoinCon).getRightExpression()), suffix);
+			Expression rightClone = cloneExpression((((EqualsTo)origJoinCon).getRightExpression()), suffix);
 			cloneEq.setRightExpression(rightClone);
 			clonedJoinConditions.add(cloneEq);
 		}
@@ -546,6 +589,13 @@ public class TermMap{
 			
 		}
 		return clonedFromItems;
+	}
+	
+	public void addFromItem(FromItem from){
+		this.alias2fromItem.put(from.getAlias(), from);
+	}
+	public void addJoinCondition(EqualsTo eq){
+		this.joinConditions.add(eq);
 	}
 	
 	

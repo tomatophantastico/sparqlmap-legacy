@@ -17,11 +17,12 @@
  */
 
 package com.hp.hpl.jena.rdf.model.impl;
-import java.util.regex.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.xerces.util.XMLChar;
 
-import com.hp.hpl.jena.shared.*;
+import com.hp.hpl.jena.shared.CannotEncodeCharacterException;
 
 /** Some utility functions.
  */

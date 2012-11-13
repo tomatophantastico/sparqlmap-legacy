@@ -13,7 +13,7 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
-import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
+import org.aksw.sparqlmap.config.syntax.IDBAccess;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ public class PostgesqlConnector implements Connector {
 	
 	private static Logger log = LoggerFactory.getLogger(MySQLConnector.class);
 	
-	private DBConnectionConfiguration dbconf;
+	private IDBAccess dbconf;
 	
 	public PostgesqlConnector(String dbConnectionString, String username, String password, int minConnections, int maxConnections) {
 		

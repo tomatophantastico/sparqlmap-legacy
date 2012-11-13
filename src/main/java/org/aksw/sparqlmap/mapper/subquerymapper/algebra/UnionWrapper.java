@@ -12,7 +12,10 @@ import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-import net.sf.jsqlparser.statement.select.Union;
+import net.sf.jsqlparser.statement.select.SelectItem;
+import net.sf.jsqlparser.statement.select.SetOperation;
+import net.sf.jsqlparser.statement.select.SetOperationList;
+import net.sf.jsqlparser.statement.select.UnionOp;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.PlainSelectWrapper;
@@ -21,12 +24,14 @@ import com.google.common.collect.BiMap;
 
 public class UnionWrapper implements Wrapper {
 	
-	private boolean aligned = false;
-
-	private TreeMap<String, SelectExpressionItem> seiTreeMap = new TreeMap<String, SelectExpressionItem>();
-	private Union union;
-	private Set<String> variablesMentioned = new HashSet<String>();
 	
+	private DataTypeHelper dth;
+    
+	
+	private boolean aligned = false;
+	private TreeMap<String, SelectExpressionItem> seiTreeMap = new TreeMap<String, SelectExpressionItem>();
+	private SetOperationList union;
+	private Set<String> variablesMentioned = new HashSet<String>();
 	private BiMap<String, String> colstring2var;
 	private Map<String, TermMap> colstring2Col;
 
@@ -34,10 +39,10 @@ public class UnionWrapper implements Wrapper {
 	 * creates a new sql Union and registers it the the wrapper2body map
 	 * @param selectBody2Wrapper
 	 */
-	public UnionWrapper(Map<SelectBody, Wrapper> selectBody2Wrapper) {
-		this.union = new Union();
-		union.setAll(true);
-		union.setPlainSelects(new ArrayList<PlainSelect>());
+	public UnionWrapper(Map<SelectBody, Wrapper> selectBody2Wrapper, DataTypeHelper dth) {
+		this.dth = dth;
+		this.union = new SetOperationList();
+		union.setOpsAndSelects(new ArrayList<PlainSelect>(),new ArrayList<SetOperation>());
 		selectBody2Wrapper.put(union, this);
 	}
 
@@ -46,19 +51,27 @@ public class UnionWrapper implements Wrapper {
 	public void addPlainSelectWrapper(PlainSelectWrapper plainSelect) {
 		
 	
-		List<SelectExpressionItem> seis = plainSelect.getPlainSelect().getSelectItems();
+		List<SelectItem> seis = plainSelect.getPlainSelect().getSelectItems();
 		
-		for (SelectExpressionItem selectExpressionItem : seis) {
-			seiTreeMap.put(selectExpressionItem.getAlias(), selectExpressionItem);
+		for (SelectItem selectExpressionItem : seis) {
+			if(selectExpressionItem instanceof SelectExpressionItem){
+				seiTreeMap.put(((SelectExpressionItem)selectExpressionItem).getAlias(), (SelectExpressionItem) selectExpressionItem);
+			}else{
+				throw new ImplementationException("non-explicit select item used");
+			}
+			
 		}
 		
 		//for tp
 		union.getPlainSelects().add(plainSelect.getPlainSelect());
+		UnionOp uop = new UnionOp();
+		uop.setAll(true);
+		union.getOperations().add(uop);
 
 		variablesMentioned.addAll(plainSelect.getColstring2Var().values());
 	}
 
-	public Union getUnion() {
+	public SetOperationList getUnion() {
 		return union;
 	}
 
@@ -86,7 +99,7 @@ public class UnionWrapper implements Wrapper {
 				
 		 for(Object obj: union.getPlainSelects()){
 				PlainSelect ps  = (PlainSelect) obj;
-				List<SelectExpressionItem> filledUp = new ArrayList<SelectExpressionItem>();
+				List<SelectItem> filledUp = new ArrayList<SelectItem>();
 				Map<String,SelectExpressionItem> alias2sei4ps = new HashMap<String, SelectExpressionItem>();
 				for(Object o_sei: ps.getSelectItems()){
 					SelectExpressionItem sei  = (SelectExpressionItem) o_sei;
@@ -97,11 +110,11 @@ public class UnionWrapper implements Wrapper {
 						filledUp.add(alias2sei4ps.get(alias));
 					}else{
 						
-						String origCastType = FilterUtil.getCastType(seiTreeMap.get(alias).getExpression());
+						String origCastType = DataTypeHelper.getCastType(seiTreeMap.get(alias).getExpression());
 						
 						SelectExpressionItem nullsei = new SelectExpressionItem();
 						nullsei.setAlias(alias);
-						nullsei.setExpression(FilterUtil.cast(new NullValue(),origCastType));
+						nullsei.setExpression(dth.cast(new NullValue(),origCastType));
 						
 						filledUp.add(nullsei);
 						
@@ -179,8 +192,8 @@ public class UnionWrapper implements Wrapper {
 	
 	
 	@Override
-	public List<SelectExpressionItem> getSelectExpressionItems() {
-		return new ArrayList<SelectExpressionItem>(seiTreeMap.values());
+	public List<SelectItem> getSelectExpressionItems() {
+		return new ArrayList<SelectItem>(seiTreeMap.values());
 		
 	}
 

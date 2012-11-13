@@ -54,10 +54,10 @@ public class MappingFilterFinder {
 	 * @param query
 	 * @return 
 	 */
-	public Binding createBindnings(Op query) {
+	public MappingBinding createBindnings(Op query) {
 
 		
-		Binding queryBindning = createScopeBlocks(query);
+		MappingBinding queryBindning = createScopeBlocks(query);
 		queryBindning.mapIt();
 		return queryBindning;
 		
@@ -66,7 +66,7 @@ public class MappingFilterFinder {
 	
 	
 
-	private Binding createScopeBlocks(Op query) {
+	private MappingBinding createScopeBlocks(Op query) {
 		
 		
 				
@@ -95,7 +95,7 @@ public class MappingFilterFinder {
 			
 			
 			
-			Binding bind = createScopeBlocks(filter.getSubOp());
+			MappingBinding bind = createScopeBlocks(filter.getSubOp());
 			bind.addFilter(filter.getExprs().getList());
 			
 			return bind;
@@ -103,18 +103,18 @@ public class MappingFilterFinder {
 		} else if (query instanceof OpLeftJoin) {
 			
 			OpLeftJoin oplj = (OpLeftJoin) query;
-			return new Binding(createScopeBlocks(oplj.getLeft()), createScopeBlocks(oplj.getRight()),true);
+			return new MappingBinding(createScopeBlocks(oplj.getLeft()), createScopeBlocks(oplj.getRight()),true);
 
 
 			
 		} else if (query instanceof OpUnion) {
 			OpUnion opUnion = (OpUnion) query;
-			Set<Binding> bindings = new HashSet<Binding>();
+			Set<MappingBinding> bindings = new HashSet<MappingBinding>();
 		
 			bindings.add(createScopeBlocks(opUnion.getLeft()));
 			bindings.add(createScopeBlocks(opUnion.getRight()));
 
-			return new Binding(bindings);
+			return new MappingBinding(bindings);
 			
 
 
@@ -122,7 +122,7 @@ public class MappingFilterFinder {
 		} else if (query instanceof OpBGP) {
 			
 			
-			return new Binding(mconf, new HashSet<Triple>(((OpBGP)query).getPattern().getList()));
+			return new MappingBinding(mconf, new HashSet<Triple>(((OpBGP)query).getPattern().getList()));
 
 		} else
 		{

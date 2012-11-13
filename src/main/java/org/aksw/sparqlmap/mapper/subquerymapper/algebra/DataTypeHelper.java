@@ -1,8 +1,17 @@
 package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
 
 import java.sql.Types;
+import java.util.Scanner;
 
+import net.sf.jsqlparser.expression.CastExpression;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.schema.Column;
+
+import org.aksw.sparqlmap.config.syntax.IDBAccess;
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
@@ -10,6 +19,9 @@ import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 public abstract  class DataTypeHelper {
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DataTypeHelper.class);
+	
+	@Autowired
+	private IDBAccess dbaccess;
 	
 	
 	public static RDFDatatype getRDFDataType(int sdt) {
@@ -45,7 +57,7 @@ public abstract  class DataTypeHelper {
 			return XSDDatatype.XSDboolean;
 		}
 		
-		if(sdt == Types.BINARY || sdt ==  Types.VARBINARY ||sdt ==  Types.BLOB){
+		if(sdt == Types.BINARY || sdt ==  Types.VARBINARY ||sdt ==  Types.BLOB || sdt == Types.LONGVARBINARY){
 			return XSDDatatype.XSDhexBinary;
 		}
 		
@@ -65,24 +77,24 @@ public abstract  class DataTypeHelper {
 		return getCastTypeString(getRDFDataType(sdt));
 	}
 	
-	public String getColumnString(int sdt){
-		if(sdt == Types.DECIMAL || sdt == Types.NUMERIC || sdt== Types.BIGINT || sdt == Types.INTEGER || sdt == Types.SMALLINT ||  sdt == Types.FLOAT || sdt == Types.DOUBLE  || sdt == Types.REAL){
-			return ColumnHelper.COL_NAME_LITERAL_NUMERIC;
-		}
-		if(sdt == Types.VARCHAR || sdt == Types.CHAR || sdt == Types.CLOB){
-			return ColumnHelper.COL_NAME_LITERAL_STRING;
-		}
-		if(sdt == Types.DATE || sdt == Types.TIME || sdt == Types.TIMESTAMP){
-			return ColumnHelper.COL_NAME_LITERAL_DATE;
-		}
-		if(sdt == Types.BOOLEAN){
-			return ColumnHelper.COL_NAME_LITERAL_BOOL;
-		}
-		
-	
-		//fallback ;-)
-		throw new ImplementationException("Encountered unknown sql type, spec says, i sould use string, but me throw error");
-	}
+//	public String getColumnString(int sdt){
+//		if(sdt == Types.DECIMAL || sdt == Types.NUMERIC || sdt== Types.BIGINT || sdt == Types.INTEGER || sdt == Types.SMALLINT ||  sdt == Types.FLOAT || sdt == Types.DOUBLE  || sdt == Types.REAL){
+//			return ColumnHelper.COL_NAME_LITERAL_NUMERIC;
+//		}
+//		if(sdt == Types.VARCHAR || sdt == Types.CHAR || sdt == Types.CLOB){
+//			return ColumnHelper.COL_NAME_LITERAL_STRING;
+//		}
+//		if(sdt == Types.DATE || sdt == Types.TIME || sdt == Types.TIMESTAMP){
+//			return ColumnHelper.COL_NAME_LITERAL_DATE;
+//		}
+//		if(sdt == Types.BOOLEAN){
+//			return ColumnHelper.COL_NAME_LITERAL_BOOL;
+//		}
+//		
+//	
+//		//fallback ;-)
+//		throw new ImplementationException("Encountered unknown sql type, spec says, i sould use string, but me throw error");
+//	}
 	
 	
 	
@@ -99,9 +111,133 @@ public abstract  class DataTypeHelper {
 		}else if(XSDDatatype.XSDhexBinary == datatype){
 			return getBinaryDataType();
 		}else{
-			throw new ImplementationException("Cannot map " + datatype.toString());
+			return getStringCastType();
 		}
 	}
+	
+//	public Expression cast(String table, String col, String castTo) {
+//		Function cast = new Function();
+//		cast.setName("CAST");
+//		ExpressionList exprlist = new ExpressionList();
+//		exprlist.setExpressions(Arrays.asList(new CastStringExpression(table,
+//				col, castTo)));
+//		cast.setParameters(exprlist);
+//		return cast;
+//	}
+
+	public Expression castNull(String castTo) {
+		
+		return new CastExpression(new NullValue(), castTo);
+		
+	}
+	
+	
+	String getDataType(Expression expr){
+		
+		log.warn("Called getDataType. Refactor to not use direct col access");
+		
+		
+		if(expr instanceof Column){
+			String colname = ((Column) expr).getColumnName();
+			String tablename = ((Column) expr).getTable().getName();
+			
+			//only shorten, if the table is not from a subselect
+			if(!tablename.contains("subsel_")){
+//				if(tablename.contains("_dupVar_")){
+//					tablename=tablename.substring(0,tablename.lastIndexOf("_dupVar_"));
+//				}
+//				//remove the variable part
+//				tablename = tablename.substring(0,tablename.lastIndexOf("_"));
+				
+				return this.getCastTypeString(dbaccess.getDataType(tablename, colname));
+			}
+			
+		}
+		if(expr instanceof StringValue){
+			
+			Scanner scanner = new Scanner(((StringValue) expr).getValue());
+
+			if(scanner.hasNextBigDecimal()){
+				return this.getNumericCastType();
+			}
+			
+			
+			return this.getStringCastType();
+		}
+
+		
+		if(expr instanceof CastExpression){
+			return ((CastExpression) expr).getTypeName();
+		}
+		
+		return null;
+		
+	}
+	
+	public Expression cast(Expression expr, String castTo) {
+		if(castTo == null){
+			return expr;
+		}
+		
+		if(expr instanceof Column){
+			
+			if (needsSpecialCastForBinary()) {
+				// get the datatype
+				Column col = (Column) expr;
+				Integer datatypeint = dbaccess.getDataType(col.getTable()
+						.getAlias(), col.getColumnName());
+				if (datatypeint != null && getRDFDataType(datatypeint)!=null && getRDFDataType(datatypeint).equals(XSDDatatype.XSDhexBinary)) {
+					// we need to wrap the cast additionally in a substring
+						
+					expr = binaryCastPrep(expr);
+
+				}
+			}
+			if (needsSpecialCastForChar()) {
+				Column col = (Column) expr;
+				Integer datatypeint = dbaccess.getDataType(col.getTable()
+						.getAlias(), col.getColumnName());
+				if (datatypeint != null  &&  datatypeint == Types.CHAR) {
+					expr = charCastPrep(expr, dbaccess.getPrecision(col.getTable()
+						.getAlias(), col.getColumnName()));
+
+				}
+			}
+			
+			
+			
+			//we have special casting needs for non-varchar and binary types.
+		}
+		
+
+		return new CastExpression(expr,
+				castTo);
+	}
+	
+	/**
+	 * if the expressions expr is a cast, the cast expression is returned,
+	 * otherwise the expr parameter is returned
+	 * 
+	 * @param expr
+	 */
+	public static Expression uncast(Expression expr) {
+
+		if(expr instanceof CastExpression){
+			expr = ((CastExpression)expr).getCastedExpression();
+		}
+		
+		return expr;
+	}
+	
+	public static String getCastType(Expression expr) {
+
+		String type = null;
+		if (expr instanceof CastExpression) {
+			type = ((CastExpression)expr).getTypeName();
+		}
+		return type;
+	}
+	
 	
 	
 	
@@ -118,6 +254,16 @@ public abstract  class DataTypeHelper {
 	public abstract String getDateCastType();
 
 	public abstract String getIntCastType();
+	
+	public abstract boolean needsSpecialCastForBinary();
+	
+	public abstract byte[] binaryResultSetTreatment(byte[] bytes);
+	
+	public abstract Expression binaryCastPrep(Expression expr);
+	
+	public abstract boolean needsSpecialCastForChar();
+	
+	public abstract Expression charCastPrep(Expression expr, Integer fieldlength);
 	
 
 

@@ -31,11 +31,11 @@ import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueNode;
  * @author joerg
  * 
  */
-public class Binding {
+public class MappingBinding {
 
 	private Multimap<Triple, TripleMap> binding = HashMultimap.create();
 
-	public Binding(Binding left, Binding right,
+	public MappingBinding(MappingBinding left, MappingBinding right,
 			boolean isOptional) {
 
 	}
@@ -43,8 +43,8 @@ public class Binding {
 	private List<Expr> filter = new ArrayList<Expr>();
 
 	private boolean isOptional;
-	Binding left;
-	Binding right;
+	MappingBinding left;
+	MappingBinding right;
 
 	/**
 	 * union case
@@ -52,13 +52,13 @@ public class Binding {
 	 * @param union
 	 *            all binding to be unioned
 	 */
-	public Binding(Set<Binding> union) {
+	public MappingBinding(Set<MappingBinding> union) {
 
 	}
 
-	private Set<Binding> union;
+	private Set<MappingBinding> union;
 
-	public Binding(R2RMLModel mapConf, Set<Triple> triples) {
+	public MappingBinding(R2RMLModel mapConf, Set<Triple> triples) {
 
 		this.mapconf = mapConf;
 
@@ -77,7 +77,7 @@ public class Binding {
 
 	}
 
-	public void joins(Binding sbnm) {
+	public void joins(MappingBinding sbnm) {
 
 	}
 

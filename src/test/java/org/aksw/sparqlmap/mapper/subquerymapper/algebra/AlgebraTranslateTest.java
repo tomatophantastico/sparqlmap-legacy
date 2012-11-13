@@ -3,13 +3,12 @@ package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
 import java.io.ByteArrayOutputStream;
 import java.sql.SQLException;
 
-import org.aksw.sparqlmap.BaseTest;
-import org.aksw.sparqlmap.RDB2RDF;
-import org.aksw.sparqlmap.RDB2RDF.ReturnType;
+import org.aksw.sparqlmap.BSBMBaseTest;
+import org.aksw.sparqlmap.SparqlMap.ReturnType;
 import org.junit.Test;
 
 
-public class AlgebraTranslateTest extends BaseTest{
+public class AlgebraTranslateTest extends BSBMBaseTest{
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AlgebraTranslateTest.class);
 	
@@ -243,8 +242,6 @@ public class AlgebraTranslateTest extends BaseTest{
 	@Override
 	public String processQuery(String shortname, String query) {
 		
-		
-		RDB2RDF r2r = new RDB2RDF("bsbm.r2rml");
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		
 		try {

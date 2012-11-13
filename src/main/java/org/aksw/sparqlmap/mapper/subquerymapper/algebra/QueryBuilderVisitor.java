@@ -22,14 +22,13 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-import net.sf.jsqlparser.statement.select.Union;
+import net.sf.jsqlparser.statement.select.SelectItem;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
-import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap.PO;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.Binding;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingBinding;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingFilterFinder;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.PlainSelectWrapper;
 import org.slf4j.Logger;
@@ -37,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.BiMap;
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.graph.compose.Union;
 import com.hp.hpl.jena.sparql.algebra.OpVisitorBase;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
@@ -45,33 +45,33 @@ import com.hp.hpl.jena.sparql.algebra.op.OpLeftJoin;
 import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
-
 public class QueryBuilderVisitor extends OpVisitorBase {
+	
+	
+	private DataTypeHelper dataTypeHelper;
+	private ColumnHelper columnhelper;
+	ExpressionConverter exprconv;
+
+	
 
 	private static Logger log = LoggerFactory
 			.getLogger(QueryBuilderVisitor.class);
-
-	private R2RMLModel mappingConfiguration;
-	private Binding queryBinding;
-	private FilterUtil filterUtil;
+	
+	private MappingBinding queryBinding;
 
 	private Map<SelectBody, Wrapper> selectBody2Wrapper = new HashMap<SelectBody, Wrapper>();
 	private Stack<SelectBody> selects = new Stack<SelectBody>();
 	
 	TermMap crc;
 
-
-	private DataTypeHelper dataTypeHelper;
-
 	private MappingFilterFinder mappingFilterFinder;
 
-	public QueryBuilderVisitor(R2RMLModel mappingConfiguration,
-			MappingFilterFinder mff, Binding queryBinding, DataTypeHelper dataTypeHelper, FilterUtil filterUtil) {
-		this.mappingConfiguration = mappingConfiguration;
+	public QueryBuilderVisitor(	MappingFilterFinder mff, MappingBinding queryBinding, DataTypeHelper dataTypeHelper, ExpressionConverter expressionConverter, ColumnHelper colhelper) {
 		this.queryBinding = queryBinding;
-		this.dataTypeHelper =dataTypeHelper;
-		this.filterUtil = filterUtil;
 		this.mappingFilterFinder= mff;
+		this.dataTypeHelper = dataTypeHelper;
+		this.exprconv = expressionConverter;
+		this.columnhelper = colhelper;
 	}
 
 	@Override
@@ -96,7 +96,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			log.info("found empty select for union, skipping it");
 			selects.push(ps1.getSelectBody());
 		}else{
-			UnionWrapper union = new UnionWrapper(selectBody2Wrapper);
+			UnionWrapper union = new UnionWrapper(selectBody2Wrapper, dataTypeHelper);
 			union.addPlainSelectWrapper(ps1);
 			union.addPlainSelectWrapper(ps2);
 			selects.push(union.getSelectBody());
@@ -125,12 +125,14 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			graph_sei.setAlias(gvar.getName() + ColumnHelper.COL_NAME_GRAPH);
 			List<Expression> additionalFilters = new ArrayList<Expression>();
 			
-			for(SelectExpressionItem sei : wrap.getSelectExpressionItems()){
-				if(sei.getAlias().endsWith("_R2R_6_GRAPH") && sei.getExpression() instanceof Column){
+			for(SelectItem si : wrap.getSelectExpressionItems()){
+				SelectExpressionItem sei  = (SelectExpressionItem) si;
+				
+				if(sei.getAlias().endsWith(ColumnHelper.COL_NAME_GRAPH) && sei.getExpression() instanceof Column){
 					if(graph_sei.getExpression()==null){
 						List<Expression> graphExprs = new ArrayList<Expression>();
 						
-						TermMap tm = new TermMap(dataTypeHelper, ColumnHelper.getExpression((Column)sei.getExpression(), ColumnHelper.COL_VAL_TYPE_RESOURCE, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, null, null, null, dataTypeHelper, null,null));
+						TermMap tm = new TermMap(dataTypeHelper, columnhelper.getExpression((Column)sei.getExpression(), ColumnHelper.COL_VAL_TYPE_RESOURCE, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, null, null, null, dataTypeHelper, null,null));
 						newGraphSeis.addAll(tm.getSelectExpressionItems(opGraph.getNode().getName()));
 						
 						
@@ -230,7 +232,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	@Override
 	public void visit(OpBGP opBGP) {
 
-		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper, mappingConfiguration, dataTypeHelper);
+		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper);
 
 		// PlainSelect bgpSelect = new PlainSelect();
 
@@ -343,7 +345,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		for (TripleMap trm : trms) {
 			for (PO po : trm.getPos()) {
 
-				PlainSelectWrapper plainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,mappingConfiguration,dataTypeHelper);
+				PlainSelectWrapper plainSelect = new PlainSelectWrapper(this.selectBody2Wrapper);
 				
 				
 
@@ -374,7 +376,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		if(pselects.size()==1){
 			return pselects.iterator().next();
 		}else{
-			UnionWrapper union = new UnionWrapper(this.selectBody2Wrapper);
+			UnionWrapper union = new UnionWrapper(this.selectBody2Wrapper,dataTypeHelper);
 			for (PlainSelectWrapper plainSelectWrapper : pselects) {
 				union.addPlainSelectWrapper(plainSelectWrapper);
 
@@ -402,7 +404,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		Map<String, TermMap> colstring2col;
 		
 		if(sb instanceof Union){
-	PlainSelectWrapper wrap = new PlainSelectWrapper(selectBody2Wrapper, mappingConfiguration,dataTypeHelper);
+	PlainSelectWrapper wrap = new PlainSelectWrapper(selectBody2Wrapper);
 			
 			wrap.addSubselect(this.selectBody2Wrapper
 					.get(sb), false);
@@ -441,7 +443,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 
 		if (mappingFilterFinder.getOrder() != null && toModify.getOrderByElements() == null) {
 			// if the list is not set, we create a new set
-			List<OrderByElement> obys = filterUtil.convert(
+			List<OrderByElement> obys = exprconv.convert(
 					mappingFilterFinder.getOrder(), colstring2var,colstring2col);
 			int i = 0;
 			for (OrderByElement orderByElement : obys) {

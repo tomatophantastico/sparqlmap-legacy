@@ -11,13 +11,17 @@ import net.sf.jsqlparser.statement.select.WithItem;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
 import org.aksw.sparqlmap.beautifier.SparqlBeautifier;
-import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
+import org.aksw.sparqlmap.config.syntax.IDBAccess;
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ExpressionConverter;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.QueryBuilderVisitor;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.Binding;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingBinding;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingFilterFinder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
@@ -29,13 +33,25 @@ import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpGraph;
 import com.hp.hpl.jena.sparql.algebra.op.OpProject;
 
+@Service
 public class AlgebraBasedMapper implements Mapper {
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AlgebraBasedMapper.class);
 
+	@Autowired
 	private R2RMLModel mappingConf;
 
-	private DBConnectionConfiguration dbconf;
+	@Autowired
+	private IDBAccess dbconf;
+	
+	@Autowired
+	private DataTypeHelper dth;
+	
+	@Autowired
+	private ColumnHelper colhelp;
+	
+	@Autowired 
+	private ExpressionConverter exprconv;
 	
 	private SparqlBeautifier beautifier = new SparqlBeautifier();
 	
@@ -45,11 +61,7 @@ public class AlgebraBasedMapper implements Mapper {
 
 
 	
-	public AlgebraBasedMapper(R2RMLModel mappingConf, DBConnectionConfiguration dbconf){
-		this.mappingConf = mappingConf;
-		this.dbconf = dbconf;
-	}
-
+	
 
 
 
@@ -66,18 +78,18 @@ public class AlgebraBasedMapper implements Mapper {
 		
 		MappingFilterFinder mff = new MappingFilterFinder(mappingConf);
 		
-		Binding queryBinding = mff.createBindnings(op);
+		MappingBinding queryBinding = mff.createBindnings(op);
 		
 
 		
-		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mappingConf, mff,queryBinding,dbconf.getDataTypeHelper(), new FilterUtil(dbconf.getDataTypeHelper(), mappingConf));
+		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mff,queryBinding,dth,exprconv,colhelp);
 		
 		
 		OpWalker.walk(op, builderVisitor);
 		
 		
 		// prepare deparse select
-		StringBuffer out = new StringBuffer();
+		StringBuilder out = new StringBuilder();
 		Select select = builderVisitor.getSqlQuery();
 		SelectDeParser selectDeParser  = dbconf.getSelectDeParser(out);
 		
@@ -127,18 +139,18 @@ public class AlgebraBasedMapper implements Mapper {
 			Set<TripleMap> tripleMaps = new HashSet<TripleMap>();
 			tripleMaps.add(trm);
 			triples.add(triple);
-			Binding qbind = new Binding(mappingConf,triples);
+			MappingBinding qbind = new MappingBinding(mappingConf,triples);
 			qbind.getBinding().replaceValues(triple, tripleMaps);
 			MappingFilterFinder mff = new MappingFilterFinder(mappingConf);
 			mff.setProject((OpProject)qop);
 			
-			QueryBuilderVisitor qbv = new QueryBuilderVisitor(mappingConf, mff, qbind,dbconf.getDataTypeHelper(), new FilterUtil(dbconf.getDataTypeHelper(), mappingConf));
+			QueryBuilderVisitor qbv = new QueryBuilderVisitor(mff,qbind,dth,exprconv,colhelp);
 			
 			
 			OpWalker.walk(qop, qbv);
 			
 			// prepare deparse select
-			StringBuffer sbsql = new StringBuffer();
+			StringBuilder sbsql = new StringBuilder();
 			Select select = qbv.getSqlQuery();
 			SelectDeParser selectDeParser  = dbconf.getSelectDeParser(sbsql);
 			

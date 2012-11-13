@@ -26,12 +26,14 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
-import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ExpressionConverter;
+import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterOptimizer;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.Wrapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BiMap;
@@ -47,13 +49,14 @@ public class PlainSelectWrapper implements Wrapper {
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory
 			.getLogger(PlainSelectWrapper.class);
 
-	private DataTypeHelper dataTypeHelper;
+	@Autowired
+	private DataTypeHelper dth;
+	@Autowired
+	ExpressionConverter exprconv;
 
 	private int dupcounter = 0;
 
 	private PlainSelect plainSelect = new PlainSelect();
-
-	private FilterUtil filterUtil;
 
 	private TermMap crc;
 
@@ -65,20 +68,15 @@ public class PlainSelectWrapper implements Wrapper {
 
 	private Map<String, TermMap> colstring2Col = new HashMap<String, TermMap>();
 	
-	private R2RMLModel mappingConfiguration;
 
-	public PlainSelectWrapper(Map<SelectBody, Wrapper> registerTo,
-			R2RMLModel mappingConfiguration, DataTypeHelper dth) {
+	
+
+	public PlainSelectWrapper(Map<SelectBody, Wrapper> registerTo) {
 
 		
 		super();
-		this.mappingConfiguration = mappingConfiguration;
-		this.dataTypeHelper = dth;
-		this.filterUtil = new FilterUtil(dataTypeHelper,mappingConfiguration) ;
-				
-				
 
-		plainSelect.setSelectItems(new ArrayList<SelectExpressionItem>());
+		plainSelect.setSelectItems(new ArrayList<SelectItem>());
 		plainSelect.setJoins(new ArrayList());
 		registerTo.put(plainSelect, this);
 	}
@@ -157,8 +155,8 @@ public class PlainSelectWrapper implements Wrapper {
 
 						for (int i = 0; i < eqs.size(); i++) {
 							addJoinCondition(eqs.get(i));
-							//fromItem2joincondition.put(((Column)FilterUtil.uncast(eqs.get(i).getLeftExpression())).getTable(), eqs.get(i));
-							//fromItem2joincondition.put(((Column)FilterUtil.uncast(eqs.get(i).getRightExpression())).getTable(), eqs.get(i));
+							//fromItem2joincondition.put(((Column)DataTypeHelper.uncast(eqs.get(i).getLeftExpression())).getTable(), eqs.get(i));
+							//fromItem2joincondition.put(((Column)DataTypeHelper.uncast(eqs.get(i).getRightExpression())).getTable(), eqs.get(i));
 							//fromItem2joincondition.put(term.getFromItems().get(i), eqs.get(i));
 						}
 
@@ -211,7 +209,7 @@ public class PlainSelectWrapper implements Wrapper {
 		
 			
 			for(EqualsTo eq : getFromItem2joincondition().get(fri.getAlias())){
-				Expression rightUncast = FilterUtil.uncast(eq.getRightExpression());
+				Expression rightUncast = DataTypeHelper.uncast(eq.getRightExpression());
 				
 				if(rightUncast instanceof Column){
 					EqualsTo clonedEq =  new EqualsTo();					
@@ -225,8 +223,8 @@ public class PlainSelectWrapper implements Wrapper {
 		}
 		for (EqualsTo clonedEq : newEqs) {
 			addJoinCondition(clonedEq);
-			//fromItem2joincondition.put(((Column)FilterUtil.uncast(clonedEq.getLeftExpression())).getTable(), clonedEq);
-			//fromItem2joincondition.put(((Column)FilterUtil.uncast(clonedEq.getRightExpression())).getTable(), clonedEq);
+			//fromItem2joincondition.put(((Column)DataTypeHelper.uncast(clonedEq.getLeftExpression())).getTable(), clonedEq);
+			//fromItem2joincondition.put(((Column)DataTypeHelper.uncast(clonedEq.getRightExpression())).getTable(), clonedEq);
 		}
 		
 		return cloneTerm;
@@ -234,15 +232,15 @@ public class PlainSelectWrapper implements Wrapper {
 	
 	
 	private Expression cloneEqualsExpression(Expression castedCol, FromItem oldFi, FromItem newFi){
-		if( FilterUtil.uncast(castedCol) instanceof Column) {
-			Column col  = (Column) FilterUtil.uncast(castedCol);
+		if( DataTypeHelper.uncast(castedCol) instanceof Column) {
+			Column col  = (Column) DataTypeHelper.uncast(castedCol);
 			if(col.getTable().getAlias().equals(oldFi.getAlias())){
-				String origCastType = FilterUtil.getCastType(castedCol);
+				String origCastType = DataTypeHelper.getCastType(castedCol);
 				
 				
-				Column clonedcolumn = new Column((Table)newFi, ((Column) FilterUtil.uncast(castedCol)).getColumnName());
-		 //= FilterUtil.createColumn(newFi.getAlias(), ((Column) FilterUtil.uncast(castedCol)).getColumnName());
-				return FilterUtil.cast(clonedcolumn, origCastType);
+				Column clonedcolumn = new Column((Table)newFi, ((Column) DataTypeHelper.uncast(castedCol)).getColumnName());
+		 //= FilterUtil.createColumn(newFi.getAlias(), ((Column) DataTypeHelper.uncast(castedCol)).getColumnName());
+				return dth.cast(clonedcolumn, origCastType);
 			}
 		}
 		return castedCol;
@@ -258,7 +256,7 @@ public class PlainSelectWrapper implements Wrapper {
 	private void createNotNull(TermMap term, String termAlias) {
 
 		for (Expression colExpr : term.getExpressions()) {
-			colExpr = FilterUtil.uncast(colExpr);
+			colExpr = DataTypeHelper.uncast(colExpr);
 			if (colExpr instanceof Column) {
 				IsNullExpression notnull = new IsNullExpression();
 				notnull.setNot(true);
@@ -371,9 +369,9 @@ public class PlainSelectWrapper implements Wrapper {
 		for (String right_alias : right_alias2expression.keySet()) {
 			if (alias2sei.containsKey(right_alias)) {
 				// duplicate variable, add equals expression
-				Expression ljExpression = FilterUtil
+				Expression ljExpression = DataTypeHelper
 						.uncast(right_alias2expression.get(right_alias));
-				Expression expression = FilterUtil.uncast(alias2expression
+				Expression expression = DataTypeHelper.uncast(alias2expression
 						.get(right_alias));
 
 				if (ljExpression instanceof StringValue
@@ -386,8 +384,11 @@ public class PlainSelectWrapper implements Wrapper {
 						&& expression instanceof StringValue) {
 					EqualsTo eq = new EqualsTo();
 					eq.setLeftExpression(alias2expression.get(right_alias));
-					eq.setRightExpression(filterUtil.cast(subsell.getAlias(),
-							right_alias, dataTypeHelper.getStringCastType()));
+					eq.setRightExpression(
+							dth.cast(
+									ColumnHelper.createColumn(subsell.getAlias(), right_alias)
+									
+							,dth.getStringCastType()));
 					joinon.add(eq);
 
 				} else {
@@ -417,7 +418,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 		for(String var: newColGroups.keySet()){
 			List<Expression> expressions  = (List) newColGroups.get(var);
-			TermMap sstc = new TermMap(dataTypeHelper,expressions);
+			TermMap sstc = new TermMap(dth,expressions);
 			colstring2Col.put(sstc.toString(), sstc);
 			colstring2var.put(sstc.toString(), var);
 		}
@@ -467,7 +468,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 			if (!dupe) {
 
-				Expression sqlEx = filterUtil.getSQLExpression(expr,
+				Expression sqlEx = exprconv.getSQLExpression(expr,
 						colstring2var, colstring2Col);
 				if (sqlEx != null) {
 					addSQLFilter(sqlEx);
@@ -551,16 +552,16 @@ public class PlainSelectWrapper implements Wrapper {
 		FromItem fi1 = null;
 		FromItem fi2 = null;
 		
-		//((Column)FilterUtil.uncast(exp1)).getTable();
-		//((Column)FilterUtil.uncast(exp2)).getTable();
+		//((Column)DataTypeHelper.uncast(exp1)).getTable();
+		//((Column)DataTypeHelper.uncast(exp2)).getTable();
 		
-		if(FilterUtil.uncast(exp1) instanceof Column){
-			fi1 = ((Column)FilterUtil.uncast(exp1)).getTable();
-			if(FilterUtil.uncast(exp2) instanceof Column){
-				fi2 = ((Column)FilterUtil.uncast(exp2)).getTable();
+		if(DataTypeHelper.uncast(exp1) instanceof Column){
+			fi1 = ((Column)DataTypeHelper.uncast(exp1)).getTable();
+			if(DataTypeHelper.uncast(exp2) instanceof Column){
+				fi2 = ((Column)DataTypeHelper.uncast(exp2)).getTable();
 			}
-		} else if (FilterUtil.uncast(exp2) instanceof Column){
-			fi1 = ((Column)FilterUtil.uncast(exp2)).getTable();
+		} else if (DataTypeHelper.uncast(exp2) instanceof Column){
+			fi1 = ((Column)DataTypeHelper.uncast(exp2)).getTable();
 		}
 	
 		EqualsTo eq = new EqualsTo();
@@ -642,7 +643,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 		// we start with purging the previously created stuff
 		plainSelect.setFromItem(null);
-		plainSelect.setJoins(new ArrayList<FromItem>());
+		plainSelect.setJoins(new ArrayList<Join>());
 		
 		
 		//determine the order of the from items
@@ -693,7 +694,7 @@ public class PlainSelectWrapper implements Wrapper {
 						List<Expression> simplified = new ArrayList<Expression>();
 						
 						for (EqualsTo equalsTo : eqsWeCanUse) {
-							simplified.add(FilterUtil.shortCut((Expression)equalsTo));
+							simplified.add(FilterOptimizer.shortCut((Expression)equalsTo));
 						}
 		
 						join.setOnExpression(FilterUtil.conjunctFilters(new ArrayList<Expression>(
@@ -742,8 +743,8 @@ public class PlainSelectWrapper implements Wrapper {
 //			Collection<EqualsTo> fiEqs = _fromItem2joincondition.get(fi);
 //			Set<Expression> conditionsWithBothFromItemsPresent = new HashSet<Expression>();
 //			for (EqualsTo eq : fiEqs) {
-//				FromItem fi1 = ((Column)FilterUtil.uncast(eq.getLeftExpression())).getTable();
-//				FromItem fi2 = ((Column)FilterUtil.uncast(eq.getLeftExpression())).getTable();
+//				FromItem fi1 = ((Column)DataTypeHelper.uncast(eq.getLeftExpression())).getTable();
+//				FromItem fi2 = ((Column)DataTypeHelper.uncast(eq.getLeftExpression())).getTable();
 //				
 //				if(fromItemsInTheQuery.contains(fi1.toString())&&fromItemsInTheQuery.contains(fi2.toString())){
 //					conditionsWithBothFromItemsPresent.add(eq);
@@ -886,7 +887,7 @@ public class PlainSelectWrapper implements Wrapper {
 	}
 
 	@Override
-	public List<SelectExpressionItem> getSelectExpressionItems() {
+	public List<SelectItem> getSelectExpressionItems() {
 		return plainSelect.getSelectItems();
 	}
 	

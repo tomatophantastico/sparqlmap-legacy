@@ -3,7 +3,7 @@ package org.aksw.sparqlmap;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
-import org.aksw.sparqlmap.RDB2RDF.ReturnType;
+import org.aksw.sparqlmap.SparqlMap.ReturnType;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 
-public abstract class BSBMTest extends BaseTest {
+public abstract class BSBMTest extends BSBMBaseTest {
 
 	private Logger log = LoggerFactory.getLogger(BSBMTest.class);
 
@@ -391,7 +391,6 @@ public abstract class BSBMTest extends BaseTest {
 	}
 	
 	
-	private RDB2RDF r2r = new RDB2RDF("bsbm.r2rml");
 
 	public String processQuery(String queryShortname, String query) {
 

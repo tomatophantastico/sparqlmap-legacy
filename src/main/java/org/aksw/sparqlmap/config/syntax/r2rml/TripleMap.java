@@ -109,6 +109,12 @@ public class TripleMap {
 		return copy;		
 	}
 	
+	@Override
+	public String toString() {
+		
+		return "TripleMap for " + this.from.toString();
+	}
+	
 	
 
 }

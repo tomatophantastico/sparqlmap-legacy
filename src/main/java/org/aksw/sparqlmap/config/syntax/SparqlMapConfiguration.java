@@ -8,7 +8,7 @@ public class SparqlMapConfiguration {
 
 	private R2RMLModel mappingConfiguration;
 
-	private DBConnectionConfiguration dbConn;
+	private IDBAccess dbConn;
 	
 	private boolean useSolutionModifierPushing = true;
 	
@@ -28,11 +28,11 @@ public class SparqlMapConfiguration {
 		this.endpoint = endpoint;
 	}
 
-	public DBConnectionConfiguration getDbConn() {
+	public IDBAccess getDbConn() {
 		return dbConn;
 	}
 
-	public void setDbConn(DBConnectionConfiguration dbConn) {
+	public void setDbConn(IDBAccess dbConn) {
 		this.dbConn = dbConn;
 	}
 

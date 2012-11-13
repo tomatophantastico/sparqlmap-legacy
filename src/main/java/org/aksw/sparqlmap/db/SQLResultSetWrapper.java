@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
@@ -31,7 +30,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.ResultBinding;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
-import com.hp.hpl.jena.sparql.engine.binding.BindingHashMap;
+import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 
 public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
@@ -155,7 +154,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 			}
 			didNext = false;
 
-			binding = new BindingHashMap();
+			binding = BindingFactory.create();
 
 			for (String var : vars) {
 				Node node;
@@ -262,9 +261,9 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					}else if(XSDDatatype.XSDboolean.getURI().equals(litType)){
 						literalValue = Boolean.toString(rs.getBoolean(var+ColumnHelper.COL_NAME_LITERAL_BOOL));
 					}else if(XSDDatatype.XSDhexBinary.getURI().equals(litType)){
-						literalValue = XSDDatatype.XSDhexBinary.unparse(rs.getBytes(ColumnHelper.COL_NAME_LITERAL_BINARY));
+						literalValue = new String(dth.binaryResultSetTreatment(rs.getBytes(var+ColumnHelper.COL_NAME_LITERAL_BINARY)));
 					}else{
-						throw new ImplementationException("Cannot map into result set");
+						literalValue = new String(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING));
 					}
 					
 					
@@ -288,7 +287,9 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					
 					throw new ImplementationException("Unidentifiable rdf type encountered.");
 				}
-				binding.add(Var.alloc(var), node);
+				if(node!=null){
+					binding.add(Var.alloc(var), node);
+				}
 
 			}
 

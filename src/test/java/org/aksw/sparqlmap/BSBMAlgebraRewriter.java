@@ -6,7 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import org.aksw.sparqlmap.RDB2RDF.ReturnType;
+import org.aksw.sparqlmap.SparqlMap.ReturnType;
 import org.aksw.sparqlmap.mapper.AlgebraBasedMapper;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
@@ -15,11 +15,10 @@ import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.query.QueryFactory;
 
-public class BSBMAlgebraRewriter {
+public class BSBMAlgebraRewriter extends BSBMBaseTest{
 	
 	
 		
-	RDB2RDF r2r = new RDB2RDF("./src/main/conf");
 	
 	@Test
 	public void query1Test() {

@@ -10,11 +10,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
-import org.aksw.sparqlmap.config.syntax.DBConnectionConfiguration;
+import org.aksw.sparqlmap.config.syntax.DBAccessConfigurator;
+import org.aksw.sparqlmap.config.syntax.IDBAccess;
 import org.apache.commons.io.FileUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.core.env.PropertiesPropertySource;
 
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
@@ -30,37 +32,66 @@ import db2r2ml.DB2R2RML;
 public class R2RMLComplianceTest {
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(R2RMLComplianceTest.class);
-	DBConnectionConfiguration dbconn;
+	IDBAccess dbSetupConn;
 	
-	Connection conn;
+	Properties dbprops;
+	Properties smprops;
+	String baseUri = "http://example.com/test/";
 	
-	@Before
-	public void setUp() throws Exception {
-		dbconn = new DBConnectionConfiguration(new File("./src/test/conf/db_r2rml.properties"));
-		conn = dbconn.getConenction();
-	}
-
-	@Test
-	public void test() throws Exception {
+	
+	
+	public static void main(String[] args) throws Exception {
 		
-		for(File folder: new File("./src/test/rdb2rdf-tests/").listFiles()){
-			if(folder.isDirectory()&&!folder.isHidden()){// &&folder.getName().contains("D019")){
+		if(args.length!=4){
+			System.out.println("requires parameters: <dburl> <dbusername> <dbpassword> <testSuiteFolder>");
+			System.exit(0);
+		}
+		
+		
+		R2RMLComplianceTest test =  new R2RMLComplianceTest();
+		
+		Properties dbprops = new Properties();
+		
+		dbprops.setProperty("jdbc.url",args[0]);
+		 
+		dbprops.setProperty("jdbc.username",args[1]);
+		dbprops.setProperty("jdbc.password",args[2]);
+		dbprops.setProperty("jdbc.poolminconnections","5");
+		dbprops.setProperty("jdbc.poolmaxconnections","10");
+		
+		test.dbprops = dbprops;
+		
+		
+		Properties setupProps = new Properties();
+		setupProps.putAll(dbprops);
+		
+		
+
+		setupProps.setProperty("jdbc.url", setupProps.getProperty("jdbc.url")+ "?sessionVariables=sql_Mode=ANSI&allowMultiQueries=true");
+		
+		DBAccessConfigurator dbaconf = new  DBAccessConfigurator(setupProps);
+		test.dbSetupConn = dbaconf.getDBAccess();
+		
+		test.test(args[3]);
+		
+	}
+	
+
+
+
+	public void test(String testSuiteFolder) throws Exception {
+		
+		for(File folder: new File(testSuiteFolder).listFiles()){
+			if(folder.isDirectory()&&!folder.isHidden() &&folder.getName().startsWith("D014")){ //25, , done: 17, 16
+	
 			Model manifest = ModelFactory.createDefaultModel();
-			
 			manifest.read(new FileInputStream(new File(folder.getAbsolutePath()+"/manifest.ttl")), null,"TTL");
-			
+		
 			//setup the db
 			dbSetup(manifest, folder);
-			
 			executeR2RML(manifest,folder);
-			
 			executeDM(manifest,folder);
-			
-			
-			}
-			
-			
-			
+			}	
 		}
 		
 	}
@@ -100,29 +131,40 @@ public class R2RMLComplianceTest {
 							log.info("Executing direct mapping for: " + dbname.toString());
 
 							Model schema = ModelFactory.createDefaultModel();
-							FileManager.get().readModel(schema, "./src/main/conf/r2rml.rdf");
+							FileManager.get().readModel(schema, "./src/main/resources/vocabularies/r2rml.ttl");
 					
 							
 							DB2R2RML db2r2rml = new DB2R2RML();
 							
-							String dburl = "http:" + dbconn.getDbConnString().split(":")[2]+ "/";
-							Connection conn = dbconn.getConenction();
+							//String dburl = "http:" + dbconn.getDbConnString().split(":")[2]+ "/";
+							Connection conn = dbSetupConn.getConnection();
 							
-							Model mapping = db2r2rml.getMydbData(conn, "http://example.com/base/", "http://example.com/base/", "http://example.com/base/");
+							Model mapping = db2r2rml.getMydbData(conn, "http://example.com/base/", "http://example.com/base/", "http://example.com/base/",";");
 							conn.close();
 							
-							mapping.write(new FileOutputStream(new File(folder + "/dm.r2rml")), "TTL", null);
+							mapping.write(new FileOutputStream(new File(folder + "/dm_r2rml.ttl")), "TTL", null);
 							
+							// gather the properties data
+							Properties sm = new Properties();
+							sm.put("sm.baseuri", this.baseUri);
+							sm.put("sm.r2rmlvocablocation", new File("./src/main/resources/vocabularies/r2rml.ttl").getAbsolutePath());
+							sm.put("sm.mappingfile", new File(folder + "/dm_r2rml.ttl").getAbsolutePath());
+							log.info("Loading mapping " +  new File(folder+ "/dm_r2rml.ttl").getAbsolutePath());
 							
+							AnnotationConfigApplicationContext ctxt = setupSparqlMap(this.dbprops, sm);
 							
-							RDB2RDF r2r = new RDB2RDF(dbconn,mapping,schema);
+							SparqlMap r2r = ctxt.getBean(SparqlMap.class);
 							
 							r2r.dump(new FileOutputStream(new File(getFileOutName(folder, outfname))));
+
+							
+							ctxt.close();
+							
 						} catch (Exception e) {
 							log.error("Error:",e);
 							try {
 								FileWriter errorwriter = new FileWriter(getFileOutName(folder, outfname)+".error");
-								errorwriter.write(e.getLocalizedMessage());
+								errorwriter.write(e.getLocalizedMessage()+"");
 							} catch (IOException e1) {
 								// TODO Auto-generated catch block
 								log.error("Error logging error:",e1);
@@ -165,14 +207,24 @@ public class R2RMLComplianceTest {
 				
 			
 			try {
-				Model schema = ModelFactory.createDefaultModel();
-				FileManager.get().readModel(schema, "./src/main/conf/r2rml.rdf");
-				Model mapping = ModelFactory.createDefaultModel();
-				log.info("Loading mapping " + folder.getAbsolutePath() + "/" + mappingfname);
-				FileManager.get().readModel(mapping, folder.getAbsolutePath() + "/" + mappingfname);
-				RDB2RDF r2r = new RDB2RDF(dbconn,mapping,schema);
+				// gather the properties data
+				Properties sm = new Properties();
+				sm.put("sm.baseuri", this.baseUri);
+				sm.put("sm.r2rmlvocablocation", new File("./src/main/resources/vocabularies/r2rml.ttl").getAbsolutePath());
+				sm.put("sm.mappingfile", folder.getAbsolutePath() + "/" + mappingfname);
+				log.info("Loading mapping " +  folder.getAbsolutePath() + "/" + mappingfname);
+				
+							
+				AnnotationConfigApplicationContext ctxt = setupSparqlMap(this.dbprops, sm);
+				
+				SparqlMap r2r = ctxt.getBean(SparqlMap.class);
 				
 				r2r.dump(new FileOutputStream(new File(getFileOutName(folder, outfname))));
+				
+				ctxt.close();
+				
+				
+				
 			} catch (Exception e) {
 				log.error("Error:",e);
 				try {
@@ -193,17 +245,24 @@ public class R2RMLComplianceTest {
 		
 	}
 
-	private void dbSetup(Model manifest, File folder) throws SQLException, IOException {
-		//remove all the old tables;
-		java.sql.Statement stmt = conn.createStatement();
-		ResultSet rs  = stmt.executeQuery("SELECT * FROM pg_tables WHERE tableowner ='" + dbconn.getUsername() + "'" );
+	public void dbSetup(Model manifest, File folder) throws SQLException, IOException {
+		Connection conn = this.dbSetupConn.getConnection();
+		
+		
+		ResultSet res =  conn.getMetaData().getTables(null, null, null, new String[] {"TABLE"});
 		List<String> tablesToDelete = new ArrayList<String>(); 
-		while(rs.next()){
-			tablesToDelete.add(rs.getString("tablename"));
+		while(res.next()){
+			String tcat  = res.getString("TABLE_CAT"); 
+	          String tschem =res.getString("TABLE_SCHEM");
+	           String tname = res.getString("TABLE_NAME");
+	           String ttype = res.getString("TABLE_TYPE");
+	           String tremsarks = res.getString("REMARKS");
+	           tablesToDelete.add(tname);
 		}
-		stmt.close();
+		
+		
 		for (String tablename : tablesToDelete) {
-			stmt = conn.createStatement();
+			java.sql.Statement stmt = conn.createStatement();
 			stmt.execute("DROP TABLE \"" + tablename +"\" CASCADE");
 			stmt.close();
 		}
@@ -225,20 +284,39 @@ public class R2RMLComplianceTest {
 		
 		String sql2Execute = FileUtils.readFileToString(new File(folder.getAbsoluteFile() + "/" + sqlFile));
 		
-		stmt = conn.createStatement();
-		stmt.execute(sql2Execute);
+		java.sql.Statement stmt = conn.createStatement();
+		try {
+			stmt.execute(sql2Execute);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			log.error("Error executing query: " +sql2Execute, e);
+			throw new RuntimeException(e);
+		}
 		stmt.close();
+		conn.close();
 				
 	}
+
 	
-	
-	@Test
-	public void dump() throws SQLException{
-		String dburl = "http:" + dbconn.getDbConnString().split(":")[2] + "/";
-		DB2R2RML db2r2rml = new DB2R2RML();
-		Model model=  db2r2rml.getMydbData(dbconn.getConenction(),dburl,dburl,dburl);
-		model.write(System.out, "TTL", null);
+	private AnnotationConfigApplicationContext setupSparqlMap(Properties db, Properties sm){
 		
+		
+		
+		AnnotationConfigApplicationContext ctxt = new AnnotationConfigApplicationContext();
+		
+		
+		ctxt.getEnvironment().getPropertySources().addFirst(new PropertiesPropertySource("sm", sm));
+		ctxt.getEnvironment().getPropertySources().addFirst(new PropertiesPropertySource("db", db));
+		
+		ctxt.scan("org.aksw.sparqlmap");
+		ctxt.refresh();
+	
+		
+		
+		
+		
+		
+		return ctxt;
 	}
 
 }
