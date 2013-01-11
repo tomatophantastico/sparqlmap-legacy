@@ -11,11 +11,11 @@ import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
-import org.aksw.sparqlmap.config.syntax.IDBAccess;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
+import org.aksw.sparqlmap.db.IDBAccess;
 import org.aksw.sparqlmap.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.mapper.Mapper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 import org.openjena.riot.out.NQuadsWriter;
 import org.openjena.riot.out.NTriplesWriter;
 import org.openjena.riot.system.JenaWriterRdfJson;
@@ -46,6 +46,7 @@ public class SparqlMap {
 	
 	
 	String baseUri;
+	boolean continueWithInvalidUris = true;
 
 //	public SparqlMap(String baseUri) {
 //		super();
@@ -57,6 +58,7 @@ public class SparqlMap {
 	@PostConstruct
 	public void loadBaseUri(){
 		baseUri = env.getProperty("sm.baseuri");
+		continueWithInvalidUris = new Boolean(env.getProperty("sm.continuewithinvaliduris","true"));
 	}
 
 	@Autowired
@@ -196,7 +198,16 @@ public class SparqlMap {
 					
 					usesGraph =true;
 				}
-				graph.add(new Quad(bind.get(Var.alloc("g")),bind.get(Var.alloc("s")), bind.get(Var.alloc("p")), bind.get(Var.alloc("o"))))	;
+				try {
+					Quad toadd = new Quad(bind.get(Var.alloc("g")),bind.get(Var.alloc("s")), bind.get(Var.alloc("p")), bind.get(Var.alloc("o")));
+					graph.add(toadd)	;
+				} catch (Exception e) {
+					
+					log.error("Error:",e);
+					if(!continueWithInvalidUris){
+						throw new RuntimeException(e);
+					}
+				}
 				if(++i%1000==0){
 					NQuadsWriter.write(out, graph);
 				}

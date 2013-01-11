@@ -11,15 +11,16 @@ import net.sf.jsqlparser.statement.select.WithItem;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
 import org.aksw.sparqlmap.beautifier.SparqlBeautifier;
-import org.aksw.sparqlmap.config.syntax.IDBAccess;
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ExpressionConverter;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.QueryBuilderVisitor;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingBinding;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.finder.r2rml.MappingFilterFinder;
+import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.mapper.finder.MappingBinding;
+import org.aksw.sparqlmap.mapper.finder.MappingFilterFinder;
+import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.translate.ExpressionConverter;
+import org.aksw.sparqlmap.mapper.translate.FilterOptimizer;
+import org.aksw.sparqlmap.mapper.translate.QueryBuilderVisitor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -53,6 +54,9 @@ public class AlgebraBasedMapper implements Mapper {
 	@Autowired 
 	private ExpressionConverter exprconv;
 	
+	@Autowired
+	private FilterOptimizer fopt;
+	
 	private SparqlBeautifier beautifier = new SparqlBeautifier();
 	
 	public SparqlBeautifier getBeautifier() {
@@ -69,21 +73,18 @@ public class AlgebraBasedMapper implements Mapper {
 		
 		Query origQuery = sparql;
 
-		log.debug(origQuery.toString());
+		log.info(origQuery.toString());
 		//first we beautify the Query
 
 
 		Op op = this.beautifier.compileToBeauty(origQuery); // new  AlgebraGenerator().compile(beautified);
-		log.debug(op.toString());
+		log.info(op.toString());
 		
 		MappingFilterFinder mff = new MappingFilterFinder(mappingConf);
 		
 		MappingBinding queryBinding = mff.createBindnings(op);
 		
-
-		
-		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mff,queryBinding,dth,exprconv,colhelp);
-		
+		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mff,queryBinding,dth,exprconv,colhelp,fopt);
 		
 		OpWalker.walk(op, builderVisitor);
 		
@@ -144,7 +145,7 @@ public class AlgebraBasedMapper implements Mapper {
 			MappingFilterFinder mff = new MappingFilterFinder(mappingConf);
 			mff.setProject((OpProject)qop);
 			
-			QueryBuilderVisitor qbv = new QueryBuilderVisitor(mff,qbind,dth,exprconv,colhelp);
+			QueryBuilderVisitor qbv = new QueryBuilderVisitor(mff,qbind,dth,exprconv,colhelp,fopt);
 			
 			
 			OpWalker.walk(qop, qbv);

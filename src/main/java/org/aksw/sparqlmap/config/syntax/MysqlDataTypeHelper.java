@@ -2,7 +2,7 @@ package org.aksw.sparqlmap.config.syntax;
 
 import net.sf.jsqlparser.expression.Expression;
 
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 
 public class MysqlDataTypeHelper extends DataTypeHelper {
 

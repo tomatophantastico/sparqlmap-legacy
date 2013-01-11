@@ -24,6 +24,10 @@ public class AlgebraTranslateTest extends BSBMBaseTest{
 	public void testJoinQuery(){
 		processQuery("rdfs:label", "select ?text ?offer ?product {?offer <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/product> ?product. ?product  <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/productPropertyTextual2>  ?text} limit 10 ");
 	}
+	@Test
+	public void testByTypeQuery(){
+		processQuery("rdfs:label", "select ?s {?s a <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/Offer>} limit 10 ");
+	}
 	
 	
 	@Test

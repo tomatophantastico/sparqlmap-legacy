@@ -8,13 +8,13 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 
 public class TripleMap {
 	
 	static int nameCounter = 1;
 	
-	String uri;
+	private String uri;
 	public FromItem from;
 	TermMap subject;
 	Set<PO> pos = new LinkedHashSet<PO>();
@@ -24,7 +24,7 @@ public class TripleMap {
 	
 	public TripleMap(String uri, FromItem from) {
 		super();
-		this.uri = uri;
+		this.setUri(uri);
 		this.from = from;
 	}
 	
@@ -70,11 +70,17 @@ public class TripleMap {
 			this.object = object;
 		}
 		
+		@Override
+		public String toString() {
+			
+			return predicate.toString() + " " + object.toString();
+		}
+		
 	}
 	
 	
 	public void toTtl(StringBuffer ttl){
-		ttl.append("<" +this.uri+ ">");
+		ttl.append("<" +this.getUri()+ ">");
 		if(from instanceof Table){
 			ttl.append("rr:logicalTable [ rr:tableName \""+((Table)from).getName()+"\" ];\n");
 		}if(from instanceof SubSelect){
@@ -103,7 +109,7 @@ public class TripleMap {
 	}
 	
 	public TripleMap getShallowCopy(){
-		TripleMap copy = new TripleMap(this.uri,this.from);
+		TripleMap copy = new TripleMap(this.getUri(),this.from);
 		copy.pos = new HashSet<TripleMap.PO>(pos);
 		copy.subject = subject;
 		return copy;		
@@ -113,6 +119,14 @@ public class TripleMap {
 	public String toString() {
 		
 		return "TripleMap for " + this.from.toString();
+	}
+
+	public String getUri() {
+		return uri;
+	}
+
+	public void setUri(String uri) {
+		this.uri = uri;
 	}
 	
 	

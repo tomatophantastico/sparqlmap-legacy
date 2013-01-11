@@ -9,7 +9,7 @@ import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 
 public class PostgresDataTypeHandler extends DataTypeHelper {
 

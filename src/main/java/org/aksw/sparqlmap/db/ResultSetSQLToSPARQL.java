@@ -32,7 +32,7 @@ public class ResultSetSQLToSPARQL {
 		//iterate through the results
 		while(rs.next()){
 			sparqlResult.append("<result>\n");
-			for (int i = 0;i<rs.getMetaData().getColumnCount();i++) {
+			for (int i = 1;i<=rs.getMetaData().getColumnCount();i++) {
 				sparqlResult.append("    <binding name=\""+ rs.getMetaData().getColumnLabel(i)+"\"/>\n");
 				String rsString = rs.getString(i);
 				//TODO we need to know if it is REALLY a uri

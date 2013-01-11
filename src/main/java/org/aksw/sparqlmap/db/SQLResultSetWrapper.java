@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 import org.apache.jena.iri.IRI;
 import org.apache.jena.iri.IRIException;
 import org.apache.jena.iri.IRIFactory;
@@ -263,7 +263,17 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					}else if(XSDDatatype.XSDhexBinary.getURI().equals(litType)){
 						literalValue = new String(dth.binaryResultSetTreatment(rs.getBytes(var+ColumnHelper.COL_NAME_LITERAL_BINARY)));
 					}else{
-						literalValue = new String(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING));
+						if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING)!=null){
+							literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
+						}else if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_DATE)!=null){
+							literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_DATE);
+						}else if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC)!=null){
+							literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC);
+						}else{
+							throw new ImplementationException("Deal with the other datatypes");
+						}
+						
+						
 					}
 					
 					

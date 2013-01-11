@@ -13,10 +13,10 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
 
-import org.aksw.sparqlmap.config.syntax.IDBAccess;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.translate.FilterUtil;
+import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -60,6 +60,10 @@ public class ColumnHelper {
 
 	public static String colnameBelongsToVar(String colalias) {
 		return colalias.substring(0, colalias.indexOf(R2R_COL_SUFFIX));
+	}
+	public static boolean isColnameResourceSegment(String colalias) {
+		
+		return colalias.substring(colalias.indexOf(R2R_COL_SUFFIX)+4).startsWith(COL_NAME_RESOURCE_COL_SEGMENT);
 	}
 	
 	@Autowired
@@ -171,7 +175,7 @@ public class ColumnHelper {
 			DataTypeHelper dth, Expression graph, String baseUri) {
 		List<Expression> texprs = new ArrayList<Expression>();
 
-		if (rdfType == COL_VAL_TYPE_LITERAL) {
+		if (rdfType.equals(COL_VAL_TYPE_LITERAL)) {
 
 			// if datatype not declared, we check, if we got a default
 			// conversion
@@ -190,7 +194,7 @@ public class ColumnHelper {
 				texprs.add(dth.cast(col, dth.getCastTypeString(rdfdt)));
 			}
 
-		} else if (rdfType == COL_VAL_TYPE_RESOURCE||rdfType == COL_VAL_TYPE_BLANK) {
+		} else if (rdfType.equals(COL_VAL_TYPE_RESOURCE)||rdfType.equals(COL_VAL_TYPE_BLANK)) {
 			texprs.addAll(getBaseExpressions(rdfType,
 					1, COL_VAL_SQL_TYPE_RESOURCE, dth, datatype, lang,
 					null,graph));
@@ -222,7 +226,7 @@ public class ColumnHelper {
 //		}
 		
 		
-		if (rdfType == COL_VAL_TYPE_LITERAL) {
+		if (rdfType.equals(COL_VAL_TYPE_LITERAL)) {
 			// if datatype not declared, we check, if we got a default
 			// conversion
 			if (datatype == null
@@ -251,7 +255,7 @@ public class ColumnHelper {
 
 			
 
-		} else if (rdfType == COL_VAL_TYPE_RESOURCE|| rdfType == COL_VAL_TYPE_BLANK) {
+		} else if (rdfType.equals(COL_VAL_TYPE_RESOURCE)|| rdfType.equals( COL_VAL_TYPE_BLANK)) {
 			if(altSeq.get(0).isEmpty()){
 				//we set the base uri 
 				altSeq.set(0, baseUri);

@@ -12,8 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import org.aksw.sparqlmap.config.syntax.DBAccessConfigurator;
-import org.aksw.sparqlmap.config.syntax.IDBAccess;
+import org.aksw.sparqlmap.automapper.DB2R2RML;
+import org.aksw.sparqlmap.db.DBAccessConfigurator;
+import org.aksw.sparqlmap.db.IDBAccess;
 import org.apache.commons.io.FileUtils;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.PropertiesPropertySource;
@@ -27,7 +28,6 @@ import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.util.FileManager;
 
-import db2r2ml.DB2R2RML;
 
 public class R2RMLComplianceTest {
 	
@@ -64,10 +64,11 @@ public class R2RMLComplianceTest {
 		
 		Properties setupProps = new Properties();
 		setupProps.putAll(dbprops);
+		if(setupProps.getProperty("jdbc.url").startsWith("jdbc:mysql")){
+			String jdbcurl = setupProps.getProperty("jdbc.url") +"?sessionVariables=sql_Mode=ANSI&allowMultiQueries=true";
+			setupProps.setProperty("jdbc.url",jdbcurl);
+		}
 		
-		
-
-		setupProps.setProperty("jdbc.url", setupProps.getProperty("jdbc.url")+ "?sessionVariables=sql_Mode=ANSI&allowMultiQueries=true");
 		
 		DBAccessConfigurator dbaconf = new  DBAccessConfigurator(setupProps);
 		test.dbSetupConn = dbaconf.getDBAccess();
@@ -82,7 +83,7 @@ public class R2RMLComplianceTest {
 	public void test(String testSuiteFolder) throws Exception {
 		
 		for(File folder: new File(testSuiteFolder).listFiles()){
-			if(folder.isDirectory()&&!folder.isHidden() &&folder.getName().startsWith("D014")){ //25, , done: 17, 16
+			if(folder.isDirectory()&&!folder.isHidden() &&folder.getName().startsWith("D017")){ //25, , done: 17, 16
 	
 			Model manifest = ModelFactory.createDefaultModel();
 			manifest.read(new FileInputStream(new File(folder.getAbsolutePath()+"/manifest.ttl")), null,"TTL");
@@ -133,13 +134,14 @@ public class R2RMLComplianceTest {
 							Model schema = ModelFactory.createDefaultModel();
 							FileManager.get().readModel(schema, "./src/main/resources/vocabularies/r2rml.ttl");
 					
+							Connection conn = dbSetupConn.getConnection();
+
+							DB2R2RML db2r2rml = new DB2R2RML(conn, "http://example.com/base/mapping/", "http://example.com/base/data/", "http://example.com/base/vocab/",";");
 							
-							DB2R2RML db2r2rml = new DB2R2RML();
 							
 							//String dburl = "http:" + dbconn.getDbConnString().split(":")[2]+ "/";
-							Connection conn = dbSetupConn.getConnection();
 							
-							Model mapping = db2r2rml.getMydbData(conn, "http://example.com/base/", "http://example.com/base/", "http://example.com/base/",";");
+							Model mapping = db2r2rml.getMydbData();
 							conn.close();
 							
 							mapping.write(new FileOutputStream(new File(folder + "/dm_r2rml.ttl")), "TTL", null);

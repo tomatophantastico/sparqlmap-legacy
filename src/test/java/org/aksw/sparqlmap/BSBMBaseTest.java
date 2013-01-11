@@ -1,6 +1,6 @@
 package org.aksw.sparqlmap;
 
-import org.aksw.sparqlmap.config.syntax.IDBAccess;
+import org.aksw.sparqlmap.db.IDBAccess;
 import org.aksw.sparqlmap.spring.ContextSetup;
 import org.junit.Before;
 import org.springframework.context.ApplicationContext;

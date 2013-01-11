@@ -1,6 +1,7 @@
 package org.aksw.sparqlmap.config.syntax;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
+import org.aksw.sparqlmap.db.IDBAccess;
 
 public class SparqlMapConfiguration {
 

@@ -24,10 +24,10 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
-import org.aksw.sparqlmap.columnanalyze.CompatibilityChecker;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.DataTypeHelper;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.FilterUtil;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.aksw.sparqlmap.mapper.compatibility.CompatibilityChecker;
+import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.translate.FilterUtil;
+import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 
 public class TermMap{
 	
@@ -86,7 +86,7 @@ public class TermMap{
 		//read the header
 		
 		Expression typeExpr =exprs.remove(0);
-		Long type = ((LongValue) dth.uncast(typeExpr)).getValue();
+		Long type = ((LongValue) DataTypeHelper.uncast(typeExpr)).getValue();
 		SelectExpressionItem typeSei = new SelectExpressionItem();
 		typeSei.setExpression(typeExpr);
 		typeSei.setAlias(colalias + ColumnHelper.COL_NAME_RDFTYPE);
@@ -95,7 +95,7 @@ public class TermMap{
 		
 		//read the lengthfield
 		Expression resLength=exprs.remove(0);
-		Long length = ((LongValue) dth.uncast(resLength)).getValue();
+		Long length = ((LongValue) DataTypeHelper.uncast(resLength)).getValue();
 		SelectExpressionItem resLengthSei = new SelectExpressionItem();
 		resLengthSei.setAlias(colalias + ColumnHelper.COL_NAME_RES_LENGTH);
 		resLengthSei.setExpression(resLength);
@@ -144,7 +144,7 @@ public class TermMap{
 			
 		//Literal, the rest must be literal expressions, decide upon the cast type
 		for (Expression expr : exprs) {
-			String castType = dth.getCastType(expr);
+			String castType = DataTypeHelper.getCastType(expr);
 			if(castType.equals(dataTypeHelper.getStringCastType())){
 				SelectExpressionItem stringsei = new SelectExpressionItem();
 				stringsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_STRING);
@@ -182,7 +182,7 @@ public class TermMap{
 	
 	
 	public List<FromItem> getFromItems(){
-		return new ArrayList(this.alias2fromItem.values());
+		return new ArrayList<FromItem>(this.alias2fromItem.values());
 	}
 	
 	/**
@@ -333,12 +333,12 @@ public class TermMap{
 	public Expression getLiteralStringExpression(){
 		
 		for(Expression expr: getLiteralExpressions()){
-			String type = dth.getCastType(expr);
+			String type = DataTypeHelper.getCastType(expr);
 			if(type != null && type.equals(dth.getStringCastType())){
 				return expr;
 			}
 		
-			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_STRING)){
+			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_STRING)){
 				return expr;
 			}
 		}
@@ -347,12 +347,12 @@ public class TermMap{
 	
 	private Expression getLiteralBoolExpression() {
 		for(Expression expr: getLiteralExpressions()){
-			String type = dth.getCastType(expr);
+			String type = DataTypeHelper.getCastType(expr);
 			if(type != null && type.equals(dth.getBooleanCastType())){
 				return expr;
 			}
 		
-			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BOOL)){
+			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BOOL)){
 				return expr;
 			}
 		}
@@ -361,11 +361,11 @@ public class TermMap{
 	
 	public Expression getLiteralNumericExpression(){
 		for(Expression expr: getLiteralExpressions()){
-			String type = dth.getCastType(expr);
+			String type = DataTypeHelper.getCastType(expr);
 			if(type != null && type.equals(dth.getNumericCastType())){
 				return expr;
 			}
-			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_NUMERIC)){
+			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_NUMERIC)){
 				return expr;
 			}
 		}
@@ -374,11 +374,11 @@ public class TermMap{
 	
 	public Expression getLiteralBinaryExpression(){
 		for(Expression expr: getLiteralExpressions()){
-			String type = dth.getCastType(expr);
+			String type = DataTypeHelper.getCastType(expr);
 			if(type != null && type.equals(dth.getBinaryDataType())){
 				return expr;
 			}
-			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BINARY)){
+			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BINARY)){
 				return expr;
 			}
 		}
@@ -387,11 +387,11 @@ public class TermMap{
 	
 	public Expression getLiteralDateExpression(){
 		for(Expression expr: getLiteralExpressions()){
-			String type = dth.getCastType(expr);
+			String type = DataTypeHelper.getCastType(expr);
 			if(type != null && type.equals(dth.getDateCastType())){
 				return expr;
 			}
-			if(dth.uncast(expr)instanceof Column &&((Column)dth.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_DATE)){
+			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_DATE)){
 				return expr;
 			}
 		}
@@ -410,7 +410,7 @@ public class TermMap{
 	
 	public Expression getResourceExpression(){
 		if(getResourceExpressions()!=null && getResourceExpressions().size()>0){
-		Function concat = FilterUtil.concat(getResourceExpressions().toArray(new Expression[0]));
+		Expression concat = FilterUtil.concat(getResourceExpressions().toArray(new Expression[0]));
 		return concat;
 		}
 			return null;
@@ -463,8 +463,8 @@ public class TermMap{
 	
 	
 	public Integer getLength(){
-		if(dth.uncast(getExpressions().get(1)) instanceof LongValue){
-			return  (int) ((LongValue)dth.uncast(getExpressions().get(1))).getValue();			
+		if(DataTypeHelper.uncast(getExpressions().get(1)) instanceof LongValue){
+			return  (int) ((LongValue)DataTypeHelper.uncast(getExpressions().get(1))).getValue();			
 		}else{
 			int i = 0;
 			for (Expression exp : getExpressions()) {
@@ -480,8 +480,8 @@ public class TermMap{
 	}
 	
 	public Integer getType(){
-		if(dth.uncast(getExpressions().get(0)) instanceof LongValue){
-			return  (int) ((LongValue)dth.uncast(getExpressions().get(0))).getValue();
+		if(DataTypeHelper.uncast(getExpressions().get(0)) instanceof LongValue){
+			return  (int) ((LongValue)DataTypeHelper.uncast(getExpressions().get(0))).getValue();
 		}else{
 			return null;
 		}
@@ -490,8 +490,8 @@ public class TermMap{
 	}
 	
 	public Integer getSqlType(){
-		if(dth.uncast(getExpressions().get(2)) instanceof LongValue){
-			return  (int) ((LongValue)dth.uncast(getExpressions().get(2))).getValue();
+		if(DataTypeHelper.uncast(getExpressions().get(2)) instanceof LongValue){
+			return  (int) ((LongValue)DataTypeHelper.uncast(getExpressions().get(2))).getValue();
 		}else{
 			return null;
 		}
@@ -499,12 +499,12 @@ public class TermMap{
 	}
 	public Expression getLanguage(){
 		
-		return dth.uncast(getExpressions().get(4));
+		return DataTypeHelper.uncast(getExpressions().get(4));
 
 	}
 	public String  getDataType(){
-		if(dth.uncast(getExpressions().get(5)) instanceof net.sf.jsqlparser.expression.StringValue){
-			return  (String) ((StringValue)dth.uncast(getExpressions().get(3))).getValue();
+		if(DataTypeHelper.uncast(getExpressions().get(5)) instanceof net.sf.jsqlparser.expression.StringValue){
+			return  (String) ((StringValue)DataTypeHelper.uncast(getExpressions().get(3))).getValue();
 		}else{
 			return null;
 		}

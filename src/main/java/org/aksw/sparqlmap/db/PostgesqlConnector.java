@@ -13,8 +13,7 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
-import org.aksw.sparqlmap.config.syntax.IDBAccess;
-import org.aksw.sparqlmap.mapper.subquerymapper.algebra.ImplementationException;
+import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +82,9 @@ public class PostgesqlConnector implements Connector {
 			log.error("Error querying table structure", e);
 		}finally{
 			try {
+				if(conn!=null){
 				conn.close();
+				}
 			} catch (SQLException e) {
 				log.error("Error:",e);
 			}
@@ -100,12 +101,7 @@ public class PostgesqlConnector implements Connector {
 	
 	
 	
-	public ResultSet executeSQL(String sql) throws SQLException{
-		java.sql.Statement stmt = getConnection().createStatement();
-		
-		
-		return stmt.executeQuery(sql);
-	}
+
 	
 	@Override
 	public Map<String,Integer> getDataTypeForView(Statement viewStatement) {
@@ -120,7 +116,6 @@ public class PostgesqlConnector implements Connector {
 		
 		Map<String,Integer> returnTypes = new HashMap<String, Integer>();
 		Connection conn = null;
-		List<SelectExpressionItem> items = new ArrayList<SelectExpressionItem>();
 		try {
 			conn = getConnection();
 			java.sql.Statement stmt = conn.createStatement();
@@ -132,7 +127,9 @@ public class PostgesqlConnector implements Connector {
 			log.error("Error querying table structure", e);
 		}finally{
 			try {
+				if(conn!=null){
 				conn.close();
+				}
 			} catch (SQLException e) {
 				log.error("Error:",e);
 			}
