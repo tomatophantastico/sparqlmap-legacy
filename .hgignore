@@ -1,3 +1,7 @@
-
-syntax: regexp
-^target$
+syntax: glob
+target
+.*
+*.log
+*.gz
+*.ttl
+*.*~
