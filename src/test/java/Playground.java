@@ -4,9 +4,23 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.hp.hpl.jena.sparql.core.Var;
+
 
 
 public class Playground {
+	
+	@Test
+	public void testVarEquivalence(){
+		HashSet<Var> vars = new HashSet<Var>();
+		vars.add(Var.alloc("a"));
+		vars.add(Var.alloc("a"));
+		Assert.assertTrue(vars.size()==2);
+		
+
+		
+		
+	}
 	
 	
 	@Test

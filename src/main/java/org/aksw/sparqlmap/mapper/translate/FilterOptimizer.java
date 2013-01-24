@@ -14,6 +14,9 @@ import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
 import net.sf.jsqlparser.schema.Column;
 
+import org.openjena.atlas.logging.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -33,6 +36,8 @@ public class FilterOptimizer {
 	public void setOptimize(){
 		shortcutFilters = new Boolean(env.getProperty("sm.opt.shortcutfilters"));
 	}
+	
+	private Logger log = LoggerFactory.getLogger(FilterOptimizer.class);
 	
 	
 
@@ -64,9 +69,6 @@ public class FilterOptimizer {
 		
 		if (sqlExpression instanceof EqualsTo){
 			EqualsTo eqto = (EqualsTo) sqlExpression;
-			
-			
-			
 			
 		}
 		
@@ -151,9 +153,13 @@ public class FilterOptimizer {
 								reduced = true;
 							}
 						} else {
-							throw new ImplementationException(
-									"Should never come here, resource constructiosn should always be String + col + string + col ...., but is: "
-											+ func);
+							
+							
+							log.debug("No Filtershortcutting for " + sqlExpression);
+							return sqlExpression;
+//							throw new ImplementationException(
+//									"Should never come here, resource columns should always be string + col + string + col ...., but is: "
+//											+ func);
 						}
 					}
 				}

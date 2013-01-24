@@ -41,7 +41,7 @@ public class TripleMap {
 
 	
 	public void addPO(TermMap predicate,TermMap object){
-		PO po = new PO();
+		PO po = new PO(this);
 		po.setPredicate(predicate);
 		po.setObject(object);
 		pos.add(po);
@@ -53,10 +53,20 @@ public class TripleMap {
 
 
 	public class PO{
+		
+		private TripleMap tripleMap;
 		private TermMap predicate;
 		private TermMap object;
 		
 		
+		
+		public PO(TripleMap tripleMap) {
+			super();
+			this.tripleMap = tripleMap;
+		}
+		public TripleMap getTripleMap() {
+			return tripleMap;
+		}
 		public TermMap getPredicate() {
 			return predicate;
 		}
@@ -118,7 +128,7 @@ public class TripleMap {
 	@Override
 	public String toString() {
 		
-		return "TripleMap for " + this.from.toString();
+		return "TripleMap: " + uri;
 	}
 
 	public String getUri() {

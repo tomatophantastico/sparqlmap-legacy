@@ -140,17 +140,6 @@ public abstract class FilterUtil {
 
 	
 
-	
-	/**
-	 * this method does nothing to the expresssion,
-	 * 
-	 * @param sqlExpression
-	 * @return
-	 */
-	private Expression checkCompatibility(Expression sqlExpression) {
-		// TODO Auto-generated method stub
-		return sqlExpression;
-	}
 
 	
 	

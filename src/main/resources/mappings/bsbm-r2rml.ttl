@@ -17,31 +17,67 @@ mapping:Product
               [ rr:objectMap
                         [ rr:column "propertyNum1"
                         ] ;
-                rr:predicate bsbm-vocab:productPropertyNum1
+                rr:predicate bsbm-vocab:productPropertyNumeric1
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "propertyNum2"
                         ] ;
-                rr:predicate bsbm-vocab:propertyNum2
+                rr:predicate bsbm-vocab:productPropertyNumeric2
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "propertyNum3"
+                        ] ;
+                rr:predicate bsbm-vocab:productPropertyNumeric3
+              ] ;              
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "propertyNum4"
+                        ] ;
+                rr:predicate bsbm-vocab:productPropertyNumeric4
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "propertyNum5"
                         ] ;
-                rr:predicate bsbm-vocab:productPropertyNum5
+                rr:predicate bsbm-vocab:productPropertyNumeric5
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "propertyTex1"
                         ] ;
-                rr:predicate bsbm-vocab:productPropertyTex1
+                rr:predicate bsbm-vocab:productPropertyTextual1
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "propertyTex2"
+                        ] ;
+                rr:predicate bsbm-vocab:productPropertyTextual2
+              ] ;
+    rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "propertyTex3"
+                        ] ;
+                rr:predicate bsbm-vocab:productPropertyTextual3
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "propertyTex4"
+                        ] ;
+                rr:predicate bsbm-vocab:productPropertyTextual4
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "propertyTex5"
                         ] ;
-                rr:predicate bsbm-vocab:productPropertyTex5
+                rr:predicate bsbm-vocab:productPropertyTextual5
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "propertyTex6"
+                        ] ;
+                rr:predicate bsbm-vocab:productPropertyTextual6
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -50,18 +86,8 @@ mapping:Product
                         ] ;
                 rr:predicate dc:date
               ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "propertyNum3"
-                        ] ;
-                rr:predicate bsbm-vocab:propertyNum3
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "propertyTex3"
-                        ] ;
-                rr:predicate bsbm-vocab:productPropertyTex3
-              ] ;
+
+  
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "comment"
@@ -80,18 +106,8 @@ mapping:Product
                         ] ;
                 rr:predicate bsbm-vocab:productPropertyNum6
               ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "propertyTex2"
-                        ] ;
-                rr:predicate bsbm-vocab:propertyTex2
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "propertyNum4"
-                        ] ;
-                rr:predicate bsbm-vocab:propertyNum4
-              ] ;
+
+
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/Producer{producer}"
@@ -100,32 +116,11 @@ mapping:Product
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "propertyTex4"
-                        ] ;
-                rr:predicate bsbm-vocab:productPropertyTex4
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "propertyTex6"
-                        ] ;
-                rr:predicate bsbm-vocab:propertyTex6
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
                         [ rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/Publisher{publisher}"
                         ] ;
                 rr:predicate dc:publisher
               ] ;
-     rr:predicateObjectMap [
-    	rr:predicate rdf:type;
-    		rr:objectMap [
-        		rr:parentTriplesMap mapping:ProductType;
-        		rr:joinCondition [
-            		rr:child "parent";
-            		rr:parent "nr";
-            	];
-        	];
-    	];
+    
       rr:subjectMap
               [ rr:class bsbm-vocab:Product ;
                 rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer{producer}/Product{nr}"
@@ -162,7 +157,7 @@ mapping:ProductFeature
               ] ;
       rr:subjectMap
               [ rr:class bsbm-vocab:ProductFeature ;
-                rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature/{nr}"
+                rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature{nr}"
               ] .
 
 mapping:ProductFeatureProduct
@@ -182,7 +177,7 @@ mapping:ProductFeatureProduct
               ] ;
       rr:subjectMap
               [
-                rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer{producer}/Product{nr}"
+                rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer{producer}/Product{nr}"                
               ] .
 
 mapping:Person
@@ -355,16 +350,16 @@ mapping:ProductType
 			rr:tableName "producttype"
 		];
 		
-	rr:predicateObjectMap [
-    	rr:predicate rdfs:subClassOf;
-    		rr:objectMap [
-        		rr:parentTriplesMap mapping:ProductType;
-        		rr:joinCondition [
-            		rr:child "parent";
-            		rr:parent "nr";
-            	];
-        	];
-    	];
+#	rr:predicateObjectMap [
+#    	rr:predicate rdfs:subClassOf;
+#   		rr:objectMap [
+#       		rr:parentTriplesMap mapping:ProductType;
+#        		rr:joinCondition [
+#            		rr:child "parent";
+#            		rr:parent "nr";
+#            	];
+#        	];
+#    	];
 		
 	  rr:predicateObjectMap
               [ rr:objectMap

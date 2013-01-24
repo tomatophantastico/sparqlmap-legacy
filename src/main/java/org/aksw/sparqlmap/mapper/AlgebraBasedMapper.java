@@ -84,6 +84,8 @@ public class AlgebraBasedMapper implements Mapper {
 		
 		MappingBinding queryBinding = mff.createBindnings(op);
 		
+		log.info(queryBinding.toString());
+		
 		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mff,queryBinding,dth,exprconv,colhelp,fopt);
 		
 		OpWalker.walk(op, builderVisitor);
@@ -141,7 +143,8 @@ public class AlgebraBasedMapper implements Mapper {
 			tripleMaps.add(trm);
 			triples.add(triple);
 			MappingBinding qbind = new MappingBinding(mappingConf,triples);
-			qbind.getBinding().replaceValues(triple, tripleMaps);
+			
+			qbind.getBinding().put(triple, tripleMaps);
 			MappingFilterFinder mff = new MappingFilterFinder(mappingConf);
 			mff.setProject((OpProject)qop);
 			

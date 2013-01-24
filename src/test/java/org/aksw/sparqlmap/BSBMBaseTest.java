@@ -13,11 +13,17 @@ public abstract class BSBMBaseTest {
 
 	private IDBAccess dbConf;
 
+	public ApplicationContext con;
+	
+	
+
+	
+
 	@Before
 	public void setUp() throws Exception {
 		String pathToConf = "./src/test/conf/bsbm";
 		
-		ApplicationContext con = ContextSetup.contextFromFolder(pathToConf);
+		con = ContextSetup.contextFromFolder(pathToConf);
 		r2r = (SparqlMap) con.getBean("sparqlMap");
 		
 		
