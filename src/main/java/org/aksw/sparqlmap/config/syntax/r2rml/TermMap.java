@@ -57,8 +57,9 @@ public class TermMap{
 
 	public TermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions, List<FromItem> fromItems, Set<EqualsTo> joinConditions, TripleMap trm) {
 			this.dth= dataTypeHelper;
-			this.trm = trm;		
 			this.expressions = expressions;
+
+			this.trm = trm;		
 			for(FromItem fi: fromItems){
 				alias2fromItem.put(fi.getAlias(), fi);
 			}

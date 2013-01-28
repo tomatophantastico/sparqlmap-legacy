@@ -29,7 +29,7 @@ import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap.PO;
 import org.aksw.sparqlmap.mapper.finder.MappingBinding;
-import org.aksw.sparqlmap.mapper.finder.MappingFilterFinder;
+import org.aksw.sparqlmap.mapper.finder.QueryInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,10 +63,10 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	TermMap crc;
 
-	private MappingFilterFinder mappingFilterFinder;
+	private QueryInformation mappingFilterFinder;
 	private FilterOptimizer fopt;
 
-	public QueryBuilderVisitor(	MappingFilterFinder mff, MappingBinding queryBinding, DataTypeHelper dataTypeHelper, ExpressionConverter expressionConverter, ColumnHelper colhelper,FilterOptimizer fopt) {
+	public QueryBuilderVisitor(	QueryInformation mff, MappingBinding queryBinding, DataTypeHelper dataTypeHelper, ExpressionConverter expressionConverter, ColumnHelper colhelper,FilterOptimizer fopt) {
 		this.fopt = fopt;
 		this.queryBinding = queryBinding;
 		this.mappingFilterFinder= mff;
@@ -204,23 +204,6 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		List<Expr> filters = opfilter.getExprs().getList();
 		List<Expr> realFilterS= new ArrayList<Expr>();
 		for(Expr filter: filters){
-			//we ignore all the filters introduced 
-			//by the beautifier here, as this type of filter gets processed earlier on
-			
-			
-//			if (filter instanceof E_Equals) {
-//				E_Equals e_e = (E_Equals) filter;
-//				
-//				if (e_e.getArg1() instanceof ExprVar && e_e.getArg2() instanceof NodeValue) {
-//					ExprVar leftVar = (ExprVar) e_e.getArg1();
-//					NodeValue rightVar = (NodeValue) e_e.getArg2();
-//					if(leftVar.asVar().getVarName().endsWith(ColumnHelper.COL_NAME_INTERNAL)){
-//						break;
-//					}
-//
-//				}
-//				
-//			}
 			realFilterS.add(filter);
 		}
 		
@@ -243,42 +226,9 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		// applicable or we add the col directly to the bgpSelect
 
 		for (Triple triple : opBGP.getPattern().getList()) {
-
-			// first we determine, whether the we need to create a subselect or
-			// of
-			// the ?p can be mapped to a single column
-
-			// we know, that p is a variable, as we previously ran the
-			// prettifier
-
-		
-			
 			
 			
 			bgpSelect.addSubselect(generateUnionFromItem(bgpSelect,triple), false);
-			
-			
-//			if (pUri != null) {
-//				// pUri is given.
-//
-//				if (sbmap.getLdps().size() == 1) {
-//					// we can map everything in a simple query. We do that now
-//					generateUnionFromItem(bgpSelect, triple, scope, sbmap);
-//
-//				} else if (sbmap.getLdps().size() == 0) {
-//					log.error("Not working with unmappable triples yet.");
-//					log.error("Could not map: " + triple.toString());
-//				} else {
-//					// p is given, but we could not map every triple in a
-//					// straight way
-//					generateUnionFromItem(bgpSelect,triple, scope, sbmap);
-//				}
-//
-//			} else {
-//				// p is not given.
-//						
-//				
-//			}
 
 		}
 
@@ -288,56 +238,11 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		super.visit(opBGP);
 	}
 	
-
-//	/**
-//	 * This function maps the triple with the varMapping into the bgpselect This
-//	 * function works only, if the triples predicate is set and varmapping maps
-//	 * to only one ldp
-//	 * 
-//	 * @param bgpSelect
-//	 * @param triple
-//	 * @param pUri
-//	 * @param varMappingMap
-//	 */
-//	private void processQueryPattern(PlainSelectWrapper bgpSelect,
-//			Triple triple, String pUri, ScopeBlock scope,SBlockNodeMapping sbmap) {
-//		// add to the from or union
-//		String ldp = sbmap.getLdps().iterator().next();
-//
-//		Set<Mapping> ldpMappings = new HashSet<Mapping>(sbmap.getMappings(ldp));
-//
-//		for (Mapping map : ldpMappings) {
-//
-//			// mapping contains columns that can be mapped for this triple
-//			Collection<ColumDefinition> cols = map
-//					.getColumDefinition(pUri);
-//			if (cols != null && cols.size()>0) {
-//				if (cols.size() == 1) {
-//					// add the subject column
-//					bgpSelect.addTripleQuery(
-//							map.getIdColumn().getTermCreator(), triple
-//									.getSubject().getName(),cols.iterator().next().getTermCreator(), triple
-//									.getObject().getName(),false);
-//	
-//			
-//				} else {
-//					throw new ImplementationException(
-//							"Non Implemented Behavior: predicate does not map to a single column. Need to implement union here.");
-//				}
-//
-//				bgpSelect.addFilterExpression(scope.getFilterFor(
-//						Var.alloc(triple.getSubject().getName()),
-//						Var.alloc(triple.getObject())));
-//			}
-//
-//		}
-//	}
-
 	private Wrapper generateUnionFromItem( PlainSelectWrapper bgpSelect, Triple triple) {
 
 		// do we need to create a union?
 		
-		Collection<TripleMap> trms = queryBinding.getBinding().get(triple);
+		Collection<TripleMap> trms = queryBinding.getBindingMap().get(triple);
 		
 		List<PlainSelectWrapper> pselects = new ArrayList<PlainSelectWrapper>();
 		

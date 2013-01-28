@@ -18,7 +18,12 @@ import com.hp.hpl.jena.sparql.algebra.OpVisitorBase;
 import com.hp.hpl.jena.sparql.algebra.OpVisitorByTypeBase;
 import com.hp.hpl.jena.sparql.algebra.OpWalker;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
+import com.hp.hpl.jena.sparql.algebra.op.OpDistinct;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
+import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
+import com.hp.hpl.jena.sparql.algebra.op.OpProject;
+import com.hp.hpl.jena.sparql.algebra.op.OpReduced;
+import com.hp.hpl.jena.sparql.algebra.op.OpSlice;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
 
@@ -28,18 +33,20 @@ public class FilterFinder{
 	
 	
 	
-	public static Map<Triple, Map<String, Collection<Expr>>> findFilters(Op op){
-	// for every triple, this map holds all expressions that are applicable to its variables.
-	Map<Triple, Map<String,Collection<Expr>>> triples2variables2expressions = new HashMap<Triple, Map<String,Collection<Expr>>>();
-	
-	final Multiset<Expr> filterStack = HashMultiset.create();
-	
-	OpWalker.walk(op,new Pusher(filterStack), new Putter(filterStack, triples2variables2expressions), new Popper(filterStack));
-	
-	return triples2variables2expressions;
-	
+	public static QueryInformation getQueryInformation(Op op) {
+		// for every triple, this map holds all expressions that are applicable
+		// to its variables.
+		QueryInformation qi = new QueryInformation();
+		qi.setQuery(op);
+
+		final Multiset<Expr> filterStack = HashMultiset.create();
+
+		OpWalker.walk(op,new Putter(filterStack, qi), new Pusher(filterStack), 
+				new Popper(filterStack));
+
+		return qi;
+
 	}
-	
 	
 
 	
@@ -62,8 +69,6 @@ public class FilterFinder{
 			}
 			
 		}
-		
-		
 	}
 	/**
 	 * removes from the stack
@@ -94,14 +99,44 @@ public class FilterFinder{
 	private static class Putter extends OpVisitorBase{
 		
 		private Multiset<Expr> filterStack;
-		private Map<Triple, Map<String, Collection<Expr>>> triples2variables2expressions;
+		private QueryInformation qi;
 
 		public Putter(
 				Multiset<Expr> filterStack,
-				Map<Triple, Map<String, Collection<Expr>>> triples2variables2expressions) {
+				QueryInformation qi) {
 			this.filterStack = filterStack;
-			this.triples2variables2expressions = triples2variables2expressions;
+			this.qi = qi;
 		}
+		@Override
+		public void visit(OpDistinct opDistinct) {
+			qi.setDistinct(opDistinct);
+			
+		}
+		
+		@Override
+		public void visit(OpOrder opOrder) {
+			qi.setOrder(opOrder);
+		}
+		
+		@Override
+		public void visit(OpProject opProject) {
+			qi.setProject(opProject);
+		}
+		@Override
+		public void visit(OpReduced opReduced) {
+			qi.setReduced(opReduced);
+		}
+		
+		@Override
+		public void visit(OpSlice opSlice) {
+			qi.setSlice(opSlice);
+		}
+		
+		
+		
+		
+		
+		
 
 		@Override
 		public void visit(OpBGP opBGP) {
@@ -129,14 +164,12 @@ public class FilterFinder{
 				var2expr.put(triple.getPredicate().getName(), pExprs);
 				var2expr.put(triple.getObject().getName(), oExprs);
 				
-				triples2variables2expressions.put(triple, var2expr);
+				qi.getFiltersforvariables().put(triple, var2expr);
 				
 				
 			}
 			
-			
-			// TODO Auto-generated method stub
-			super.visit(opBGP);
+
 		}
 		
 		

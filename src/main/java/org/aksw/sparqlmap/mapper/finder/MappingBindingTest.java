@@ -50,12 +50,17 @@ public class MappingBindingTest extends BSBMBaseTest {
 		Op op = this.beautifier.compileToBeauty(QueryFactory.create(q1_reduced)); // new  AlgebraGenerator().compile(beautified);
 		log.info(op.toString());
 		
-		MappingFilterFinder mff = new MappingFilterFinder(model);
+		QueryInformation qi = FilterFinder.getQueryInformation(op);
 		
-		MappingBinding queryBinding = mff.createBindnings(op);
+				
+		Binder binder = new Binder(model, qi);
 		
-		for(Triple triple : queryBinding.getBinding().keySet()){
-			for(TripleMap tm : queryBinding.getBinding().get(triple)){
+		
+		
+		MappingBinding queryBinding = binder.bind(op);
+		
+		for(Triple triple : queryBinding.getBindingMap().keySet()){
+			for(TripleMap tm : queryBinding.getBindingMap().get(triple)){
 				for(PO po : tm.getPos()){
 					if(triple.toString().contains("label")){
 						

@@ -176,8 +176,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 							String segment =rs.getString(colname);
 							if(segment !=null){
 								try {
-									
-									
+
 									uri.append(URLEncoder.encode(segment, "US-ASCII").replaceAll("\\+", "%20"));
 								} catch (UnsupportedEncodingException e) {
 									// TODO Auto-generated catch block

@@ -7,6 +7,7 @@
 @prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix mapping: <http://aksw.org/Projects/sparqlmap/mappings/bsbm/>.
+@prefix rev:     <http://purl.org/stuff/rev#>.
 
 mapping:Product
       rr:logicalTable
@@ -108,12 +109,29 @@ mapping:Product
               ] ;
 
 
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/Producer{producer}"
-                        ] ;
-                rr:predicate bsbm-vocab:producer
-              ] ;
+       rr:predicateObjectMap [
+    		rr:predicate  bsbm-vocab:producer;
+    		rr:objectMap [
+        		rr:parentTriplesMap mapping:Producer;
+        		rr:joinCondition [
+            		rr:child "producer";
+            		rr:parent "nr";
+            	];
+        	];
+    	];      
+              
+      rr:predicateObjectMap [
+    		rr:predicate dc:publisher;
+    		rr:objectMap [
+        		rr:parentTriplesMap mapping:Producer;
+        		rr:joinCondition [
+            		rr:child "publisher";
+            		rr:parent "nr";
+            	];
+        	];
+    	];        
+              
+              
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/Publisher{publisher}"
@@ -242,6 +260,16 @@ mapping:Offer
     		];
     	];
       rr:predicateObjectMap [
+    		rr:predicate dc:publisher;
+    		rr:objectMap [
+        		rr:parentTriplesMap mapping:Vendor;
+        		rr:joinCondition [
+            		rr:child "vendor";
+            		rr:parent "nr";
+            	];
+        	];
+    	];
+    	 rr:predicateObjectMap [
     		rr:predicate bsbm-vocab:vendor;
     		rr:objectMap [
         		rr:parentTriplesMap mapping:Vendor;
@@ -274,7 +302,7 @@ mapping:Offer
               [ rr:objectMap
                         [ rr:column "deliveryDays"
                         ] ;
-                rr:predicate bsbm-vocab:price
+                rr:predicate bsbm-vocab:deliveryDays
               ] ;
        rr:predicateObjectMap
               [ rr:objectMap
@@ -320,10 +348,47 @@ mapping:Vendor
               ] ; 
        rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:template "http://downlode.org/rdf/iso-3166/countries{\"homepage\"}";
+                        [ rr:template "http://downlode.org/rdf/iso-3166/countries{\"country\"}";
                         ] ;
                 rr:predicate bsbm-vocab:country
-              ] .   
+              ] .
+                 
+mapping:Producer
+   	rr:logicalTable
+              [ 
+                rr:tableName "producer"
+              ] ;
+      rr:subjectMap
+              [ rr:class bsbm-vocab:Vendor ;
+                rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer{nr}/Producer{nr}"
+              ] ;                     
+       rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "label";
+                       ] ;
+                rr:predicate rdfs:label
+              ] ;  
+       rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "comment";
+                        ] ;
+                rr:predicate rdfs:comment
+              ] ;                
+       rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "homepage";
+                          rr:termType rr:IRI
+                        ] ;
+                rr:predicate foaf:homepage
+              ] ; 
+       rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:template "http://downlode.org/rdf/iso-3166/countries{\"country\"}";
+                        ] ;
+                rr:predicate bsbm-vocab:country
+              ] .
+                 
+            
                
 mapping:ProductTypeProduct
 	rr:logicalTable[
@@ -349,18 +414,6 @@ mapping:ProductType
 		[
 			rr:tableName "producttype"
 		];
-		
-#	rr:predicateObjectMap [
-#    	rr:predicate rdfs:subClassOf;
-#   		rr:objectMap [
-#       		rr:parentTriplesMap mapping:ProductType;
-#        		rr:joinCondition [
-#            		rr:child "parent";
-#            		rr:parent "nr";
-#            	];
-#        	];
-#    	];
-		
 	  rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "label";
@@ -376,4 +429,90 @@ mapping:ProductType
 	rr:subjectMap [
                rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType{nr}"
 	].	
+		                        
+mapping:review
+   	rr:logicalTable
+              [ 
+                rr:tableName "review"
+              ] ;
+              
+      rr:subjectMap
+              [ rr:class rev:Review ;
+                rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite{publisher}/Review{nr}"
+              ] ;
+              
+      rr:predicateObjectMap [
+    		rr:predicate bsbm-vocab:reviewFor;
+    		rr:objectMap [
+        		rr:parentTriplesMap mapping:Product;
+        		rr:joinCondition [
+            		rr:child "product";
+            		rr:parent "nr";
+        		];
+    		];
+    	];
+      rr:predicateObjectMap [
+    		rr:predicate rev:reviewer;
+    		rr:objectMap [
+        		rr:parentTriplesMap mapping:Person;
+        		rr:joinCondition [
+            		rr:child "person";
+            		rr:parent "nr";
+            	];
+        	];
+    	];
+    	rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite{publisher}/dataFromRatingSite{publisher}"
+                        ] ;
+                rr:predicate dc:publisher 
+              ] ;
+    	rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "reviewDate"
+                        ] ;
+                rr:predicate bsbm-vocab:reviewDate 
+              ] ;
+    	rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "title"
+                        ] ;
+                rr:predicate dc:title
+              ] ; 
+    	rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "text"
+                        ] ;
+                rr:predicate rev:text 
+              ] ;                                 
+    	rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "rating1"
+                        ] ;
+                rr:predicate bsbm-vocab:rating1
+              ] ;
+        rr:predicateObjectMap
+              [ rr:objectMap
+        				[ rr:column "rating2"
+                        ] ;
+                rr:predicate bsbm-vocab:rating2
+              ] ;
+        rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "rating3"
+                        ] ;
+                rr:predicate bsbm-vocab:rating3
+              ] ;
+        rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "rating4"
+                        ] ;
+                rr:predicate bsbm-vocab:rating4
+              ]; 
+                      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "publishDate"
+                        ] ;
+                rr:predicate dc:date
+              ]     .		                        
 		                        

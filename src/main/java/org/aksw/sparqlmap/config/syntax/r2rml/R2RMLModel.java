@@ -68,8 +68,6 @@ public class R2RMLModel {
 	Model mapping = null;
 	Model r2rmlSchema = null;
 	
-	private boolean validate = true;
-	private boolean validateDeep = true;
 
 	Map<String, Map<String, String>> col2castTo = new HashMap<String, Map<String, String>>();
 
@@ -422,26 +420,43 @@ public class R2RMLModel {
 
 				ptm = createTermMap(fromItem, tmUri, triplemap, graph, p,
 						ColumnHelper.COL_VAL_TYPE_RESOURCE);
+				
+				
+				
+				
 
 				TermMapQueryResult o = new TermMapQueryResult(posol, "o",
 						fromItem);
-				o.termTypeInt = ColumnHelper.COL_VAL_TYPE_RESOURCE;
-
-				TermMap otm = null;
-
-				if (o.column != null
-						|| o.lang != null
-						|| o.datatypeuri != null
-						|| (o.termType != null && o.termType.getURI().equals(
-								R2RML.Literal))) {
-					o.termTypeInt = ColumnHelper.COL_VAL_TYPE_LITERAL;
-				} else if (o.termType != null
-						&& o.termType.getURI().equals(R2RML.BlankNode)) {
-					o.termTypeInt = ColumnHelper.COL_VAL_TYPE_BLANK;
+				//the term type definition according to the R2RML spec  http://www.w3.org/TR/r2rml/#termtype
+				
+				int otermtype = ColumnHelper.COL_VAL_TYPE_RESOURCE;
+				// if it is explicitly defined we use this value
+				if(o.termType != null){
+					if(o.termType.getURI().equals(R2RML.IRI)){
+						otermtype = ColumnHelper.COL_VAL_TYPE_RESOURCE;
+					}else if (o.termType.getURI().equals(R2RML.BlankNode)) {
+						otermtype = ColumnHelper.COL_VAL_TYPE_BLANK;
+					} else if (o.termType.getURI().equals(R2RML.Literal)) {
+						otermtype = ColumnHelper.COL_VAL_TYPE_LITERAL;
+					}
+				}else{ //if not
+					if(o.column != null //when column, etc. then it is a literal
+							|| o.lang != null
+							|| o.datatypeuri != null
+							|| (o.termType != null && o.termType.getURI().equals(
+									R2RML.Literal))){
+						otermtype = ColumnHelper.COL_VAL_TYPE_LITERAL;
+						
+					}else{
+						//it stays IRI
+					}
 				}
+				
+				
+			
 
-				otm = createTermMap(fromItem, tmUri, triplemap, graph, o,
-						o.termTypeInt);
+				TermMap otm = createTermMap(fromItem, tmUri, triplemap, graph, o,
+						otermtype);
 
 				triplemap.addPO(ptm, otm);
 

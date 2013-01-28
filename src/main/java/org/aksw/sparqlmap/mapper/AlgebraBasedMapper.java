@@ -1,9 +1,13 @@
 package org.aksw.sparqlmap.mapper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import net.sf.jsqlparser.statement.select.Select;
@@ -15,8 +19,10 @@ import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.mapper.finder.Binder;
+import org.aksw.sparqlmap.mapper.finder.FilterFinder;
 import org.aksw.sparqlmap.mapper.finder.MappingBinding;
-import org.aksw.sparqlmap.mapper.finder.MappingFilterFinder;
+import org.aksw.sparqlmap.mapper.finder.QueryInformation;
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.translate.ExpressionConverter;
 import org.aksw.sparqlmap.mapper.translate.FilterOptimizer;
@@ -80,13 +86,15 @@ public class AlgebraBasedMapper implements Mapper {
 		Op op = this.beautifier.compileToBeauty(origQuery); // new  AlgebraGenerator().compile(beautified);
 		log.info(op.toString());
 		
-		MappingFilterFinder mff = new MappingFilterFinder(mappingConf);
+		QueryInformation qi = FilterFinder.getQueryInformation(op);
 		
-		MappingBinding queryBinding = mff.createBindnings(op);
+		Binder binder = new Binder(this.mappingConf,qi);
+		
+		MappingBinding queryBinding = binder.bind(op);
 		
 		log.info(queryBinding.toString());
 		
-		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(mff,queryBinding,dth,exprconv,colhelp,fopt);
+		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(qi,queryBinding,dth,exprconv,colhelp,fopt);
 		
 		OpWalker.walk(op, builderVisitor);
 		
@@ -138,14 +146,14 @@ public class AlgebraBasedMapper implements Mapper {
 		
 		
 		for(TripleMap trm: mappingConf.getTripleMaps()){
-			Set<Triple> triples = new HashSet<Triple>();
-			Set<TripleMap> tripleMaps = new HashSet<TripleMap>();
-			tripleMaps.add(trm);
-			triples.add(triple);
-			MappingBinding qbind = new MappingBinding(mappingConf,triples);
+			Map<Triple,Collection<TripleMap>> bindingMap = new HashMap<Triple, Collection<TripleMap>>();
+			bindingMap.put(triple, Arrays.asList(trm));
 			
-			qbind.getBinding().put(triple, tripleMaps);
-			MappingFilterFinder mff = new MappingFilterFinder(mappingConf);
+			
+			MappingBinding qbind = new MappingBinding(bindingMap);
+			
+			
+			QueryInformation mff = FilterFinder.getQueryInformation(qop);
 			mff.setProject((OpProject)qop);
 			
 			QueryBuilderVisitor qbv = new QueryBuilderVisitor(mff,qbind,dth,exprconv,colhelp,fopt);

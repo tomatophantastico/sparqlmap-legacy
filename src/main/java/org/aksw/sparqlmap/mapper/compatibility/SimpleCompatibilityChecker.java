@@ -1,6 +1,9 @@
 package org.aksw.sparqlmap.mapper.compatibility;
 
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import net.sf.jsqlparser.expression.Expression;
@@ -13,12 +16,15 @@ import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.translate.FilterUtil;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 
+import com.google.common.base.Splitter;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.Expr;
+import com.hp.hpl.jena.sparql.expr.ExprVar;
 import com.hp.hpl.jena.sparql.expr.NodeValue;
+import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueNode;
 
 public class SimpleCompatibilityChecker implements CompatibilityChecker{
 	
@@ -46,20 +52,9 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 					}
 				}else if(datatype1!=null && datatype2==null||datatype2!=null && datatype1==null){
 					return false;
+				}else{
+					throw new ImplementationException("Check non considered case");
 				}
-				
-//				Expression lang1 = DataTypeHelper.uncast(termMap.getLanguage());
-//				Expression lang2 = DataTypeHelper.uncast(termMap2.getLanguage());
-//				
-//				if(!lang1.getClass().equals(lang2.getClass())){
-//					
-//					return false;
-//				}
-//				
-				
-				
-				
-				
 				
 			}else {
 				//is either blank node or resource, so we evaluate the resource constructor
@@ -67,66 +62,175 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 				List<Expression> resourceExpr1 = termMap.getResourceExpressions();
 				List<Expression> resourceExpr2 = termMap2.getResourceExpressions();
 								
+
+				//the uri separator split list. Currently only split for  "/"
+				List<Object> splitUri1 = split(resourceExpr1);
+				List<Object> splitUri2 = split(resourceExpr2);
 				
-				
-				
-				
-				
-				//check for prefix
-				String prefix1 = ((StringValue) DataTypeHelper.uncast(resourceExpr1.get(0))).getNotExcapedValue();
-				String prefix2 = ((StringValue) DataTypeHelper.uncast(resourceExpr2.get(0))).getNotExcapedValue();
-				
-				//if they are constant and identical, they match
-				if(resourceExpr1.size()==1 && resourceExpr2.size()==1){
-					if(prefix1.equals(prefix2)){
-						return true;
-					}
+				return evaluateSplits(splitUri1,splitUri2);
+		
+			}
+		}else{
+			return false;
+		}
+		// fallback
+		
+		return true;
+	}
+	
+	
+	private boolean evaluateSplits(List<Object> splitUri1,
+		List<Object> splitUri2) {
+		
+		
+		//the basic structure of these splits has to be the same
+		if(splitUri1.size()!=splitUri2.size()){
+			return false;
+		}
+		
+		
+		Iterator<Object> iter1 = splitUri1.iterator();
+		Iterator<Object> iter2 = splitUri2.iterator();
+	
+		
+		
+	
+		
+		while(iter1.hasNext() && iter2.hasNext()){
+			
+			Object current1 = iter1.next();
+			Object current2 = iter2.next();
+			
+			if(current1 instanceof String && current2 instanceof String){
+				//check if is the same separator
+				if(!((String)current1).equals(((String)current1))){
+					return false;
 				}
+			} else if(current1 instanceof List<?> && current2 instanceof List<?>){
+				//we check the separator-free part.
+				List<Object> list1 = (List<Object>) current1;
+				List<Object> list2 = (List<Object>) current2;
 				
-				//this prefix evaluation is not 100 percent precise, but should do the trick for now.
-				if(!prefix1.isEmpty() && !prefix2.isEmpty()){
-					//if present, they have to start with the same string an be followed by a column
-					
-					boolean can1generate2 = prefix1.startsWith(prefix2) && resourceExpr1.size()>1;
-					boolean can2generate1 = prefix2.startsWith(prefix1) && resourceExpr2.size()>1;
-					
-					//if neither can generate the other, they are not compatible
-					if(!(can1generate2||can2generate1)){
+				//we only have to check for the first and last parts.
+				Object prefixExpr1 = list1.get(0);
+				Object prefixExpr2 = list2.get(0);
+				
+				if(prefixExpr1 instanceof String && prefixExpr2 instanceof String){
+					String prefix1 = ((String)prefixExpr1);
+					String prefix2 = ((String)prefixExpr2);
+					if(!(prefix1.startsWith(prefix2)||prefix2.startsWith(prefix1))){
 						return false;
 					}
-					
 				}
+
+				Object suffixExpr1 = list1.get(list1.size()-1);
+				Object suffixExpr2 = list2.get(list2.size()-1);
 				
-				//and suffix, if there is any
-				
-				Expression suffixExpr1 = DataTypeHelper.uncast(DataTypeHelper.uncast(resourceExpr1.get(resourceExpr1.size()-1)));
-				Expression suffixExpr2 = DataTypeHelper.uncast(DataTypeHelper.uncast(resourceExpr2.get(resourceExpr2.size()-1)));
-				
-				if(suffixExpr1 instanceof StringValue && suffixExpr2 instanceof StringValue){
-					String suffix1 = ((StringValue)suffixExpr1).getNotExcapedValue();
-					String suffix2 = ((StringValue)suffixExpr2).getNotExcapedValue();
+				if(suffixExpr1 instanceof String && suffixExpr2 instanceof String){
+					String suffix1 = ((String)suffixExpr1);
+					String suffix2 = ((String)suffixExpr2);
 					if(!(suffix1.endsWith(suffix2)||suffix2.endsWith(suffix1))){
 						return false;
 					}
 				}
-				
-				
-				
+
+			}else{
+				throw new ImplementationException("Bad uri-separator split resource expressions");
 			}
-			
-			
-			
 			
 		}
 		
-		//catch all. is filtered out by the database hopefully.
+		
 		return true;
+			
+			
 		
-		
+	
+
 		
 	}
 	
 	
+
+	/**
+	 * creates an list of objects, following this scheme: if a 
+	 * string is present, than it is a uri separator. if there is a list in there, then we have a sequence of non-uri-separators and 
+	 * 
+	 * @param resourceExpr1
+	 * @return
+	 */
+	private List<Object> split(List<Expression> resourceExpr) {
+		
+		List<Object> uriSeparatedSplit = new ArrayList<Object>();
+		
+		for(Expression expression : resourceExpr){
+			if(DataTypeHelper.uncast(expression) instanceof StringValue){
+				
+				
+				String stringResourcepart = ((StringValue)DataTypeHelper.uncast(expression)).getNotExcapedValue();
+				StringBuilder nonSeparatorPart = new StringBuilder();
+				for(char c : stringResourcepart.toCharArray()){
+					if(c =='/'){
+						//put the string builder content, if there is any into the list
+						if(nonSeparatorPart.length()>0){
+							
+							putNonSeparatorInPlace(uriSeparatedSplit,
+									nonSeparatorPart);
+							nonSeparatorPart = new StringBuilder();
+						}
+						uriSeparatedSplit.add(String.valueOf(c));
+					}else{
+						nonSeparatorPart.append(c);
+					}
+				}
+				//putting the end also in the arry
+				if(nonSeparatorPart.length()>0){
+					
+					putNonSeparatorInPlace(uriSeparatedSplit,
+							nonSeparatorPart);
+				}
+				Iterator<String> iter =  Splitter.on("/").split(stringResourcepart).iterator();	
+				
+			}else
+			if (DataTypeHelper.uncast(expression)instanceof Column){
+				
+				Column col = (Column) DataTypeHelper.uncast(expression);
+				
+				//peek at the list, and attach at the right place.
+				if(uriSeparatedSplit.size()==0 || uriSeparatedSplit.get(uriSeparatedSplit.size()-1) instanceof String){
+					List<Object> nonSeparators = new  ArrayList<Object>();
+					nonSeparators.add(col);
+					uriSeparatedSplit.add(nonSeparators);
+				}else{
+					List<Object> nonSeparators = (List<Object>) uriSeparatedSplit.get(uriSeparatedSplit.size()-1);
+					nonSeparators.add(col);
+				}
+			}
+			
+		}
+		
+		return uriSeparatedSplit;
+	}
+
+
+	private void putNonSeparatorInPlace(List<Object> uriSeparatedSplit,
+			StringBuilder nonSeparatorPart) {
+		//put the string in the right place
+		if(uriSeparatedSplit.size()==0 || uriSeparatedSplit.get(uriSeparatedSplit.size()-1) instanceof String){
+			List<Object> nonSeparators = new  ArrayList<Object>();
+			nonSeparators.add(nonSeparatorPart.toString());
+			uriSeparatedSplit.add(nonSeparators);
+		}else{
+			List<Object> nonSeparators = (List<Object>) uriSeparatedSplit.get(uriSeparatedSplit.size()-1);
+			nonSeparators.add(nonSeparatorPart.toString());
+		}
+	}
+			
+
+		
+		
+
+
 	@Override
 	public boolean isCompatible(Node n) {
 		if(n.isVariable()){
@@ -166,8 +270,7 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 					return false;
 				}
 			}else{
-				Column tmCol = ((Column)DataTypeHelper.uncast(tmExprs.get(i)));
-				
+			
 				String potentialColContent; 
 				if(tmExprs.size()>(i+2)){
 					String nextString = ((net.sf.jsqlparser.expression.StringValue)DataTypeHelper.uncast(tmExprs.get(i+1))).getNotExcapedValue();
@@ -236,19 +339,21 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 		boolean isCompatible = true;
 		for(Expr expr : exprs){
 			if(expr instanceof E_Equals){
-				Var exprVar = null;
-				Node exprValue = null;
+				ExprVar exprVar = null;
+				NodeValueNode exprValue = null;
 				E_Equals equals = (E_Equals) expr;
-				if(equals.getArg1() instanceof Var && equals.getArg2() instanceof NodeValue){
-					exprVar = (Var) equals.getArg1();
-					exprValue = (Node) equals.getArg2();
+				if(equals.getArg1() instanceof ExprVar && equals.getArg2() instanceof NodeValue){
+					exprVar = (ExprVar) equals.getArg1();
+					exprValue = (NodeValueNode) equals.getArg2();
 				}
-				if(equals.getArg2() instanceof Var && equals.getArg1() instanceof NodeValue){
-					exprVar = (Var) equals.getArg2();
-					exprValue = (Node) equals.getArg1();
+				if(equals.getArg2() instanceof ExprVar && equals.getArg1() instanceof NodeValue){
+					exprVar = (ExprVar) equals.getArg2();
+					exprValue = (NodeValueNode) equals.getArg1();
 				}
-				if(exprVar!=null && exprVar.getName().equals(var) && exprValue !=null){
-					isCompatible = isCompatible && isCompatible(exprValue);
+				if(exprVar!=null && exprVar.getVarName().equals(var) && exprValue !=null){
+					
+					//if an equals check is not true, this term map is not compatible to the expression presented here
+					isCompatible = isCompatible && isCompatible(exprValue.asNode());
 				}
 				
 			}

@@ -36,20 +36,26 @@ import com.hp.hpl.jena.sparql.expr.Expr;
  */
 public class Binder {
 	private static Logger log = LoggerFactory.getLogger(Binder.class);
-
 	
-	
+	private QueryInformation qi;
 	private R2RMLModel mapconf;
 
 	
-	Map<Triple, Map<String,Collection<Expr>>> triples2variables2expressions;
+	public Binder(R2RMLModel mappingConf, QueryInformation qi) {
+		this.mapconf = mappingConf;
+		this.qi = qi;
+	}
 
 
-	public Map<Triple, Collection<TripleMap>> bind(Op op){
+	public MappingBinding bind(Op op){
 		
-		final Map<Triple, Collection<TripleMap>> binding = new HashedMap<Triple, Collection<TripleMap>>();
+		Map<Triple, Collection<TripleMap>> bindingMap = new HashedMap<Triple, Collection<TripleMap>>();
+		
+		OpWalker.walk(op, new BinderVisitor(qi.getFiltersforvariables(), bindingMap));
+		
+		
 
-		return binding;
+		return new MappingBinding(bindingMap);
 	}
 	
 	
@@ -58,14 +64,30 @@ public class Binder {
 		Map<Triple, Map<String,Collection<Expr>>> triples2variables2expressions;
 		Map<Triple, Collection<TripleMap>> binding;
 		
+		
+		
+		
+		public BinderVisitor(
+				Map<Triple, Map<String, Collection<Expr>>> triples2variables2expressions,
+				Map<Triple, Collection<TripleMap>> binding) {
+			super();
+			this.triples2variables2expressions = triples2variables2expressions;
+			this.binding = binding;
+		}
+
+
 		// we use this stack to track track which what to merge on unions, joins and left joins
 		Stack<Collection<Triple>> triples = new Stack<Collection<Triple>>();
 		
 		
 		@Override
 		public void visit(OpJoin opJoin) {
-			Collection<Triple> leftSideTriples = triples.pop();
+			log.debug("Visiting opJoin " + opJoin);
 			Collection<Triple> rightSideTriples = triples.pop();
+
+			Collection<Triple> leftSideTriples = triples.pop();
+			
+			
 			//we now merge the bindings for each and every triple we got here.
 			
 			boolean changed = mergeBinding(partitionBindings(leftSideTriples), partitionBindings(rightSideTriples));
@@ -77,12 +99,14 @@ public class Binder {
 				OpWalker.walk(opJoin, this);
 
 			}
+			mergeAndPutOnStack(leftSideTriples, rightSideTriples);
 		}
 
 		@Override
 		public void visit(OpLeftJoin opLeftJoin) {
-			Collection<Triple> leftSideTriples = triples.pop();
+			log.debug("Visiting opLeftJoin"+opLeftJoin);
 			Collection<Triple> rightSideTriples = triples.pop();
+			Collection<Triple> leftSideTriples = triples.pop();
 			//we now merge the bindings for each and every triple we got here.
 			
 			boolean changed =  mergeBinding(partitionBindings(rightSideTriples), partitionBindings(leftSideTriples));
@@ -92,25 +116,30 @@ public class Binder {
 			if(changed){
 				OpWalker.walk(opLeftJoin, this);
 			}
+			mergeAndPutOnStack(leftSideTriples, rightSideTriples);
 		}
 		
 		
 		
 		@Override
 		public void visit(OpUnion opUnion) {
+			log.debug("Visiting opUnion" + opUnion);
 			//just popping the triples, so they are not used later on 
-			Collection<Triple> leftSideTriples = triples.pop();
 			Collection<Triple> rightSideTriples = triples.pop();
+			Collection<Triple> leftSideTriples = triples.pop();
 			
+			mergeAndPutOnStack(leftSideTriples, rightSideTriples);
+			
+			
+		}
+
+		private void mergeAndPutOnStack(Collection<Triple> leftSideTriples,
+				Collection<Triple> rightSideTriples) {
 			//do not nothing to the triples but put them together, so they can be merged by a later join
 			Collection<Triple> combined = new HashSet<Triple>();
 			combined.addAll(leftSideTriples);
 			combined.addAll(rightSideTriples);
-			
-			
 			triples.add(combined);
-			
-			
 		}
 		
 		
@@ -125,6 +154,13 @@ public class Binder {
 					initialBinding(triple);
 				}
 			}
+			
+			// now merge them
+			boolean hasMerged = false;
+			do{
+				hasMerged = mergeBinding(partitionBindings(opBGP.getPattern().getList()), partitionBindings(opBGP.getPattern().getList()));
+			}while(hasMerged);
+			
 		}
 		
 		
@@ -152,8 +188,7 @@ public class Binder {
 			}
 			binding.put(triple, trms);
 			
-			log.debug("Initial Binding for triple :" + triple);
-			
+		
 			//then check them for compatibility
 			Map<String,Collection<Expr>> var2exps = triples2variables2expressions.get(triple);
 			String sname = triple.getSubject().getName();
@@ -168,39 +203,46 @@ public class Binder {
 			for (TripleMap tripleMap : new HashSet<TripleMap>(trms)) {
 				if (!tripleMap.getSubject().getCompChecker().isCompatible(sname,sxprs)) {
 					trms.remove(tripleMap);
-					if (log.isDebugEnabled()) {
-						log.debug("Removing triple map because of subject compatibility:"
-								+ tripleMap);
-					}
+//					if (log.isDebugEnabled()) {
+//						log.debug("Removing triple map because of subject compatibility:"
+//								+ tripleMap);
+//					}
 				} else {
 					// we can now check for PO
 					for (PO po : new HashSet<PO>(tripleMap.getPos())) {
 						if (!po.getPredicate().getCompChecker().isCompatible(pname,pxprs)) {
 							tripleMap.getPos().remove(po);
-							if (log.isDebugEnabled()) {
-								log.debug("Removing PO  because of predicate compatibility:"
-										+ tripleMap.getSubject() + " " + po);
-							}
+//							if (log.isDebugEnabled()) {
+//								log.debug("Removing PO  because of predicate compatibility:"
+//										+ tripleMap.getSubject() + " " + po);
+//							}
 						} else if (!po.getObject().getCompChecker()
 								.isCompatible(oname,oxprs)) {
 							tripleMap.getPos().remove(po);
-							if (log.isDebugEnabled()) {
-								log.debug("Removing PO because of object compatibility:"
-										+ tripleMap.getSubject() + " " + po);
-							}
+//							if (log.isDebugEnabled()) {
+//								log.debug("Removing PO because of object compatibility:"
+//										+ tripleMap.getSubject() + " " + po);
+//							}
 						}
 					}
 					if (tripleMap.getPos().isEmpty()) {
 						trms.remove(tripleMap);
-						if (log.isDebugEnabled()) {
-							log.debug("Removing triple map POs are empty:"
-									+ tripleMap);
-						}
+//						if (log.isDebugEnabled()) {
+//							log.debug("Removing triple map POs are empty:"
+//									+ tripleMap);
+						
 					}
 				}
+				
 			}
-			
+			if(log.isDebugEnabled()){
+				log.debug("Initial binding for triple " +triple   );
+				log.debug("" + binding.get(triple));
+			}
+		
+
 		}
+		
 		
 		
 		
@@ -223,14 +265,21 @@ public class Binder {
 			wasmergedthisrun = false;
 			for (Triple t1 : new HashSet<Triple>(binding1.keySet())) {
 				for (Triple t2 : binding2.keySet()) {
-					boolean hadMatch = false;
 					if (!(t1 == t2)) {
 						for (Triple.Field f1 : fields) {
 							for (Triple.Field f2 : fields) {
+					
 								Node n1 = f1.getField(t1);
 								Node n2 = f2.getField(t2);
 								Collection<TripleMap> triplemaps1 = binding1
 										.get(t1);
+								Collection<TripleMap> triplemaps1_copy= null;
+								if(log.isDebugEnabled()){
+									triplemaps1_copy = new HashSet<TripleMap>(binding1
+											.get(t1));
+								}
+										
+								
 								Collection<TripleMap> triplemaps2 = binding2
 										.get(t2);
 								if (matches(n1, n2)) {
@@ -239,7 +288,23 @@ public class Binder {
 									if (wasmergedthisrun) {
 										wasmerged = true;
 									}
-									hadMatch = true; 
+									if(log.isDebugEnabled()){
+										if(wasmergedthisrun){
+											log.debug("Merged on t1: " + t1.toString() + " x t2:" + t2.toString());
+											log.debug("Removed the following triple maps:");
+											
+											triplemaps1_copy.removeAll(triplemaps1);
+											for (TripleMap tripleMap : triplemaps1_copy) {
+												log.debug("" +  tripleMap);
+											}
+										}else{
+											log.debug("All compatible on t1: " + t1.toString() + " x t2:" + t2.toString());
+
+										}
+										
+									}
+									
+									
 								}
 							}
 						}
@@ -274,9 +339,8 @@ public class Binder {
 
 		// we iterate over all triplemaps of both (join-style)
 		for (TripleMap triplemap1 : new HashSet<TripleMap>(triplemaps1)) {
+			Set<PO> toRetain = new HashSet<TripleMap.PO>();
 			for (PO po1 : new HashSet<PO>(triplemap1.getPos())) {
-				Set<PO> toRetain = new HashSet<TripleMap.PO>();
-
 				for (TripleMap triplemap2 : triplemaps2) {
 					// we iterate over the PO, as each generates a triple per
 					// row.
@@ -290,8 +354,9 @@ public class Binder {
 						}
 					}
 				}
-				mergedSomething = triplemap1.getPos().retainAll(toRetain);
 			}
+			mergedSomething = triplemap1.getPos().retainAll(toRetain);
+
 			if (triplemap1.getPos().size() == 0) {
 				triplemaps1.remove(triplemap1);
 			}

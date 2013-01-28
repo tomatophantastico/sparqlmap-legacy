@@ -196,9 +196,9 @@ public class ColumnHelper {
 
 		} else if (rdfType.equals(COL_VAL_TYPE_RESOURCE)||rdfType.equals(COL_VAL_TYPE_BLANK)) {
 			texprs.addAll(getBaseExpressions(rdfType,
-					1, COL_VAL_SQL_TYPE_RESOURCE, dth, datatype, lang,
+					2, COL_VAL_SQL_TYPE_RESOURCE, dth, datatype, lang,
 					null,graph));
-			//texprs.add(dth.cast(new StringValue("\"\""), dth.getStringCastType()));
+			texprs.add(dth.cast(new StringValue("\"\""), dth.getStringCastType()));
 			texprs.add(dth.cast(col, dth.getStringCastType()));
 
 		} 
