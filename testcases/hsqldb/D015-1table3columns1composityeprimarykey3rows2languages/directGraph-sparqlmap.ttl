@@ -1,0 +1,4 @@
+<http://example.com/base/data/Code=IE;Lan=EN> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Country> .
+<http://example.com/base/data/Code=BO;Lan=EN> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Country> .
+<http://example.com/base/data/Code=IE;Lan=ES> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Country> .
+<http://example.com/base/data/Code=BO;Lan=ES> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Country> .

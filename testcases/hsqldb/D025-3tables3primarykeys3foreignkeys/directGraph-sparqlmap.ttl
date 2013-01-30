@@ -1,0 +1,5 @@
+<http://example.com/base/data/Addresses/ID=18> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Addresses> .
+<http://example.com/base/data/People/ID=8> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/People> .
+<http://example.com/base/data/People/ID=7> <http://example.com/base/vocab/People#addr> <http://example.com/base/data/Addresses/ID=18> .
+<http://example.com/base/data/People/ID=7> <http://example.com/base/vocab/People#deptName;deptCity> <http://example.com/base/data/Department/ID=23> .
+<http://example.com/base/data/People/ID=7> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/People> .

@@ -1,0 +1,36 @@
+@prefix rr:      <http://www.w3.org/ns/r2rml#> .
+@prefix data:    <http://example.com/base/data/> .
+@prefix mapping:  <http://example.com/base/mapping/> .
+@prefix vocab:   <http://example.com/base/vocab/> .
+
+mapping:Target
+      rr:logicalTable
+              [ rr:tableName "\"Target\""
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Target ;
+                rr:template "http://example.com/base/data/Target/PK={\"PK\"}"
+              ] .
+
+mapping:Source
+      rr:logicalTable
+              [ rr:tableName "\"Source\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"attrA\"" ;
+                                    rr:parent "\"key2attr2\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"attrB\"" ;
+                                    rr:parent "\"key2attr1\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:Target
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/Source#attrA;attrB>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Source ;
+                rr:template "http://example.com/base/data/Source/ID={\"ID\"}"
+              ] .

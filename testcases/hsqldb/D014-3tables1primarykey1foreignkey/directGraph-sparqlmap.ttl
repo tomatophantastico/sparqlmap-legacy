@@ -1,0 +1,4 @@
+_:BhttpX3AX2FX2FexampleX2EcomX2FbaseX2FdataX2F <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/LIKES> .
+_:BhttpX3AX2FX2FexampleX2EcomX2FbaseX2FdataX2F <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/DEPT> .
+<http://example.com/base/data/EMP/empno=7369> <http://example.com/base/vocab/EMP#deptno> _:BhttpX3AX2FX2FexampleX2EcomX2FbaseX2FdataX2F .
+<http://example.com/base/data/EMP/empno=7369> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/EMP> .

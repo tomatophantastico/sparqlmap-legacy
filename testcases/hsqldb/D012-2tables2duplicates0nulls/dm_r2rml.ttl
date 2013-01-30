@@ -1,0 +1,24 @@
+@prefix rr:      <http://www.w3.org/ns/r2rml#> .
+@prefix data:    <http://example.com/base/data/> .
+@prefix mapping:  <http://example.com/base/mapping/> .
+@prefix vocab:   <http://example.com/base/vocab/> .
+
+mapping:IOUs
+      rr:logicalTable
+              [ rr:tableName "\"IOUs\""
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:IOUs ;
+                rr:template "http://example.com/base/data/" ;
+                rr:termType rr:BlankNode
+              ] .
+
+mapping:Lives
+      rr:logicalTable
+              [ rr:tableName "\"Lives\""
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Lives ;
+                rr:template "http://example.com/base/data/" ;
+                rr:termType rr:BlankNode
+              ] .

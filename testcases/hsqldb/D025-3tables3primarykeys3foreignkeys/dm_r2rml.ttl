@@ -1,0 +1,150 @@
+@prefix rr:      <http://www.w3.org/ns/r2rml#> .
+@prefix data:    <http://example.com/base/data/> .
+@prefix mapping:  <http://example.com/base/mapping/> .
+@prefix vocab:   <http://example.com/base/vocab/> .
+
+mapping:Projects
+      rr:logicalTable
+              [ rr:tableName "\"Projects\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"deptName\"" ;
+                                    rr:parent "\"name\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"deptCity\"" ;
+                                    rr:parent "\"city\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:Department
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/Projects#deptName;deptCity>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"lead\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:People
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/Projects#lead>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Projects ;
+                rr:template "http://example.com/base/data/" ;
+                rr:termType rr:BlankNode
+              ] .
+
+mapping:TaskAssignments
+      rr:logicalTable
+              [ rr:tableName "\"TaskAssignments\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"deptCity\"" ;
+                                    rr:parent "\"city\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"deptName\"" ;
+                                    rr:parent "\"name\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:Department
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/TaskAssignments#deptName;deptCity>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"worker\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:People
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/TaskAssignments#worker>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"project\"" ;
+                                    rr:parent "\"name\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"deptName\"" ;
+                                    rr:parent "\"deptName\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"deptCity\"" ;
+                                    rr:parent "\"deptCity\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:Projects
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/TaskAssignments#project;deptName;deptCity>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:TaskAssignments ;
+                rr:template "http://example.com/base/data/worker={\"worker\"};project={\"project\"}"
+              ] .
+
+mapping:People
+      rr:logicalTable
+              [ rr:tableName "\"People\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"addr\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:Addresses
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/People#addr>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"deptName\"" ;
+                                    rr:parent "\"name\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"deptCity\"" ;
+                                    rr:parent "\"city\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:Department
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/People#deptName;deptCity>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:People ;
+                rr:template "http://example.com/base/data/People/ID={\"ID\"}"
+              ] .
+
+mapping:Addresses
+      rr:logicalTable
+              [ rr:tableName "\"Addresses\""
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Addresses ;
+                rr:template "http://example.com/base/data/Addresses/ID={\"ID\"}"
+              ] .
+
+mapping:Department
+      rr:logicalTable
+              [ rr:tableName "\"Department\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"manager\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:People
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/Department#manager>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Department ;
+                rr:template "http://example.com/base/data/Department/ID={\"ID\"}"
+              ] .

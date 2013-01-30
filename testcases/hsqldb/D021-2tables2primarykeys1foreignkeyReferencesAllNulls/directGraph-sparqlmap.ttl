@@ -1,0 +1,7 @@
+<http://example.com/base/data/Target/PK=1012> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Target> .
+<http://example.com/base/data/Target/PK=1011> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Target> .
+<http://example.com/base/data/Target/PK=1010> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Target> .
+<http://example.com/base/data/Source/ID=1101> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Source> .
+<http://example.com/base/data/Source/ID=1100> <http://example.com/base/vocab/Source#attrA;attrB> <http://example.com/base/data/Target/PK=1010> .
+<http://example.com/base/data/Source/ID=1100> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Source> .
+<http://example.com/base/data/Source/ID=1102> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Source> .

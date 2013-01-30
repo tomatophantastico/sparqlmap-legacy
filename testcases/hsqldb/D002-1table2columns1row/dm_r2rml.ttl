@@ -1,0 +1,14 @@
+@prefix rr:      <http://www.w3.org/ns/r2rml#> .
+@prefix data:    <http://example.com/base/data/> .
+@prefix mapping:  <http://example.com/base/mapping/> .
+@prefix vocab:   <http://example.com/base/vocab/> .
+
+mapping:Student
+      rr:logicalTable
+              [ rr:tableName "\"Student\""
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Student ;
+                rr:template "http://example.com/base/data/" ;
+                rr:termType rr:BlankNode
+              ] .

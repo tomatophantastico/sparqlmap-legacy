@@ -1,0 +1,51 @@
+@prefix rr:      <http://www.w3.org/ns/r2rml#> .
+@prefix data:    <http://example.com/base/data/> .
+@prefix mapping:  <http://example.com/base/mapping/> .
+@prefix vocab:   <http://example.com/base/vocab/> .
+
+mapping:Student_Sport
+      rr:logicalTable
+              [ rr:tableName "\"Student_Sport\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"ID_Sport\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:Sport
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/Student_Sport#ID_Sport>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"ID_Student\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:Student
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/Student_Sport#ID_Student>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Student_Sport ;
+                rr:template "http://example.com/base/data/ID_Student={\"ID_Student\"};ID_Sport={\"ID_Sport\"}"
+              ] .
+
+mapping:Student
+      rr:logicalTable
+              [ rr:tableName "\"Student\""
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Student ;
+                rr:template "http://example.com/base/data/Student/ID={\"ID\"}"
+              ] .
+
+mapping:Sport
+      rr:logicalTable
+              [ rr:tableName "\"Sport\""
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Sport ;
+                rr:template "http://example.com/base/data/Sport/ID={\"ID\"}"
+              ] .

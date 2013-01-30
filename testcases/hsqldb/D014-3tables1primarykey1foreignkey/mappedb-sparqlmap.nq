@@ -1,0 +1,14 @@
+_:BDepartment10 <http://example.com/dept#deptno> "10"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:BDepartment10 <http://example.com/dept#name> "APPSERVER" .
+_:BDepartment10 <http://example.com/dept#location> "NEW YORK" .
+_:BDepartment10 <http://example.com/dept#COMPANY> "EXAMPLE Corporation" .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://example.com/emp#emptype> <http%3A%2F%2Fexample.com%2Femp%2Fetype%2FPART_TIME> .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://example.com/emp#c_ref_deptno> _:BDepartment10 .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://example.com/emp#empno> "7369"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://example.com/emp#job> "CLERK" .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://example.com/emp#etype> "PART_TIME" .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://example.com/emp#jobtype> <http%3A%2F%2Fexample.com%2Femp%2Fjob%2FCLERK> .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://example.com/emp#name> "SMITH" .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://example.com/emp#deptNum> "10"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http%3A%2F%2Fexample.com%2Femp%2Fetype%2FPART_TIME> .
+<http%3A%2F%2Fexample.com%2Femp%2F7369> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http%3A%2F%2Fexample.com%2Femp%2Fjob%2FCLERK> .

@@ -1,0 +1,1 @@
+_:BhttpX3AX2FX2FexampleX2EcomX2FbaseX2FdataX2F <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Student> .

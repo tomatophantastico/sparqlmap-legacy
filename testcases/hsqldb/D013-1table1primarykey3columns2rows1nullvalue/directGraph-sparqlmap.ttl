@@ -1,0 +1,2 @@
+<http://example.com/base/data/Person/ID=2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Person> .
+<http://example.com/base/data/Person/ID=1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/vocab/Person> .

@@ -1,0 +1,43 @@
+@prefix rr:      <http://www.w3.org/ns/r2rml#> .
+@prefix data:    <http://example.com/base/data/> .
+@prefix mapping:  <http://example.com/base/mapping/> .
+@prefix vocab:   <http://example.com/base/vocab/> .
+
+mapping:DEPT
+      rr:logicalTable
+              [ rr:tableName "\"DEPT\""
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:DEPT ;
+                rr:template "http://example.com/base/data/" ;
+                rr:termType rr:BlankNode
+              ] .
+
+mapping:EMP
+      rr:logicalTable
+              [ rr:tableName "\"EMP\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"deptno\"" ;
+                                    rr:parent "\"deptno\""
+                                  ] ;
+                          rr:parentTriplesMap mapping:DEPT
+                        ] ;
+                rr:predicate <http://example.com/base/vocab/EMP#deptno>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:EMP ;
+                rr:template "http://example.com/base/data/EMP/empno={\"empno\"}"
+              ] .
+
+mapping:LIKES
+      rr:logicalTable
+              [ rr:tableName "\"LIKES\""
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:LIKES ;
+                rr:template "http://example.com/base/data/" ;
+                rr:termType rr:BlankNode
+              ] .
