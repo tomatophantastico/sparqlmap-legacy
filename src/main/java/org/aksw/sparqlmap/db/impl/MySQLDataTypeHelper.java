@@ -1,10 +1,10 @@
-package org.aksw.sparqlmap.config.syntax;
+package org.aksw.sparqlmap.db.impl;
 
 import net.sf.jsqlparser.expression.Expression;
 
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 
-public class MysqlDataTypeHelper extends DataTypeHelper {
+public class MySQLDataTypeHelper extends DataTypeHelper {
 
 	@Override
 	public String getStringCastType() {

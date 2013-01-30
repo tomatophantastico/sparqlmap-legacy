@@ -595,9 +595,7 @@ public class TermMap{
 	public void addFromItem(FromItem from){
 		this.alias2fromItem.put(from.getAlias(), from);
 	}
-	public void addJoinCondition(EqualsTo eq){
-		this.joinConditions.add(eq);
-	}
+	
 	
 	
 	public void toTtl(StringBuffer sb){

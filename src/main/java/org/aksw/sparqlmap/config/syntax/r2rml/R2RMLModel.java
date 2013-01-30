@@ -30,6 +30,7 @@ import org.aksw.sparqlmap.mapper.compatibility.SimpleCompatibilityChecker;
 import org.aksw.sparqlmap.mapper.compatibility.columnanalyze.CompatibilityCheckerFactory;
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
+import org.openjena.atlas.logging.Log;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.query.Dataset;
@@ -93,6 +94,15 @@ public class R2RMLModel {
 	}
 
 	private void loadParentTripleStatements() {
+		
+		
+		
+		
+		
+		
+		
+		
+		
 
 		String ptquery = "PREFIX  rr:   <http://www.w3.org/ns/r2rml#> \n"
 				+ "SELECT DISTINCT * \n" + "{\n"
@@ -125,7 +135,7 @@ public class R2RMLModel {
 			// get join conditions
 
 			String joinConditionQuery = "PREFIX  rr:   <http://www.w3.org/ns/r2rml#> \n"
-					+ "SELECT * \n"
+					+ "SELECT DISTINCT ?jcparent ?jcchild ?refPredObjMap \n"
 					+ "{\n"
 					+ "<"
 					+ tmUri
@@ -141,13 +151,13 @@ public class R2RMLModel {
 			ResultSet jcrs = QueryExecutionFactory.create(
 					QueryFactory.create(joinConditionQuery), reasoningModel)
 					.execSelect();
-
+			log.debug("Parent tripleMaps for " + tmUri + " referencing: " + parentTripleMapUri);
 			while (jcrs.hasNext()) {
 
 				QuerySolution jcsol = jcrs.next();
 
-				String parentjcColName = jcsol.get("jcparent").asLiteral()
-						.toString();
+				String parentjcColName = unescape(jcsol.get("jcparent").asLiteral()
+						.toString());
 
 				// validate it
 				this.dbconf.getDataType(parentTm.from,
@@ -156,8 +166,8 @@ public class R2RMLModel {
 				tab.setAlias(parentTm.from.getAlias());
 				Column leftCol = new Column(tab, parentjcColName);
 
-				String childjcColName = jcsol.get("jcchild").asLiteral()
-						.toString();
+				String childjcColName = unescape(jcsol.get("jcchild").asLiteral()
+						.toString());
 				Table table = new Table(null, tm.from.getAlias());
 				table.setAlias(tm.from.getAlias());
 				Column rightCol = new Column(table, childjcColName);
@@ -168,9 +178,9 @@ public class R2RMLModel {
 				newTermMap.getFromJoins().add(eq);
 				newTermMap.addFromItem(tm.from);
 
-				log.info("And joins on parent: " + parentTm.from.toString()
+				log.debug("And joins on parent: " + parentTm.from.toString()
 						+ "." + parentjcColName + " and " + tm.from.toString()
-						+ "." + childjcColName);
+						+ "." + childjcColName +" refObjectMap: " +jcsol.getResource("refPredObjMap").toString());
 			}
 
 			TermMap ptm = null;
@@ -735,7 +745,7 @@ public class R2RMLModel {
 				
 				for (RDFNode pomap : poMaps) {
 					List<RDFNode> predicatemaps =  reasoningModel.listObjectsOfProperty(pomap.asResource(),  ResourceFactory.createProperty(R2RML.predicateMap)).toList();
-					if(predicatemaps.size()!=1){
+					if(predicatemaps.size()<1){
 						throw new R2RMLValidationException("Found predicateObjectmap without an predicate in triple map: " +  tripleMap.getURI() );
 					}
 					if(!(predicatemaps.get(0).asResource().hasProperty(ResourceFactory.createProperty(R2RML.template))

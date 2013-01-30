@@ -36,6 +36,7 @@ public class DBAccess implements IDBAccess {
 	
 	public static String POSTGRES = "postgresql";
 	public static String MYSQL = "mysql";
+	public static String HSQLDB = "hsqldb"; 
 	public DBAccess(Connector dbConnector, String dbname) {
 		super();
 		this.dbConnector = dbConnector;
@@ -293,13 +294,11 @@ public class DBAccess implements IDBAccess {
 			
 			
 			return selectDeParser;
-		} else if(dbname.equals(POSTGRES)){
+		} else if(dbname.equals(POSTGRES )|| dbname.equals(HSQLDB)){
 			PostgresqlSelectDeparser selectDeParser = new PostgresqlSelectDeparser();
 			PostgresqlExpressionDeParser expressionDeParser = new PostgresqlExpressionDeParser(selectDeParser,sb);
 			selectDeParser.setBuffer(sb);
 			selectDeParser.setExpressionVisitor(expressionDeParser);
-			
-			
 			return selectDeParser;
 			
 		}
@@ -315,7 +314,7 @@ public class DBAccess implements IDBAccess {
 	public ExpressionDeParser getExpressionDeParser(SelectDeParser selectDeParser, StringBuilder out) {
 		if(dbname.equals(MYSQL)){
 			return new ExpressionDeParser(selectDeParser, out);
-		} else if(dbname.equals(POSTGRES)){
+		} else if(dbname.equals(POSTGRES)||dbname.equals(HSQLDB)){
 			return new PostgresqlExpressionDeParser(selectDeParser, out);
 			
 		}

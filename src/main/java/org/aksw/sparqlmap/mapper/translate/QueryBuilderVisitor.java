@@ -23,6 +23,8 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
+import net.sf.jsqlparser.statement.select.SetOperation;
+import net.sf.jsqlparser.statement.select.SetOperationList;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
@@ -131,9 +133,9 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 				
 				if(sei.getAlias().endsWith(ColumnHelper.COL_NAME_GRAPH) && sei.getExpression() instanceof Column){
 					if(graph_sei.getExpression()==null){
-						List<Expression> graphExprs = new ArrayList<Expression>();
+						List<Expression> graphExprs =columnhelper.getExpression((Column)sei.getExpression(), ColumnHelper.COL_VAL_TYPE_RESOURCE, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, null, null, null, dataTypeHelper, null,null);
 						
-						TermMap tm = new TermMap(dataTypeHelper, columnhelper.getExpression((Column)sei.getExpression(), ColumnHelper.COL_VAL_TYPE_RESOURCE, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, null, null, null, dataTypeHelper, null,null));
+						TermMap tm = new TermMap(dataTypeHelper, graphExprs);
 						newGraphSeis.addAll(tm.getSelectExpressionItems(opGraph.getNode().getName()));
 						
 						
@@ -298,7 +300,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		BiMap<String, String> colstring2var;
 		Map<String, TermMap> colstring2col;
 		
-		if(sb instanceof Union){
+		if(sb instanceof SetOperationList){
 	PlainSelectWrapper wrap = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,fopt);
 			
 			wrap.addSubselect(this.selectBody2Wrapper

@@ -11,7 +11,6 @@ import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap.PO;
-import org.apache.commons.collections15.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,7 @@ public class Binder {
 
 	public MappingBinding bind(Op op){
 		
-		Map<Triple, Collection<TripleMap>> bindingMap = new HashedMap<Triple, Collection<TripleMap>>();
+		Map<Triple, Collection<TripleMap>> bindingMap = new HashMap<Triple, Collection<TripleMap>>();
 		
 		OpWalker.walk(op, new BinderVisitor(qi.getFiltersforvariables(), bindingMap));
 		
@@ -169,7 +168,7 @@ public class Binder {
 		 * @return
 		 */
 		private Map<Triple,Collection<TripleMap>> partitionBindings(Collection<Triple> triples){
-			Map<Triple,Collection<TripleMap>> subset = new HashedMap<Triple, Collection<TripleMap>>();
+			Map<Triple,Collection<TripleMap>> subset = new HashMap<Triple, Collection<TripleMap>>();
 			for(Triple triple : triples){
 				subset.put(triple, binding.get(triple));
 			}

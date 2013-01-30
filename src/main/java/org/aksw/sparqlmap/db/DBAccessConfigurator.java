@@ -8,8 +8,12 @@ import java.util.Properties;
 
 import javax.annotation.PostConstruct;
 
-import org.aksw.sparqlmap.config.syntax.MysqlDataTypeHelper;
-import org.aksw.sparqlmap.config.syntax.PostgresDataTypeHandler;
+import org.aksw.sparqlmap.db.impl.HSQLDBConnector;
+import org.aksw.sparqlmap.db.impl.HSQLDBDataTypeHelper;
+import org.aksw.sparqlmap.db.impl.MySQLConnector;
+import org.aksw.sparqlmap.db.impl.MySQLDataTypeHelper;
+import org.aksw.sparqlmap.db.impl.PostgeSQLConnector;
+import org.aksw.sparqlmap.db.impl.PostgreSQLDataTypeHelper;
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,12 +81,13 @@ public class DBAccessConfigurator {
 	@Bean
 	public DataTypeHelper getDataTypeHelper() {
 		String dbname =  getJdbcDBName();
-		if(dbname.equals("mysql")){
-			return new MysqlDataTypeHelper();
-		}else if(dbname.equals("postgresql")){
-			return new PostgresDataTypeHandler();
-		
-		}else{
+		if(dbname.equals(DBAccess.MYSQL)){
+			return new MySQLDataTypeHelper();
+		}else if(dbname.equals(DBAccess.POSTGRES) ){
+			return new PostgreSQLDataTypeHelper();
+		}else if(dbname.equals(DBAccess.HSQLDB)){
+			return new HSQLDBDataTypeHelper();
+		}{
 			throw new ImplementationException("Unknown Database string " + dbname + " encountered");
 		}
 	}
@@ -111,11 +116,14 @@ public class DBAccessConfigurator {
 		
 		String dbname =  getJdbcDBName();
 		Connector dbConnector = null;
-		if(dbname.equals("mysql")){
+		if(dbname.equals(DBAccess.MYSQL)){
 			dbConnector = new MySQLConnector(dbUrl, username, password, new Integer(poolminconnections), new Integer(poolmaxconnections));
-		}else if(dbname.equals("postgresql")){
-			dbConnector = new PostgesqlConnector(dbUrl, username, password, new Integer(poolminconnections), new Integer(poolmaxconnections));
-		}else{
+		}else if(dbname.equals(DBAccess.POSTGRES)){
+			dbConnector = new PostgeSQLConnector(dbUrl, username, password, new Integer(poolminconnections), new Integer(poolmaxconnections));
+		}else if(dbname.equals(DBAccess.HSQLDB)){
+			dbConnector = new HSQLDBConnector(dbUrl, username, password, new Integer(poolminconnections), new Integer(poolmaxconnections));
+		}else		
+		{
 			throw new ImplementationException("Unknown Database string " + dbname + " encountered");
 		}
 		

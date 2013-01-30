@@ -1,4 +1,4 @@
-package org.aksw.sparqlmap.db;
+package org.aksw.sparqlmap.db.impl;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -13,6 +13,8 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
+import org.aksw.sparqlmap.db.Connector;
+import org.aksw.sparqlmap.db.IDBAccess;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,26 +22,25 @@ import org.slf4j.LoggerFactory;
 import com.jolbox.bonecp.BoneCP;
 import com.jolbox.bonecp.BoneCPConfig;
 
-public class MySQLConnector implements Connector {
+public class PostgeSQLConnector extends Connector {
+	
 	
 	private BoneCP connectionPool = null;
 	
 	private static Logger log = LoggerFactory.getLogger(MySQLConnector.class);
 	
+	private IDBAccess dbconf;
 	
-	public MySQLConnector(String dbConnectionString, String username, String password, int minConnections, int maxConnections) {
+	public PostgeSQLConnector(String dbConnectionString, String username, String password, int minConnections, int maxConnections) {
 		
 		
-
 
  
 		try {
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName("org.postgresql.Driver");
 
 			// setup the connection pool
 			BoneCPConfig config = new BoneCPConfig();
-			
-			
 			config.setJdbcUrl(dbConnectionString); // jdbc url specific to your database, eg jdbc:mysql://127.0.0.1/yourdb
 			config.setUsername(username); 
 			config.setPassword(password);
@@ -73,10 +74,10 @@ public class MySQLConnector implements Connector {
 		try {
 			conn = getConnection();
 			java.sql.Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery("describe " + table+";");
+			ResultSet rs = stmt.executeQuery("SELECT column_name FROM information_schema.columns WHERE table_name ='" + table+"' ORDER BY ordinal_position;");
 			while(rs.next()){
 				SelectExpressionItem item = new SelectExpressionItem();
-				item.setExpression(new Column(table, rs.getString("Field")));
+				item.setExpression(new Column(table, rs.getString("column_name")));
 				items.add(item);	
 			}
 		} catch (SQLException e) {
@@ -84,7 +85,7 @@ public class MySQLConnector implements Connector {
 		}finally{
 			try {
 				if(conn!=null){
-					conn.close();
+				conn.close();
 				}
 			} catch (SQLException e) {
 				log.error("Error:",e);
@@ -101,12 +102,8 @@ public class MySQLConnector implements Connector {
 	}
 	
 	
-	public ResultSet executeSQL(String sql) throws SQLException{
-		java.sql.Statement stmt = getConnection().createStatement();
-		
-		
-		return stmt.executeQuery(sql);
-	}
+	
+
 	
 	@Override
 	public Map<String,Integer> getDataTypeForView(Statement viewStatement) {
@@ -135,8 +132,8 @@ public class MySQLConnector implements Connector {
 				if(conn!=null){
 				conn.close();
 				}
-			} catch (SQLException e1) {
-				log.error("Error:",e1);
+			} catch (SQLException e) {
+				log.error("Error:",e);
 			}
 		}
 		
@@ -146,9 +143,10 @@ public class MySQLConnector implements Connector {
 	@Override
 	public void close() {
 		connectionPool.close();
+		
 	}
 
 	
 	
-
+	
 }

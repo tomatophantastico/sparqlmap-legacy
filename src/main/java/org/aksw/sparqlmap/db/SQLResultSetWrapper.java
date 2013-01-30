@@ -157,143 +157,17 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 			binding = BindingFactory.create();
 
 			for (String var : vars) {
-				Node node;
+				Node node= null;
 				// create the binding here
 				// first check for type
-				int type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
-				if (type == ColumnHelper.COL_VAL_TYPE_RESOURCE || type == ColumnHelper.COL_VAL_TYPE_BLANK) {
-					StringBuffer uri = new StringBuffer();
-					int i = 0;
-					for(String colname : this.var2ResourceCols.get(var)){
-						if(i++%2==0){
-							//fix string
-							String segment =rs.getString(colname);
-							if(segment !=null){
-								uri.append(segment);
-							}
-						}else{
-							//column derived valued
-							String segment =rs.getString(colname);
-							if(segment !=null){
-								try {
-
-									uri.append(URLEncoder.encode(segment, "US-ASCII").replaceAll("\\+", "%20"));
-								} catch (UnsupportedEncodingException e) {
-									// TODO Auto-generated catch block
-									log.error("Error:",e);
-								}
-							}
-						}
-						
-					}
-				
-					if(uri.length()==0){
-						node = null; 
-					}else{
-						if(type == ColumnHelper.COL_VAL_TYPE_RESOURCE){
-							
-							if(baseUri!=null){
-								try{
-									IRI iri = IRIFactory.semanticWebImplementation().construct(uri.toString());
-									node = Node.createURI(uri.toString());
-								}catch(IRIException e){
-									try {
-										IRI iri = IRIFactory.semanticWebImplementation().construct(baseUri + uri.toString());
-										node = Node.createURI(uri.toString());
-									} catch (IRIException e1) {
-										log.warn("Trying to create invalid IRIs, using :" + uri.toString());
-										node = null;
-									}
-								}
-								
-								
-							}else{
-								node = Node.createURI(uri.toString());
-							}
-							
-							
-						}else{
-							node = Node.createAnon(new AnonId(uri.toString()));
-						}
-						
-					}
-					
+				Integer type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
+				if(type.equals(0)){ // funny as getInt for null-values returns 0
+					//no value for this variable, do nothing
+				} else 	if (type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE) || type.equals(ColumnHelper.COL_VAL_TYPE_BLANK)) {
+					node = createResource(var, type);			
 				} else if (type == ColumnHelper.COL_VAL_TYPE_LITERAL) {
-					
-					String litType = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_TYPE);
-					RDFDatatype dt = null;
-					if(litType!=null&&!litType.isEmpty()){
-						dt = new BaseDatatype(litType);
-					}
-					
-					String lang =  rs.getString(var + ColumnHelper.COL_NAME_LITERAL_LANG);
-					
-					
-					
-					// node =
-					// Node.createLiteral(rs.getString(var+ColumnHelper.LITERAL_COL_STRING));
-
-					// determine the data type
-					int sqldatatype = rs.getInt(var
-							+ ColumnHelper.COL_NAME_SQL_TYPE);
-					
-	
-					String literalValue;
-					
-					if(XSDDatatype.XSDdecimal.getURI().equals(litType)||XSDDatatype.XSDinteger.getURI().equals(litType)){
-						literalValue = rs.getBigDecimal(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC).toString();
-					}else if( XSDDatatype.XSDdouble.getURI().equals(litType)){
-						literalValue = doubleFormatter.format(rs.getDouble(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC));
-					
-						new DecimalFormat();
-					}else if(XSDDatatype.XSDstring.getURI().equals( litType)|| litType ==null){
-						literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
-					}else if(XSDDatatype.XSDdateTime.getURI().equals(litType)){
-						
-						
-						literalValue = datetimeFormatter.print( (rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE)).getTime());
-					}else if(XSDDatatype.XSDdate.getURI().equals(litType) ){
-						literalValue = dateFormatter.print(rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
-						
-					}else if( XSDDatatype.XSDtime.getURI().equals(litType)){
-						literalValue = timeFormatter.print(rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
-					}else if(XSDDatatype.XSDboolean.getURI().equals(litType)){
-						literalValue = Boolean.toString(rs.getBoolean(var+ColumnHelper.COL_NAME_LITERAL_BOOL));
-					}else if(XSDDatatype.XSDhexBinary.getURI().equals(litType)){
-						literalValue = new String(dth.binaryResultSetTreatment(rs.getBytes(var+ColumnHelper.COL_NAME_LITERAL_BINARY)));
-					}else{
-						if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING)!=null){
-							literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
-						}else if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_DATE)!=null){
-							literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_DATE);
-						}else if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC)!=null){
-							literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC);
-						}else{
-							throw new ImplementationException("Deal with the other datatypes");
-						}
-						
-						
-					}
-					
-					
-						
-					
-					
-					
-					if(literalValue !=null){
-						
-
-					node = Node
-							.createLiteral(
-									literalValue,
-									lang, dt
-									);
-					}else{
-						node = null; 
-					}
-
+					node = createLiteral(var);
 				} else{
-					
 					throw new ImplementationException("Unidentifiable rdf type encountered.");
 				}
 				if(node!=null){
@@ -307,6 +181,144 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 			log.error("Error:", e);
 		}
 		return binding;
+	}
+
+	private Node createLiteral(String var) throws SQLException {
+		Node node = null;
+		String litType = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_TYPE);
+		RDFDatatype dt = null;
+		if(litType!=null&&!litType.isEmpty()){
+			dt = new BaseDatatype(litType);
+		}
+		
+		String lang =  rs.getString(var + ColumnHelper.COL_NAME_LITERAL_LANG);
+		
+		
+		
+		// node =
+		// Node.createLiteral(rs.getString(var+ColumnHelper.LITERAL_COL_STRING));
+
+		// determine the data type
+		int sqldatatype = rs.getInt(var
+				+ ColumnHelper.COL_NAME_SQL_TYPE);
+		
+
+		String literalValue;
+		
+		if(XSDDatatype.XSDdecimal.getURI().equals(litType)||XSDDatatype.XSDinteger.getURI().equals(litType)){
+			literalValue = rs.getBigDecimal(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC).toString();
+		}else if( XSDDatatype.XSDdouble.getURI().equals(litType)){
+			literalValue = doubleFormatter.format(rs.getDouble(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC));
+		
+			new DecimalFormat();
+		}else if(XSDDatatype.XSDstring.getURI().equals( litType)|| litType ==null){
+			literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
+		}else if(XSDDatatype.XSDdateTime.getURI().equals(litType)){
+			
+			
+			literalValue = datetimeFormatter.print( (rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE)).getTime());
+		}else if(XSDDatatype.XSDdate.getURI().equals(litType) ){
+			literalValue = dateFormatter.print(rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
+			
+		}else if( XSDDatatype.XSDtime.getURI().equals(litType)){
+			literalValue = timeFormatter.print(rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
+		}else if(XSDDatatype.XSDboolean.getURI().equals(litType)){
+			literalValue = Boolean.toString(rs.getBoolean(var+ColumnHelper.COL_NAME_LITERAL_BOOL));
+		}else if(XSDDatatype.XSDhexBinary.getURI().equals(litType)){
+			literalValue = new String(dth.binaryResultSetTreatment(rs.getBytes(var+ColumnHelper.COL_NAME_LITERAL_BINARY)));
+		}else{
+			if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING)!=null){
+				literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
+			}else if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_DATE)!=null){
+				literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_DATE);
+			}else if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC)!=null){
+				literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC);
+			}else{
+				throw new ImplementationException("Deal with the other datatypes");
+			}
+			
+			
+		}
+		
+		
+			
+		
+		
+		
+		if(literalValue !=null){
+			
+
+		node = Node
+				.createLiteral(
+						literalValue,
+						lang, dt
+						);
+		}else{
+			node = null; 
+		}
+		
+		return node;
+
+	}
+
+	private Node createResource(String var, Integer type) throws SQLException {
+		Node node;
+		StringBuffer uri = new StringBuffer();
+		int i = 0;
+		for(String colname : this.var2ResourceCols.get(var)){
+			if(i++%2==0){
+				//fix string
+				String segment =rs.getString(colname);
+				if(segment !=null){
+					uri.append(segment);
+				}
+			}else{
+				//column derived valued
+				String segment =rs.getString(colname);
+				if(segment !=null){
+					try {
+
+						uri.append(URLEncoder.encode(segment, "US-ASCII").replaceAll("\\+", "%20"));
+					} catch (UnsupportedEncodingException e) {
+						// TODO Auto-generated catch block
+						log.error("Error:",e);
+					}
+				}
+			}
+			
+		}
+
+		if(uri.length()==0){
+			node = null; 
+		}else{
+			if(type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE)){
+				
+				if(baseUri!=null){
+					try{
+						IRI iri = IRIFactory.semanticWebImplementation().construct(uri.toString());
+						node = Node.createURI(uri.toString());
+					}catch(IRIException e){
+						try {
+							IRI iri = IRIFactory.semanticWebImplementation().construct(baseUri + uri.toString());
+							node = Node.createURI(uri.toString());
+						} catch (IRIException e1) {
+							log.warn("Trying to create invalid IRIs, using :" + uri.toString());
+							node = null;
+						}
+					}
+					
+					
+				}else{
+					node = Node.createURI(uri.toString());
+				}
+				
+				
+			}else{
+				node = Node.createAnon(new AnonId(uri.toString()));
+			}
+			
+		}
+		return node;
 	}
 
 	@Override

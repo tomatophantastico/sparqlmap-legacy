@@ -1,4 +1,4 @@
-package org.aksw.sparqlmap.config.syntax;
+package org.aksw.sparqlmap.db.impl;
 
 import java.util.Arrays;
 
@@ -11,7 +11,7 @@ import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 
-public class PostgresDataTypeHandler extends DataTypeHelper {
+public class PostgreSQLDataTypeHelper extends DataTypeHelper {
 
 	@Override
 	public String getStringCastType() {

@@ -3,6 +3,7 @@ package org.aksw.sparqlmap.mapper.finder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,6 @@ import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap.PO;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
-import org.apache.commons.collections15.map.HashedMap;
 import org.openjena.atlas.logging.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueNode;
  */
 public class MappingBinding {
 
-	private Map<Triple, Collection<TripleMap>> bindingMap = new HashedMap<Triple, Collection<TripleMap>>();
+	private Map<Triple, Collection<TripleMap>> bindingMap = new HashMap<Triple, Collection<TripleMap>>();
 
 
 	public MappingBinding(Map<Triple, Collection<TripleMap>> bindingMap) {
