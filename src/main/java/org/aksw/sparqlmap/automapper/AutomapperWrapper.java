@@ -8,8 +8,8 @@ import java.sql.SQLException;
 
 import javax.annotation.PostConstruct;
 
+import org.aksw.sparqlmap.db.DBAccess;
 import org.aksw.sparqlmap.db.DBAccessConfigurator;
-import org.aksw.sparqlmap.db.IDBAccess;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -22,7 +22,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 public class AutomapperWrapper {
 	
 	@Autowired
-	private IDBAccess dbaccess;
+	private DBAccess dbaccess;
 	
 	@Autowired
 	private DBAccessConfigurator dbconf;

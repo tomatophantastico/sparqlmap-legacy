@@ -7,65 +7,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 import org.aksw.sparqlmap.db.Connector;
-import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jolbox.bonecp.BoneCP;
 import com.jolbox.bonecp.BoneCPConfig;
 
 public class MySQLConnector extends Connector {
 	
-	private BoneCP connectionPool = null;
-	
+
+
+	public MySQLConnector(String dbUrl, String username, String password,
+			Integer poolminconnections, Integer poolmaxconnections) {
+		super(dbUrl, username, password, poolminconnections, poolmaxconnections);
+	}
+
 	private static Logger log = LoggerFactory.getLogger(MySQLConnector.class);
 	
-	
-	public MySQLConnector(String dbConnectionString, String username, String password, int minConnections, int maxConnections) {
-		
-		
 
 
- 
-		try {
-			Class.forName("com.mysql.jdbc.Driver");
-
-			// setup the connection pool
-			BoneCPConfig config = new BoneCPConfig();
-			
-			
-			config.setJdbcUrl(dbConnectionString); // jdbc url specific to your database, eg jdbc:mysql://127.0.0.1/yourdb
-			config.setUsername(username); 
-			config.setPassword(password);
-			config.setMinConnectionsPerPartition(minConnections);
-			config.setMaxConnectionsPerPartition(maxConnections);
-			config.setPartitionCount(1);
-			connectionPool = new BoneCP(config); // setup the connection pool
-			
-		
-		
-			//setupDriver(dbconf.getDbConnString(),dbconf.getUsername(),dbconf.getPassword());
-		} catch (Exception e) {
-			log.error("Error setting up the db pool",e);
-		}
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.aksw.r2rj.db.Connector#getConnection()
-	 */
-	public Connection getConnection() throws SQLException{
-	
-
-			return connectionPool.getConnection();
-	
-	}
 
 	@Override
 	public List<SelectExpressionItem> getSelectItemsForTable(Table table) {
@@ -95,27 +61,11 @@ public class MySQLConnector extends Connector {
 		return items;
 	}
 
-	@Override
-	public List<SelectExpressionItem> getSelectItemsForView(Statement view) {
-		log.error("getSelectItemsforViewnotImplemented");
-		return null;
-	}
 	
 	
-	public ResultSet executeSQL(String sql) throws SQLException{
-		java.sql.Statement stmt = getConnection().createStatement();
-		
-		
-		return stmt.executeQuery(sql);
-	}
+
 	
-	@Override
-	public Map<String,Integer> getDataTypeForView(Statement viewStatement) {
-		throw new ImplementationException("getDataTypeForView not implemented");
-		
-		
-		
-	}
+	
 
 	@Override
 	public Map<String,Integer> getDataTypeForTable(Table table) {
@@ -145,8 +95,35 @@ public class MySQLConnector extends Connector {
 	}
 	
 	@Override
-	public void close() {
-		connectionPool.close();
+	public String getJDBCDriverClassString() {
+		
+		return "com.mysql.jdbc.Driver";
+	}
+	
+	@Override
+	public BoneCPConfig getBoneCPConfig(String dbUrl, String username, String password,
+			Integer poolminconnections, Integer poolmaxconnections) {
+		BoneCPConfig conf = super.getBoneCPConfig(dbUrl, username, password, poolminconnections, poolmaxconnections);
+		String dbConnectionString = conf.getJdbcUrl();
+		
+		if(!dbConnectionString.contains("?")){
+			dbConnectionString += "?";
+		}else{
+			dbConnectionString +=  "&";
+		}
+		
+		if(!dbConnectionString.contains("padCharsWithSpace")){
+			dbConnectionString +=  "padCharsWithSpace=true";
+		}
+		if(dbConnectionString.contains("sessionVariables")){
+			log.warn("Session variables contained in url string. make sure it sets the ");
+		}else{
+			dbConnectionString += "&sessionVariables=sql_mode='ANSI_QUOTES'";
+		}
+		
+		conf.setJdbcUrl(dbConnectionString);
+		
+		return conf;
 	}
 
 	

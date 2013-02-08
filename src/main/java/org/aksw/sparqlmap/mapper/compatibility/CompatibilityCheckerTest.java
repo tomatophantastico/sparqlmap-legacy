@@ -1,10 +1,9 @@
 package org.aksw.sparqlmap.mapper.compatibility;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import org.aksw.sparqlmap.BSBMBaseTest;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
-import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap.PO;
 import org.junit.Before;
@@ -12,7 +11,6 @@ import org.junit.Test;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Node_URI;
-import com.hp.hpl.jena.sparql.util.NodeFactory;
 
 public class CompatibilityCheckerTest extends BSBMBaseTest {
 	

@@ -1,6 +1,7 @@
 package org.aksw.sparqlmap.mapper.translate;
 
 import java.sql.Types;
+import java.util.List;
 import java.util.Scanner;
 
 import net.sf.jsqlparser.expression.CastExpression;
@@ -10,7 +11,7 @@ import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.schema.Column;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
-import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.db.DBAccess;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
@@ -21,7 +22,7 @@ public abstract  class DataTypeHelper {
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DataTypeHelper.class);
 	
 	@Autowired
-	private IDBAccess dbaccess;
+	private DBAccess dbaccess;
 	
 	
 	public static RDFDatatype getRDFDataType(int sdt) {
@@ -239,7 +240,9 @@ public abstract  class DataTypeHelper {
 	}
 	
 	
-	
+	public byte[] binaryResultSetTreatment(byte[] bytes){
+		return bytes;
+	}
 	
 	
 	
@@ -257,13 +260,20 @@ public abstract  class DataTypeHelper {
 	
 	public abstract boolean needsSpecialCastForBinary();
 	
-	public abstract byte[] binaryResultSetTreatment(byte[] bytes);
+
 	
 	public abstract Expression binaryCastPrep(Expression expr);
 	
 	public abstract boolean needsSpecialCastForChar();
 	
 	public abstract Expression charCastPrep(Expression expr, Integer fieldlength);
+	
+	public abstract boolean hasRowIdFunction();
+	
+
+	public List<Expression> getRowIdFunction(String fromAlias) {
+		return null;
+	}
 	
 
 

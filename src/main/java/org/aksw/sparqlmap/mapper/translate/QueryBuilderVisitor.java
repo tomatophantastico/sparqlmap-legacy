@@ -23,7 +23,6 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
-import net.sf.jsqlparser.statement.select.SetOperation;
 import net.sf.jsqlparser.statement.select.SetOperationList;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
@@ -37,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.BiMap;
 import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.graph.compose.Union;
 import com.hp.hpl.jena.sparql.algebra.OpVisitorBase;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;

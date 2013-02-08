@@ -305,10 +305,11 @@ public class TermMap{
 			clonedFunction.setEscaped(origFunction.isEscaped());
 			clonedFunction.setName(origFunction.getName());
 			List<Expression> cloneExprList = new ArrayList<Expression>();
+			if(origFunction.getParameters()!=null){
 			for(Object expObj : origFunction.getParameters().getExpressions()){
 				cloneExprList.add(cloneExpression((Expression) expObj, suffix));
 			}
-			
+			}
 			clonedFunction.setParameters(new ExpressionList(cloneExprList));
 				
 			return clonedFunction;

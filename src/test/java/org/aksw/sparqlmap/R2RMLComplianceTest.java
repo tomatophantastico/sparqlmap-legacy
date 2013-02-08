@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Properties;
 
 import org.aksw.sparqlmap.automapper.DB2R2RML;
+import org.aksw.sparqlmap.db.DBAccess;
 import org.aksw.sparqlmap.db.DBAccessConfigurator;
-import org.aksw.sparqlmap.db.IDBAccess;
 import org.apache.commons.io.FileUtils;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.PropertiesPropertySource;
@@ -32,7 +32,7 @@ import com.hp.hpl.jena.util.FileManager;
 public class R2RMLComplianceTest {
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(R2RMLComplianceTest.class);
-	IDBAccess dbSetupConn;
+	DBAccess dbSetupConn;
 	
 	Properties dbprops;
 	Properties smprops;

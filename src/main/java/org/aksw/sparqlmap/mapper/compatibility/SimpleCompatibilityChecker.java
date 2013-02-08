@@ -1,6 +1,5 @@
 package org.aksw.sparqlmap.mapper.compatibility;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -13,13 +12,10 @@ import net.sf.jsqlparser.schema.Column;
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
-import org.aksw.sparqlmap.mapper.translate.FilterUtil;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 
 import com.google.common.base.Splitter;
 import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.impl.LiteralLabel;
-import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprVar;

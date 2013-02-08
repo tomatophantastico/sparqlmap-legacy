@@ -8,7 +8,7 @@ import javax.annotation.PostConstruct;
 import net.sf.jsqlparser.JSQLParserException;
 
 import org.aksw.sparqlmap.automapper.AutomapperWrapper;
-import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.db.DBAccess;
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +34,7 @@ public class R2RMLModelConfigurator {
 	AutomapperWrapper automapper; 
 	
 	@Autowired
-	IDBAccess dbaccess;
+	DBAccess dbaccess;
 	@Autowired
 	private ColumnHelper columnhelper;
 	@Autowired

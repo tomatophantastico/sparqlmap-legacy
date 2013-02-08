@@ -10,15 +10,14 @@ import java.util.Map;
 import javax.annotation.PreDestroy;
 
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.FromItemVisitor;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.util.deparser.AnsiQuoteExpressionDeParser;
+import net.sf.jsqlparser.util.deparser.AnsiQuoteSelectDeparser;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
-import net.sf.jsqlparser.util.deparser.PostgresqlExpressionDeParser;
-import net.sf.jsqlparser.util.deparser.PostgresqlSelectDeparser;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLValidationException;
@@ -27,7 +26,7 @@ import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 
-public class DBAccess implements IDBAccess {
+public class DBAccess {
 	
 	@Autowired
 	private DataTypeHelper dataTypeHelper;
@@ -47,10 +46,7 @@ public class DBAccess implements IDBAccess {
 	private String dbname;
 
 	
-	/* (non-Javadoc)
-	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#executeSQL(java.lang.String)
-	 */
-	@Override
+
 	public SQLResultSetWrapper executeSQL(String sql) throws SQLException{
 		
 		Connection connect  = dbConnector.getConnection();
@@ -73,50 +69,32 @@ public class DBAccess implements IDBAccess {
 
 
 
-	/* (non-Javadoc)
-	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getSelectItemsForView(net.sf.jsqlparser.statement.Statement)
-	 */
-	@Override
-	public List<SelectExpressionItem> getSelectItemsForView(Statement view) {	
-		return dbConnector.getSelectItemsForView(view);
-	}
 
 
 
 	/* (non-Javadoc)
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getSelectItemsForTable(net.sf.jsqlparser.schema.Table)
 	 */
-	@Override
+	
 	public List<SelectExpressionItem> getSelectItemsForTable(Table table) {
 		return dbConnector.getSelectItemsForTable(table);
 	}
 
 
 
-	/* (non-Javadoc)
-	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getDataTypeForView(net.sf.jsqlparser.statement.Statement)
-	 */
-	@Override
-	public Map<String,Integer> getDataTypeForView(Statement viewStatement) {
-		return dbConnector.getDataTypeForView( viewStatement);
-	}
+
 
 
 
 	/* (non-Javadoc)
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getDataTypeForTable(net.sf.jsqlparser.schema.Table)
 	 */
-	@Override
+	
 	public Map<String,Integer> getDataTypeForTable(Table table) {
 		return dbConnector.getDataTypeForTable(table);
 	}
 
 
-
-	/* (non-Javadoc)
-	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#close()
-	 */
-	@Override
 	@PreDestroy
 	public void close() {
 		log.info("Closing the connections");
@@ -124,12 +102,6 @@ public class DBAccess implements IDBAccess {
 		
 	}
 
-
-	/* (non-Javadoc)
-	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#validateFromItem(net.sf.jsqlparser.statement.select.FromItem)
-	 */
-
-	@Override
 	public void validateFromItem(FromItem fromItem) throws SQLException {
 		String query = "SELECT * FROM " + fromItemToString(fromItem) +  "  LIMIT 1";
 		
@@ -140,10 +112,7 @@ public class DBAccess implements IDBAccess {
 	}
 	
 	
-	/* (non-Javadoc)
-	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getColumnName(net.sf.jsqlparser.statement.select.FromItem, java.lang.String)
-	 */
-	@Override
+
 	public String getColumnName(FromItem fromItem, String unescapedColname) {
 		String query= null;
 		   try {
@@ -169,7 +138,7 @@ public class DBAccess implements IDBAccess {
 	/* (non-Javadoc)
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getDataType(java.lang.String, java.lang.String)
 	 */
-	@Override
+	
 	public Integer getDataType(String alias, String colname) {
 		if(alias_col2datatype.containsKey(alias)&&
 				alias_col2datatype.get(alias).containsKey(colname)){
@@ -184,7 +153,7 @@ public class DBAccess implements IDBAccess {
 	/* (non-Javadoc)
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getDataType(net.sf.jsqlparser.statement.select.FromItem, java.lang.String)
 	 */
-	@Override
+	
 	public Integer getDataType(FromItem fromItem, String colname) {
 		if(alias_col2datatype.containsKey(fromItem.getAlias())&&
 				alias_col2datatype.get(fromItem.getAlias()).containsKey(colname)){
@@ -226,13 +195,13 @@ public class DBAccess implements IDBAccess {
 		
 		fromItem.accept(new FromItemVisitor() {
 			
-			@Override
+			
 			public void visit(SubJoin subjoin) {
 				throw new ImplementationException("Not implemented");
 				
 			}
 			
-			@Override
+			
 			public void visit(SubSelect subSelect) {
 				fromItemSb.append("( ");
 				subSelect.getSelectBody().accept(sdp);
@@ -242,7 +211,7 @@ public class DBAccess implements IDBAccess {
 				
 			}
 			
-			@Override
+			
 			public void visit(Table tableName) {
 				tableName.accept(sdp);
 				
@@ -261,7 +230,7 @@ public class DBAccess implements IDBAccess {
 	/* (non-Javadoc)
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getExpressionDeParser(java.lang.StringBuffer)
 	 */
-	@Override
+	
 	public ExpressionDeParser getExpressionDeParser(StringBuilder fromItemSb) {
 		return getExpressionDeParser(getSelectDeParser(fromItemSb), fromItemSb);
 		
@@ -271,7 +240,7 @@ public class DBAccess implements IDBAccess {
 	/* (non-Javadoc)
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getConenction()
 	 */
-	@Override
+	
 	public Connection getConnection() throws SQLException {
 		return this.dbConnector.getConnection();
 
@@ -281,50 +250,51 @@ public class DBAccess implements IDBAccess {
 	/* (non-Javadoc)
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getSelectDeParser(java.lang.StringBuffer)
 	 */
-	@Override
+	
 	public SelectDeParser getSelectDeParser(StringBuilder sb) {
-		if(dbname.equals(MYSQL)){
-			
-			ExpressionDeParser expressionDeParser = new ExpressionDeParser();
-			SelectDeParser selectDeParser = new SelectDeParser();
-			expressionDeParser.setBuffer(sb);
+//		if(dbname.equals(MYSQL)){
+//			
+//			ExpressionDeParser expressionDeParser = new ExpressionDeParser();
+//			SelectDeParser selectDeParser = new SelectDeParser();
+//			expressionDeParser.setBuffer(sb);
+//			selectDeParser.setBuffer(sb);
+//			expressionDeParser.setSelectVisitor(selectDeParser);
+//			selectDeParser.setExpressionVisitor(expressionDeParser);
+//			
+//			
+//			return selectDeParser;
+//		} else if(dbname.equals(POSTGRES )|| dbname.equals(HSQLDB)){
+			AnsiQuoteSelectDeparser selectDeParser = new AnsiQuoteSelectDeparser();
+			AnsiQuoteExpressionDeParser expressionDeParser = new AnsiQuoteExpressionDeParser(selectDeParser,sb);
 			selectDeParser.setBuffer(sb);
-			expressionDeParser.setSelectVisitor(selectDeParser);
-			selectDeParser.setExpressionVisitor(expressionDeParser);
-			
-			
-			return selectDeParser;
-		} else if(dbname.equals(POSTGRES )|| dbname.equals(HSQLDB)){
-			PostgresqlSelectDeparser selectDeParser = new PostgresqlSelectDeparser();
-			PostgresqlExpressionDeParser expressionDeParser = new PostgresqlExpressionDeParser(selectDeParser,sb);
-			selectDeParser.setBuffer(sb);
 			selectDeParser.setExpressionVisitor(expressionDeParser);
 			return selectDeParser;
 			
-		}
-		log.warn("Selected default deparser");
-		return new SelectDeParser();
+//		}
+//		log.warn("Selected default deparser");
+//		return new SelectDeParser();
 	}
 	
 	
 	/* (non-Javadoc)
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getExpressionDeParser(net.sf.jsqlparser.util.deparser.SelectDeParser, java.lang.StringBuffer)
 	 */
-	@Override
+	
 	public ExpressionDeParser getExpressionDeParser(SelectDeParser selectDeParser, StringBuilder out) {
-		if(dbname.equals(MYSQL)){
-			return new ExpressionDeParser(selectDeParser, out);
-		} else if(dbname.equals(POSTGRES)||dbname.equals(HSQLDB)){
-			return new PostgresqlExpressionDeParser(selectDeParser, out);
-			
-		}
-		log.warn("Selected default expresseiondeparser");
-		return new ExpressionDeParser(selectDeParser,out);
+		return new AnsiQuoteExpressionDeParser(selectDeParser, out);
+//		if(dbname.equals(MYSQL)){
+//			return new ExpressionDeParser(selectDeParser, out);
+//		} else if(dbname.equals(POSTGRES)||dbname.equals(HSQLDB)){
+//			
+//			
+//		}
+//		log.warn("Selected default expresseiondeparser");
+//		return new ExpressionDeParser(selectDeParser,out);
 	}
 
 
 
-	@Override
+	
 	public Integer getPrecision(String alias, String colname) {
 		
 		return alias_col2precision.get(alias).get(colname);

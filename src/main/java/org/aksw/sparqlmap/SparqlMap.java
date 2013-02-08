@@ -12,7 +12,7 @@ import java.util.Set;
 import javax.annotation.PostConstruct;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
-import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.db.DBAccess;
 import org.aksw.sparqlmap.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.mapper.Mapper;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
@@ -68,7 +68,7 @@ public class SparqlMap {
 	private R2RMLModel mapping;
 	
 	@Autowired
-	private IDBAccess dbConf;	
+	private DBAccess dbConf;	
 
 	private Logger log = LoggerFactory.getLogger(SparqlMap.class);
 

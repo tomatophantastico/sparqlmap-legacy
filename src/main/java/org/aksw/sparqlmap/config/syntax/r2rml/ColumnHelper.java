@@ -13,7 +13,7 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
 
-import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.db.DBAccess;
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.translate.FilterUtil;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
@@ -67,7 +67,7 @@ public class ColumnHelper {
 	}
 	
 	@Autowired
-	IDBAccess dbaccess;
+	DBAccess dbaccess;
 	
 	@Autowired
 	DataTypeHelper dth;
@@ -196,9 +196,9 @@ public class ColumnHelper {
 
 		} else if (rdfType.equals(COL_VAL_TYPE_RESOURCE)||rdfType.equals(COL_VAL_TYPE_BLANK)) {
 			texprs.addAll(getBaseExpressions(rdfType,
-					2, COL_VAL_SQL_TYPE_RESOURCE, dth, datatype, lang,
+					1, COL_VAL_SQL_TYPE_RESOURCE, dth, datatype, lang,
 					null,graph));
-			texprs.add(dth.cast(new StringValue("\"\""), dth.getStringCastType()));
+//			texprs.add(dth.cast(new StringValue("\"\""), dth.getStringCastType()));
 			texprs.add(dth.cast(col, dth.getStringCastType()));
 
 		} 
@@ -214,75 +214,104 @@ public class ColumnHelper {
 	public  List<Expression> getExpression(String[] template,
 			Integer rdfType, int sqlType, String datatype, String lang, Column lanColumn, 
 			DataTypeHelper dth, FromItem fi,Expression graph,String baseUri) {
-		List<Expression> texprs = new ArrayList<Expression>();
-		
-	
-		
+		List<Expression> texprs = null;
 		List<String>  altSeq = Arrays.asList(template);
 		
-		
-//		if(template.startsWith("{") && rdfType != COL_VAL_TYPE_LITERAL){
-//			altSeq.add(0, "");
-//		}
-		
+
 		
 		if (rdfType.equals(COL_VAL_TYPE_LITERAL)) {
-			// if datatype not declared, we check, if we got a default
-			// conversion
-			if (datatype == null
-					&& DataTypeHelper.getRDFDataType(sqlType) != null) {
-				datatype = DataTypeHelper.getRDFDataType(sqlType).getURI();
-			}
-			texprs.addAll(getBaseExpressions(rdfType,
-					COL_VAL_RES_LENGTH_LITERAL, sqlType, dth, datatype, lang,
-					lanColumn,graph));
-
-			// now create a big concat statement.
-			List<Expression> toConcat = new ArrayList<Expression>();
-			for (int i = 0; i < altSeq.size(); i++) {
-				if (i % 2 == 1) {
-					String colName = altSeq.get(i);
-					//validate and register the colname first
-					dbaccess.getDataType(fi,colName);
-					toConcat.add(dth.cast(ColumnHelper.createCol(fi.getAlias(),colName ),dth.getStringCastType()));
-				} else {
-					toConcat.add(dth.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
-				}
-			}
-			
-			Expression concat = dth.cast(FilterUtil.concat(toConcat.toArray(new Expression[0])),dth.getStringCastType());
-			texprs.add(concat);	
+			texprs = getExpressionsForTemplateLiteral(rdfType, sqlType, datatype, lang,
+					lanColumn,  fi, graph, altSeq);	
 
 			
 
-		} else if (rdfType.equals(COL_VAL_TYPE_RESOURCE)|| rdfType.equals( COL_VAL_TYPE_BLANK)) {
-			if(altSeq.get(0).isEmpty()){
-				//we set the base uri 
-				altSeq.set(0, baseUri);
-			}
-			
-			
-			texprs.addAll(getBaseExpressions(rdfType, altSeq.size(),
-					COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null,graph));
-			for (int i = 0; i < altSeq.size(); i++) {
-				if (i % 2 == 1) {
-					String colName = R2RMLModel.unescape(altSeq.get(i));
-					//validate and register the colname first
-					dbaccess.getDataType(fi,colName);
-					texprs.add(dth.cast(ColumnHelper.createCol(fi.getAlias(), colName),dth.getStringCastType()));
-				} else {
-					texprs.add(dth.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
-				}
-			}
-			
-
-		
 		}
-		
-		// we go now for all unescapeded "{"
-
+		if (rdfType.equals(COL_VAL_TYPE_RESOURCE)) {
+			texprs = getExpressionsForTemplateResource(
+					rdfType,  fi, graph, baseUri, altSeq);
+			
+		} 
+		if ( rdfType.equals( COL_VAL_TYPE_BLANK)){
+			texprs = getExpressionsForTemplateBlankNode(
+					rdfType,  fi, graph, baseUri, altSeq);
+		}
+	
 		return texprs;
 
+	}
+	private List<Expression> getExpressionsForTemplateBlankNode(
+			Integer rdfType, FromItem fi,
+			Expression graph, String baseUri, List<String> altSeq) {
+		
+		
+		if(dth.hasRowIdFunction()){
+			List<Expression> texprs =  new ArrayList<Expression>();
+			texprs.addAll(getBaseExpressions(rdfType, 2,
+					COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null,graph));
+			//first an empty string to maintain the string-column scheme
+			texprs.addAll(dth.getRowIdFunction(fi.getAlias()));
+			return texprs;
+			
+		}else{
+			return getExpressionsForTemplateResource(rdfType, fi, graph, baseUri, altSeq);
+		}
+	}
+	private List<Expression> getExpressionsForTemplateLiteral(Integer rdfType, int sqlType,
+			String datatype, String lang, Column lanColumn, 
+			FromItem fi, Expression graph,
+			List<String> altSeq) {
+		List<Expression> texprs =  new ArrayList<Expression>();
+		// if datatype not declared, we check, if we got a default
+		// conversion
+		if (datatype == null
+				&& DataTypeHelper.getRDFDataType(sqlType) != null) {
+			datatype = DataTypeHelper.getRDFDataType(sqlType).getURI();
+		}
+		texprs.addAll(getBaseExpressions(rdfType,
+				COL_VAL_RES_LENGTH_LITERAL, sqlType, dth, datatype, lang,
+				lanColumn,graph));
+
+		// now create a big concat statement.
+		List<Expression> toConcat = new ArrayList<Expression>();
+		for (int i = 0; i < altSeq.size(); i++) {
+			if (i % 2 == 1) {
+				String colName = altSeq.get(i);
+				//validate and register the colname first
+				dbaccess.getDataType(fi,colName);
+				toConcat.add(dth.cast(ColumnHelper.createCol(fi.getAlias(),colName ),dth.getStringCastType()));
+			} else {
+				toConcat.add(dth.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
+			}
+		}
+		
+		Expression concat = dth.cast(FilterUtil.concat(toConcat.toArray(new Expression[0])),dth.getStringCastType());
+		texprs.add(concat);
+		
+		
+		return texprs;
+	}
+	private List<Expression> getExpressionsForTemplateResource(Integer rdfType,
+			 FromItem fi, Expression graph, String baseUri,
+			List<String> altSeq) {
+		List<Expression> newExprs = new ArrayList<Expression>();
+		
+		if(altSeq.get(0).isEmpty()){
+			//we set the base uri 
+			altSeq.set(0, baseUri);
+		}
+		newExprs.addAll(getBaseExpressions(rdfType, altSeq.size(),
+				COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null,graph));
+		for (int i = 0; i < altSeq.size(); i++) {
+			if (i % 2 == 1) {
+				String colName = R2RMLModel.unescape(altSeq.get(i));
+				//validate and register the colname first
+				//dbaccess.getDataType(fi,colName);
+				newExprs.add(dth.cast(ColumnHelper.createCol(fi.getAlias(), colName),dth.getStringCastType()));
+			} else {
+				newExprs.add(dth.cast(new StringValue("\"" +altSeq.get(i) +  "\""), dth.getStringCastType()));
+			}
+		}
+		return newExprs;
 	}
 
 	/*

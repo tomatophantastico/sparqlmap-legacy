@@ -4,11 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.WithItem;
@@ -18,7 +16,7 @@ import org.aksw.sparqlmap.beautifier.SparqlBeautifier;
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
-import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.db.DBAccess;
 import org.aksw.sparqlmap.mapper.finder.Binder;
 import org.aksw.sparqlmap.mapper.finder.FilterFinder;
 import org.aksw.sparqlmap.mapper.finder.MappingBinding;
@@ -49,7 +47,7 @@ public class AlgebraBasedMapper implements Mapper {
 	private R2RMLModel mappingConf;
 
 	@Autowired
-	private IDBAccess dbconf;
+	private DBAccess dbconf;
 	
 	@Autowired
 	private DataTypeHelper dth;

@@ -1,6 +1,6 @@
 package org.aksw.sparqlmap.mapper.finder;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import org.aksw.sparqlmap.BSBMBaseTest;
 import org.aksw.sparqlmap.beautifier.SparqlBeautifier;

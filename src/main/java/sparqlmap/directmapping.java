@@ -5,14 +5,10 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 import org.aksw.sparqlmap.SparqlMap;
-import org.aksw.sparqlmap.mapper.translate.ImplementationException;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class directmapping extends AbstractSparqlMapCommanLineOperation {

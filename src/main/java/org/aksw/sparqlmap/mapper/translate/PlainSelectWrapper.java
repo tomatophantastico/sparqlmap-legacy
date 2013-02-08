@@ -27,7 +27,6 @@ import net.sf.jsqlparser.statement.select.SubSelect;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BiMap;

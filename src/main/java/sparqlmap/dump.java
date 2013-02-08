@@ -1,19 +1,14 @@
 package sparqlmap;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.Properties;
 
 import org.aksw.sparqlmap.SparqlMap;
-import org.apache.commons.cli.AlreadySelectedException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**

@@ -1,7 +1,7 @@
 package org.aksw.sparqlmap.config.syntax;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
-import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.db.DBAccess;
 
 public class SparqlMapConfiguration {
 
@@ -9,7 +9,7 @@ public class SparqlMapConfiguration {
 
 	private R2RMLModel mappingConfiguration;
 
-	private IDBAccess dbConn;
+	private DBAccess dbConn;
 	
 	private boolean useSolutionModifierPushing = true;
 	
@@ -29,11 +29,11 @@ public class SparqlMapConfiguration {
 		this.endpoint = endpoint;
 	}
 
-	public IDBAccess getDbConn() {
+	public DBAccess getDbConn() {
 		return dbConn;
 	}
 
-	public void setDbConn(IDBAccess dbConn) {
+	public void setDbConn(DBAccess dbConn) {
 		this.dbConn = dbConn;
 	}
 

@@ -1,6 +1,6 @@
 package org.aksw.sparqlmap;
 
-import org.aksw.sparqlmap.db.IDBAccess;
+import org.aksw.sparqlmap.db.DBAccess;
 import org.aksw.sparqlmap.spring.ContextSetup;
 import org.junit.Before;
 import org.springframework.context.ApplicationContext;
@@ -11,7 +11,7 @@ public abstract class BSBMBaseTest {
 	
 	public SparqlMap r2r;
 
-	private IDBAccess dbConf;
+	private DBAccess dbConf;
 
 	public ApplicationContext con;
 	

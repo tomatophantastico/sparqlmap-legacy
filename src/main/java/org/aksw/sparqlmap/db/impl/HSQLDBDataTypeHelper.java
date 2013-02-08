@@ -18,7 +18,7 @@ public class HSQLDBDataTypeHelper extends DataTypeHelper {
 
 	@Override
 	public String getNumericCastType() {
-		return "NUMERIC";
+		return "DOUBLE";
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class HSQLDBDataTypeHelper extends DataTypeHelper {
 
 	@Override
 	public String getDateCastType() {
-		return "DATE";
+		return "DATETIME";
 	}
 
 	@Override
@@ -41,10 +41,6 @@ public class HSQLDBDataTypeHelper extends DataTypeHelper {
 		return false;
 	}
 
-	@Override
-	public byte[] binaryResultSetTreatment(byte[] bytes) {
-		return null;
-	}
 
 	@Override
 	public Expression binaryCastPrep(Expression expr) {
@@ -60,5 +56,32 @@ public class HSQLDBDataTypeHelper extends DataTypeHelper {
 	public Expression charCastPrep(Expression expr, Integer fieldlength) {
 		return null;
 	}
+
+	@Override
+	public boolean hasRowIdFunction() {
+		
+		return false;
+	}
+
+//	@Override
+//	public List<Expression> getRowIdFunction(String fromAlias) {
+//		List<Expression> expressions=  new ArrayList<Expression>();
+//		if(fromAlias!=null){
+//			StringValue fromAliasValue = new StringValue("\"" + fromAlias + "\"");
+//			expressions.add(cast(fromAliasValue, getStringCastType()));
+//			
+//		}else{
+//			StringValue fromAliasValue = new StringValue("\"\"");
+//			expressions.add(cast(fromAliasValue, getStringCastType()));
+//		}
+//		
+//		Function rownum = new Function();
+//		rownum.setName("ROWNUM");
+//		expressions.add(cast(rownum, getStringCastType()));
+//		return expressions;
+//
+//	}
+
+
 
 }

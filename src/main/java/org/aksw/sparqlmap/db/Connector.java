@@ -8,25 +8,82 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.sql.DataSource;
 
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.jolbox.bonecp.BoneCPConfig;
+import com.jolbox.bonecp.BoneCPDataSource;
+/**
+ * holds the connection pool and some other interesting stuff
+ * @author joerg
+ *
+ */
 public abstract class Connector {
+	
+	
+	public Connector(String dbUrl, String username, String password, Integer poolminconnections, Integer poolmaxconnections){
+		
+		try {
+			Class.forName(getJDBCDriverClassString());
+		} catch (ClassNotFoundException e) {
+			log.error("JDB class not found", e);
+		}
+
+		
+		BoneCPConfig conf = getBoneCPConfig(dbUrl, username, password,poolminconnections,poolmaxconnections);
+		connectionPool = new BoneCPDataSource(conf);
+	}
 	
 	private static Logger log = LoggerFactory.getLogger(Connector.class);
 
-
-	public abstract Connection getConnection() throws SQLException;
+	public Connection getConnection() throws SQLException{
+		return connectionPool.getConnection(); 
+	}
 	
 	
-	public  abstract List<SelectExpressionItem> getSelectItemsForView(Statement view);
+	public JdbcTemplate getTemplate(){
+		return new JdbcTemplate(connectionPool);
+	}
+	
+	public DataSource getDataSource(){
+		return connectionPool;
+	}
+	
+	
+	private BoneCPDataSource connectionPool = null;
+	
+	
+	public BoneCPConfig getBoneCPConfig(String dbUrl, String username, String password, Integer poolminconnections, Integer poolmaxconnections){
 
+		if (poolmaxconnections==null){
+			poolmaxconnections =10;
+		}
+		if (poolminconnections == null){
+			poolminconnections = 5;
+		}
+		
+		
+		BoneCPConfig config = new BoneCPConfig();
+		config.setJdbcUrl(dbUrl); 
+		config.setUsername(username); 
+		config.setPassword(password);
+		config.setMinConnectionsPerPartition(poolminconnections);
+		config.setMaxConnectionsPerPartition(poolmaxconnections);
+		config.setPartitionCount(1);
+		
+		
+		return config;
+		
+	}
 
 
 	public List<SelectExpressionItem> getSelectItemsForTable(Table table){
@@ -62,11 +119,7 @@ public abstract class Connector {
 		return items;
 	}
 	
-	
-
-
-	public abstract Map<String,Integer> getDataTypeForView(Statement viewStatement);
-
+	public abstract String getJDBCDriverClassString();
 
 
 	public Map<String,Integer> getDataTypeForTable(Table table){
@@ -95,7 +148,9 @@ public abstract class Connector {
 	}
 
 
-	public abstract void close();
+	public void close(){
+		connectionPool.close();
+	}
 
 
 }

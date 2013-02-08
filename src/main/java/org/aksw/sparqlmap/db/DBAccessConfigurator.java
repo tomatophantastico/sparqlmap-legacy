@@ -111,7 +111,7 @@ public class DBAccessConfigurator {
 	
 	
 	@Bean
-	public IDBAccess getDBAccess(){
+	public DBAccess getDBAccess(){
 		log.info("Creating DB Access for: " + dbUrl + "|" + username + ", etc." );
 		
 		String dbname =  getJdbcDBName();
@@ -127,7 +127,7 @@ public class DBAccessConfigurator {
 			throw new ImplementationException("Unknown Database string " + dbname + " encountered");
 		}
 		
-		IDBAccess access = new DBAccess(dbConnector, dbname);
+		DBAccess access = new DBAccess(dbConnector, dbname);
 		return access;
 	}
 	

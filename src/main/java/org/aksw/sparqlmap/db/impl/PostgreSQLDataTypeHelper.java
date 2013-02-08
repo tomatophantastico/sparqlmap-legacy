@@ -100,6 +100,13 @@ public class PostgreSQLDataTypeHelper extends DataTypeHelper {
 		return Arrays.copyOfRange(bytes, 4, bytes.length);
 	}
 
+	@Override
+	public boolean hasRowIdFunction() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+
 
 
 }

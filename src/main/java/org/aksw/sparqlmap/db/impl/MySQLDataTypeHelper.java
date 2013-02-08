@@ -1,7 +1,14 @@
 package org.aksw.sparqlmap.db.impl;
 
-import net.sf.jsqlparser.expression.Expression;
+import java.util.ArrayList;
+import java.util.List;
 
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.StringExpression;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.schema.Column;
+
+import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 
 public class MySQLDataTypeHelper extends DataTypeHelper {
@@ -18,7 +25,7 @@ public class MySQLDataTypeHelper extends DataTypeHelper {
 
 	@Override
 	public String getBooleanCastType() {
-		return "BOOLEAN";
+		return "CHAR";
 	}
 
 	@Override
@@ -65,5 +72,28 @@ public class MySQLDataTypeHelper extends DataTypeHelper {
 		return bytes;
 	}
 
+	@Override
+	public boolean hasRowIdFunction() {
+		
+		return false;
+	}
+	
+//	@Override
+//	public List<Expression> getRowIdFunction(String fromAlias) {
+//		List<Expression> expressions=  new ArrayList<Expression>();
+//		if(fromAlias!=null){
+//			StringValue fromAliasValue = new StringValue("\"" + fromAlias + "\"");
+//			expressions.add(cast(fromAliasValue, getStringCastType()));
+//			
+//		}else{
+//			StringValue fromAliasValue = new StringValue("\"\"");
+//			expressions.add(cast(fromAliasValue, getStringCastType()));
+//		}
+//		
+//		StringExpression rowid = new StringExpression("_rowid");
+//		expressions.add(cast(rowid, getStringCastType()));
+//		return expressions;
+//
+//	}
 
 }

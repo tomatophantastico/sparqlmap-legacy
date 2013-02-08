@@ -12,6 +12,7 @@ import java.util.List;
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.jena.iri.IRI;
 import org.apache.jena.iri.IRIException;
 import org.apache.jena.iri.IRIFactory;
@@ -44,8 +45,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	
 	String baseUri = null;
 	DecimalFormat doubleFormatter = new DecimalFormat("0.0##########################E0");
-
-	static org.slf4j.Logger log = org.slf4j.LoggerFactory
+		static org.slf4j.Logger log = org.slf4j.LoggerFactory
 			.getLogger(SQLResultSetWrapper.class);
 
 	private ResultSet rs;
@@ -205,27 +205,34 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 
 		String literalValue;
 		
-		if(XSDDatatype.XSDdecimal.getURI().equals(litType)||XSDDatatype.XSDinteger.getURI().equals(litType)){
+		if(XSDDatatype.XSDdecimal.getURI().equals(litType)){
 			literalValue = rs.getBigDecimal(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC).toString();
+		
 		}else if( XSDDatatype.XSDdouble.getURI().equals(litType)){
 			literalValue = doubleFormatter.format(rs.getDouble(var + ColumnHelper.COL_NAME_LITERAL_NUMERIC));
 		
-			new DecimalFormat();
+		}else if( XSDDatatype.XSDint.getURI().equals(litType)||XSDDatatype.XSDinteger.getURI().equals(litType)){
+			literalValue =Integer.toString(rs.getInt((var + ColumnHelper.COL_NAME_LITERAL_NUMERIC)));
+		
 		}else if(XSDDatatype.XSDstring.getURI().equals( litType)|| litType ==null){
 			literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
+		
 		}else if(XSDDatatype.XSDdateTime.getURI().equals(litType)){
-			
-			
 			literalValue = datetimeFormatter.print( (rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE)).getTime());
+		
 		}else if(XSDDatatype.XSDdate.getURI().equals(litType) ){
 			literalValue = dateFormatter.print(rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
 			
 		}else if( XSDDatatype.XSDtime.getURI().equals(litType)){
 			literalValue = timeFormatter.print(rs.getTimestamp(var+ColumnHelper.COL_NAME_LITERAL_DATE).getTime());
+		
 		}else if(XSDDatatype.XSDboolean.getURI().equals(litType)){
 			literalValue = Boolean.toString(rs.getBoolean(var+ColumnHelper.COL_NAME_LITERAL_BOOL));
+		
 		}else if(XSDDatatype.XSDhexBinary.getURI().equals(litType)){
-			literalValue = new String(dth.binaryResultSetTreatment(rs.getBytes(var+ColumnHelper.COL_NAME_LITERAL_BINARY)));
+			String hex= Hex.encodeHexString(rs.getBytes(var+ColumnHelper.COL_NAME_LITERAL_BINARY));
+			literalValue = new String(hex);
+		
 		}else{
 			if(rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING)!=null){
 				literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
