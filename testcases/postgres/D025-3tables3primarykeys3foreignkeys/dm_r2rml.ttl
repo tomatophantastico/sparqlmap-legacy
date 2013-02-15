@@ -9,25 +9,25 @@ vocab:Department
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
+                        [ rr:column "\"name\""
+                        ] ;
+                rr:predicate <http://example.com/base/Department#name>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
                         [ rr:column "\"city\""
                         ] ;
                 rr:predicate <http://example.com/base/Department#city>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"manager\""
-                        ] ;
-                rr:predicate <http://example.com/base/Department#manager>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
                         [ rr:joinCondition
-                                  [ rr:child "\"ID\"" ;
-                                    rr:parent "\"manager\""
+                                  [ rr:child "\"manager\"" ;
+                                    rr:parent "\"ID\""
                                   ] ;
                           rr:parentTriplesMap vocab:People
                         ] ;
-                rr:predicate <http://example.com/base/Department#manager>
+                rr:predicate <http://example.com/base/Department#ref-manager>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -37,9 +37,9 @@ vocab:Department
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"name\""
+                        [ rr:column "\"manager\""
                         ] ;
-                rr:predicate <http://example.com/base/Department#name>
+                rr:predicate <http://example.com/base/Department#manager>
               ] ;
       rr:subjectMap
               [ rr:class vocab:Department ;
@@ -52,15 +52,15 @@ vocab:Addresses
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"state\""
-                        ] ;
-                rr:predicate <http://example.com/base/Addresses#state>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
                         [ rr:column "\"ID\""
                         ] ;
                 rr:predicate <http://example.com/base/Addresses#ID>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"state\""
+                        ] ;
+                rr:predicate <http://example.com/base/Addresses#state>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -79,37 +79,19 @@ vocab:People
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"fname\""
-                        ] ;
-                rr:predicate <http://example.com/base/People#fname>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:joinCondition
-                                  [ rr:child "\"ID\"" ;
-                                    rr:parent "\"addr\""
-                                  ] ;
-                          rr:parentTriplesMap vocab:Addresses
-                        ] ;
-                rr:predicate <http://example.com/base/People#addr>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"addr\""
-                        ] ;
-                rr:predicate <http://example.com/base/People#addr>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
                         [ rr:column "\"deptCity\""
                         ] ;
                 rr:predicate <http://example.com/base/People#deptCity>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"ID\""
+                        [ rr:joinCondition
+                                  [ rr:child "\"addr\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap vocab:Addresses
                         ] ;
-                rr:predicate <http://example.com/base/People#ID>
+                rr:predicate <http://example.com/base/People#ref-addr>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -119,17 +101,35 @@ vocab:People
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
+                        [ rr:column "\"fname\""
+                        ] ;
+                rr:predicate <http://example.com/base/People#fname>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
                         [ rr:joinCondition
-                                  [ rr:child "\"city\"" ;
-                                    rr:parent "\"deptCity\""
+                                  [ rr:child "\"deptName\"" ;
+                                    rr:parent "\"name\""
                                   ] ;
                           rr:joinCondition
-                                  [ rr:child "\"name\"" ;
-                                    rr:parent "\"deptName\""
+                                  [ rr:child "\"deptCity\"" ;
+                                    rr:parent "\"city\""
                                   ] ;
                           rr:parentTriplesMap vocab:Department
                         ] ;
-                rr:predicate <http://example.com/base/People#deptName;deptCity>
+                rr:predicate <http://example.com/base/People#ref-deptName;deptCity>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"ID\""
+                        ] ;
+                rr:predicate <http://example.com/base/People#ID>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"addr\""
+                        ] ;
+                rr:predicate <http://example.com/base/People#addr>
               ] ;
       rr:subjectMap
               [ rr:class vocab:People ;
@@ -142,25 +142,13 @@ vocab:Projects
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"deptName\""
-                        ] ;
-                rr:predicate <http://example.com/base/Projects#deptName>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
                         [ rr:joinCondition
-                                  [ rr:child "\"ID\"" ;
-                                    rr:parent "\"lead\""
+                                  [ rr:child "\"lead\"" ;
+                                    rr:parent "\"ID\""
                                   ] ;
                           rr:parentTriplesMap vocab:People
                         ] ;
-                rr:predicate <http://example.com/base/Projects#lead>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"lead\""
-                        ] ;
-                rr:predicate <http://example.com/base/Projects#lead>
+                rr:predicate <http://example.com/base/Projects#ref-lead>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -170,23 +158,35 @@ vocab:Projects
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:joinCondition
-                                  [ rr:child "\"name\"" ;
-                                    rr:parent "\"deptName\""
-                                  ] ;
-                          rr:joinCondition
-                                  [ rr:child "\"city\"" ;
-                                    rr:parent "\"deptCity\""
-                                  ] ;
-                          rr:parentTriplesMap vocab:Department
-                        ] ;
-                rr:predicate <http://example.com/base/Projects#deptName;deptCity>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
                         [ rr:column "\"deptCity\""
                         ] ;
                 rr:predicate <http://example.com/base/Projects#deptCity>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"deptName\""
+                        ] ;
+                rr:predicate <http://example.com/base/Projects#deptName>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"deptName\"" ;
+                                    rr:parent "\"name\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"deptCity\"" ;
+                                    rr:parent "\"city\""
+                                  ] ;
+                          rr:parentTriplesMap vocab:Department
+                        ] ;
+                rr:predicate <http://example.com/base/Projects#ref-deptName;deptCity>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"lead\""
+                        ] ;
+                rr:predicate <http://example.com/base/Projects#lead>
               ] ;
       rr:subjectMap
               [ rr:class vocab:Projects ;
@@ -200,42 +200,6 @@ vocab:TaskAssignments
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"deptCity\""
-                        ] ;
-                rr:predicate <http://example.com/base/TaskAssignments#deptCity>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:joinCondition
-                                  [ rr:child "\"ID\"" ;
-                                    rr:parent "\"worker\""
-                                  ] ;
-                          rr:parentTriplesMap vocab:People
-                        ] ;
-                rr:predicate <http://example.com/base/TaskAssignments#worker>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"project\""
-                        ] ;
-                rr:predicate <http://example.com/base/TaskAssignments#project>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:joinCondition
-                                  [ rr:child "\"name\"" ;
-                                    rr:parent "\"deptName\""
-                                  ] ;
-                          rr:joinCondition
-                                  [ rr:child "\"city\"" ;
-                                    rr:parent "\"deptCity\""
-                                  ] ;
-                          rr:parentTriplesMap vocab:Department
-                        ] ;
-                rr:predicate <http://example.com/base/TaskAssignments#deptName;deptCity>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
                         [ rr:column "\"deptName\""
                         ] ;
                 rr:predicate <http://example.com/base/TaskAssignments#deptName>
@@ -243,20 +207,44 @@ vocab:TaskAssignments
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:joinCondition
-                                  [ rr:child "\"deptCity\"" ;
-                                    rr:parent "\"deptCity\""
-                                  ] ;
-                          rr:joinCondition
                                   [ rr:child "\"deptName\"" ;
                                     rr:parent "\"deptName\""
                                   ] ;
                           rr:joinCondition
-                                  [ rr:child "\"name\"" ;
-                                    rr:parent "\"project\""
+                                  [ rr:child "\"deptCity\"" ;
+                                    rr:parent "\"deptCity\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"project\"" ;
+                                    rr:parent "\"name\""
                                   ] ;
                           rr:parentTriplesMap vocab:Projects
                         ] ;
-                rr:predicate <http://example.com/base/TaskAssignments#project;deptName;deptCity>
+                rr:predicate <http://example.com/base/TaskAssignments#ref-project;deptName;deptCity>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"worker\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap vocab:People
+                        ] ;
+                rr:predicate <http://example.com/base/TaskAssignments#ref-worker>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"deptCity\"" ;
+                                    rr:parent "\"city\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"deptName\"" ;
+                                    rr:parent "\"name\""
+                                  ] ;
+                          rr:parentTriplesMap vocab:Department
+                        ] ;
+                rr:predicate <http://example.com/base/TaskAssignments#ref-deptName;deptCity>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -264,7 +252,19 @@ vocab:TaskAssignments
                         ] ;
                 rr:predicate <http://example.com/base/TaskAssignments#worker>
               ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"deptCity\""
+                        ] ;
+                rr:predicate <http://example.com/base/TaskAssignments#deptCity>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"project\""
+                        ] ;
+                rr:predicate <http://example.com/base/TaskAssignments#project>
+              ] ;
       rr:subjectMap
               [ rr:class vocab:TaskAssignments ;
-                rr:template "http://example.com/base/worker={\"worker\"};project={\"project\"}"
+                rr:template "http://example.com/base/TaskAssignments/worker={\"worker\"};project={\"project\"}"
               ] .

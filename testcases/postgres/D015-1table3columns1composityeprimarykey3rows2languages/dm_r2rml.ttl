@@ -3,15 +3,9 @@
 @prefix mapping:  <http://example.com/base/> .
 @prefix vocab:   <http://example.com/base/> .
 
-vocab:TriplesMap1
+vocab:Country
       rr:logicalTable
               [ rr:tableName "\"Country\""
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"Lan\""
-                        ] ;
-                rr:predicate <http://example.com/base/Country#Lan>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -25,7 +19,13 @@ vocab:TriplesMap1
                         ] ;
                 rr:predicate <http://example.com/base/Country#Code>
               ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"Lan\""
+                        ] ;
+                rr:predicate <http://example.com/base/Country#Lan>
+              ] ;
       rr:subjectMap
               [ rr:class vocab:Country ;
-                rr:template "http://example.com/base/Code={\"Code\"};Lan={\"Lan\"}"
+                rr:template "http://example.com/base/Country/Code={\"Code\"};Lan={\"Lan\"}"
               ] .

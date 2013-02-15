@@ -3,56 +3,35 @@
 @prefix mapping:  <http://example.com/base/> .
 @prefix vocab:   <http://example.com/base/> .
 
-vocab:TriplesMap2
+vocab:DEPT
       rr:logicalTable
-              [ rr:tableName "\"EMP\""
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"ename\""
-                        ] ;
-                rr:predicate <http://example.com/base/EMP#ename>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"etype\""
-                        ] ;
-                rr:predicate <http://example.com/base/EMP#etype>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"empno\""
-                        ] ;
-                rr:predicate <http://example.com/base/EMP#empno>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:joinCondition
-                                  [ rr:child "\"deptno\"" ;
-                                    rr:parent "\"deptno\""
-                                  ] ;
-                          rr:parentTriplesMap vocab:TriplesMap1
-                        ] ;
-                rr:predicate <http://example.com/base/EMP#deptno>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"job\""
-                        ] ;
-                rr:predicate <http://example.com/base/EMP#job>
+              [ rr:tableName "\"DEPT\""
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "\"deptno\""
                         ] ;
-                rr:predicate <http://example.com/base/EMP#deptno>
+                rr:predicate <http://example.com/base/DEPT#deptno>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"dname\""
+                        ] ;
+                rr:predicate <http://example.com/base/DEPT#dname>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"loc\""
+                        ] ;
+                rr:predicate <http://example.com/base/DEPT#loc>
               ] ;
       rr:subjectMap
-              [ rr:class vocab:EMP ;
-                rr:template "http://example.com/base/EMP/empno={\"empno\"}"
+              [ rr:class vocab:DEPT ;
+                rr:template "http://example.com/base/DEPT={\"deptno\"};DEPT={\"dname\"};DEPT={\"loc\"}" ;
+                rr:termType rr:BlankNode
               ] .
 
-vocab:TriplesMap3
+vocab:LIKES
       rr:logicalTable
               [ rr:tableName "\"LIKES\""
               ] ;
@@ -80,30 +59,51 @@ vocab:TriplesMap3
                 rr:termType rr:BlankNode
               ] .
 
-vocab:TriplesMap1
+vocab:EMP
       rr:logicalTable
-              [ rr:tableName "\"DEPT\""
+              [ rr:tableName "\"EMP\""
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"loc\""
+                        [ rr:column "\"job\""
                         ] ;
-                rr:predicate <http://example.com/base/DEPT#loc>
+                rr:predicate <http://example.com/base/EMP#job>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"etype\""
+                        ] ;
+                rr:predicate <http://example.com/base/EMP#etype>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"deptno\"" ;
+                                    rr:parent "\"deptno\""
+                                  ] ;
+                          rr:parentTriplesMap vocab:DEPT
+                        ] ;
+                rr:predicate <http://example.com/base/EMP#ref-deptno>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "\"deptno\""
                         ] ;
-                rr:predicate <http://example.com/base/DEPT#deptno>
+                rr:predicate <http://example.com/base/EMP#deptno>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"dname\""
+                        [ rr:column "\"ename\""
                         ] ;
-                rr:predicate <http://example.com/base/DEPT#dname>
+                rr:predicate <http://example.com/base/EMP#ename>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"empno\""
+                        ] ;
+                rr:predicate <http://example.com/base/EMP#empno>
               ] ;
       rr:subjectMap
-              [ rr:class vocab:DEPT ;
-                rr:template "http://example.com/base/DEPT={\"deptno\"};DEPT={\"dname\"};DEPT={\"loc\"}" ;
-                rr:termType rr:BlankNode
+              [ rr:class vocab:EMP ;
+                rr:template "http://example.com/base/EMP/empno={\"empno\"}"
               ] .

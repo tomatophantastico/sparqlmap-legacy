@@ -3,9 +3,15 @@
 @prefix mapping:  <http://example.com/base/> .
 @prefix vocab:   <http://example.com/base/> .
 
-vocab:TriplesMap2
+vocab:Student
       rr:logicalTable
               [ rr:tableName "\"Student\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"LastName\""
+                        ] ;
+                rr:predicate <http://example.com/base/Student#LastName>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -19,18 +25,33 @@ vocab:TriplesMap2
                         ] ;
                 rr:predicate <http://example.com/base/Student#ID>
               ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"LastName\""
-                        ] ;
-                rr:predicate <http://example.com/base/Student#LastName>
-              ] ;
       rr:subjectMap
               [ rr:class vocab:Student ;
                 rr:template "http://example.com/base/Student/ID={\"ID\"}"
               ] .
 
-vocab:TriplesMap3
+vocab:Sport
+      rr:logicalTable
+              [ rr:tableName "\"Sport\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"ID\""
+                        ] ;
+                rr:predicate <http://example.com/base/Sport#ID>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"Description\""
+                        ] ;
+                rr:predicate <http://example.com/base/Sport#Description>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Sport ;
+                rr:template "http://example.com/base/Sport/ID={\"ID\"}"
+              ] .
+
+vocab:Student_Sport
       rr:logicalTable
               [ rr:tableName "\"Student_Sport\""
               ] ;
@@ -46,48 +67,27 @@ vocab:TriplesMap3
                         ] ;
                 rr:predicate <http://example.com/base/Student_Sport#ID_Sport>
               ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"ID_Sport\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap vocab:Sport
+                        ] ;
+                rr:predicate <http://example.com/base/Student_Sport#ref-ID_Sport>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"ID_Student\"" ;
+                                    rr:parent "\"ID\""
+                                  ] ;
+                          rr:parentTriplesMap vocab:Student
+                        ] ;
+                rr:predicate <http://example.com/base/Student_Sport#ref-ID_Student>
+              ] ;
       rr:subjectMap
               [ rr:class vocab:Student_Sport ;
-                rr:template "http://example.com/base/ID_Student={\"ID_Student\"};ID_Sport={\"ID_Sport\"}"
-              ] .
-
-vocab:TriplesMap1
-      rr:logicalTable
-              [ rr:tableName "\"Sport\""
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:joinCondition
-                                  [ rr:child "\"ID\"" ;
-                                    rr:parent "\"ID_Sport\""
-                                  ] ;
-                          rr:parentTriplesMap vocab:TriplesMap1
-                        ] ;
-                rr:predicate <http://example.com/base/Sport#ID_Sport>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:joinCondition
-                                  [ rr:child "\"ID\"" ;
-                                    rr:parent "\"ID_Student\""
-                                  ] ;
-                          rr:parentTriplesMap vocab:TriplesMap2
-                        ] ;
-                rr:predicate <http://example.com/base/Sport#ID_Student>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"Description\""
-                        ] ;
-                rr:predicate <http://example.com/base/Sport#Description>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"ID\""
-                        ] ;
-                rr:predicate <http://example.com/base/Sport#ID>
-              ] ;
-      rr:subjectMap
-              [ rr:class vocab:Sport ;
-                rr:template "http://example.com/base/Sport/ID={\"ID\"}"
+                rr:template "http://example.com/base/Student_Sport/ID_Student={\"ID_Student\"};ID_Sport={\"ID_Sport\"}"
               ] .

@@ -6,11 +6,11 @@
 <TriplesMap1>
     a rr:TriplesMap;
     rr:logicalTable [ rr:sqlQuery """
-       SELECT concat("Department", deptno) AS deptId
-            , deptno
-            , dname
-            , loc
-       FROM DEPT
+       SELECT ('Department' || "deptno") AS "deptId"
+            , "deptno"
+            , "dname"
+            , "loc"
+       FROM "DEPT"
        """ ];
 
     rr:subjectMap [ rr:column "\"deptId\""; rr:termType rr:BlankNode;

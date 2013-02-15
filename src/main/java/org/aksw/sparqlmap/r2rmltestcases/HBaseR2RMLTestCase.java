@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
 
+import org.aksw.sparqlmap.db.Connector;
+import org.aksw.sparqlmap.db.impl.HSQLDBConnector;
 import org.apache.commons.io.FileUtils;
 import org.hsqldb.Server;
 import org.hsqldb.cmdline.SqlFile;
@@ -47,6 +49,11 @@ public class HBaseR2RMLTestCase extends R2RMLTest{
 		
 	}
 	
+	public static String getTestCaseLocations() {
+		
+		return "./testcases/hsqldb/";
+	}
+	
 
 	Server server = null;
 	
@@ -62,7 +69,7 @@ public class HBaseR2RMLTestCase extends R2RMLTest{
 	public void loadFileIntoDB(String file) throws ClassNotFoundException,
 			SQLException, IOException {
 		
-			Connection conn = getConnection();
+			Connection conn = getConnector().getConnection();
 			SqlFile sqlFile = new SqlFile(new File(file));
 			sqlFile.setConnection(conn);
 			try {
@@ -91,25 +98,12 @@ public class HBaseR2RMLTestCase extends R2RMLTest{
 
 
 
-	
-	public String getDBname() {
-		return "hsqldb";
-		
-	}
-
-	
-	public static String getTestCaseLocations() {
-		
-		return "./testcases/hsqldb/";
-	}
-
 	@Override
-	public Connection getConnection() throws ClassNotFoundException, SQLException {
-		Class.forName("org.hsqldb.jdbcDriver");
-       
-        Connection connection = DriverManager.getConnection(
-            "jdbc:hsqldb:hsql://localhost/r2rml", "sa", "");
-		return connection;
+	public Connector getConnector(){
+		
+		
+		return new HSQLDBConnector("jdbc:hsqldb:hsql://localhost/r2rml", "sa", "", 5, 10);
+		
 	}
 
 	@Override

@@ -3,7 +3,7 @@
 @prefix mapping:  <http://example.com/base/> .
 @prefix vocab:   <http://example.com/base/> .
 
-vocab:TriplesMap1
+vocab:Student
       rr:logicalTable
               [ rr:tableName "\"Student\""
               ] ;

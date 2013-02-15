@@ -11,7 +11,7 @@
 <TriplesMap1>
     a rr:TriplesMap;
     rr:logicalTable [ rr:sqlQuery """
-       SELECT ('Department' || "deptno") AS deptId
+       SELECT ('Department' || "deptno") AS "deptId"
             , "deptno"
             , "dname"
             , "loc"

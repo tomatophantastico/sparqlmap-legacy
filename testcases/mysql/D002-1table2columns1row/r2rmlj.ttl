@@ -9,8 +9,8 @@
     
     rr:logicalTable [ 
                      rr:sqlQuery """
-                       SELECT Student.ID, Student.Name 
-                       FROM Student
+                       SELECT "Student"."ID", "Student"."Name" 
+                       FROM "Student"
                        """
                        ];
 

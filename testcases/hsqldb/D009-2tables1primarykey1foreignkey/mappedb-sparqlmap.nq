@@ -1,6 +1,7 @@
-<http://example.com/resource/student_20> <http://xmlns.com/foaf/0.1/name> "Demi Moore" <http%3A%2F%2Fexample.com%2Fgraph%2Fstudents> .
-<http://example.com/resource/student_20> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ontology/Student> <http%3A%2F%2Fexample.com%2Fgraph%2Fstudents> .
-<http://example.com/resource/student_10> <http://xmlns.com/foaf/0.1/name> "Venus Williams" <http%3A%2F%2Fexample.com%2Fgraph%2Fstudents> .
-<http://example.com/resource/student_10> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ontology/Student> <http%3A%2F%2Fexample.com%2Fgraph%2Fstudents> .
-<http://example.com/resource/sport_100> <http://www.w3.org/2000/01/rdf-schema#label> "Tennis" <http%3A%2F%2Fexample.com%2Fgraph%2Fsports> .
-<http://example.com/resource/sport_100> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ontology/Sport> <http%3A%2F%2Fexample.com%2Fgraph%2Fsports> .
+<http://example.com/resource/sport_100> <http://www.w3.org/2000/01/rdf-schema#label> "Tennis" .
+<http://example.com/resource/sport_100> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ontology/Sport> .
+<http://example.com/resource/student_20> <http://xmlns.com/foaf/0.1/name> "Demi Moore" .
+<http://example.com/resource/student_20> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ontology/Student> .
+<http://example.com/resource/student_10> <http://example.com/ontology/practises> <http://example.com/resource/sport_100> .
+<http://example.com/resource/student_10> <http://xmlns.com/foaf/0.1/name> "Venus Williams" .
+<http://example.com/resource/student_10> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/ontology/Student> .

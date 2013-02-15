@@ -3,15 +3,9 @@
 @prefix mapping:  <http://example.com/base/> .
 @prefix vocab:   <http://example.com/base/> .
 
-vocab:TriplesMap1
+vocab:Student
       rr:logicalTable
               [ rr:tableName "\"Student\""
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "\"FirstName\""
-                        ] ;
-                rr:predicate <http://example.com/base/Student#FirstName>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -24,6 +18,12 @@ vocab:TriplesMap1
                         [ rr:column "\"ID\""
                         ] ;
                 rr:predicate <http://example.com/base/Student#ID>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"FirstName\""
+                        ] ;
+                rr:predicate <http://example.com/base/Student#FirstName>
               ] ;
       rr:subjectMap
               [ rr:class vocab:Student ;

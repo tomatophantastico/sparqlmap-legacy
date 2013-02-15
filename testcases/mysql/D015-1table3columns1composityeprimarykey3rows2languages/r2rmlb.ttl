@@ -10,9 +10,9 @@
     a rr:TriplesMap;
       
 	rr:logicalTable [  rr:sqlQuery """
-                       SELECT Code, Name, Lan
-                       FROM Country
-					   WHERE Lan = "EN";
+                       SELECT "Code", "Name", "Lan"
+                       FROM "Country"
+					   WHERE "Lan" = 'EN';
                        """ ] ;
 	
     rr:subjectMap [ rr:template "http://example.com/{\"Code\"}" ]; 

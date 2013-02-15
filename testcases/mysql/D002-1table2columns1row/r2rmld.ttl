@@ -9,10 +9,10 @@
     
     rr:logicalTable [ 
                      rr:sqlQuery """
-                       Select concat("Student",ID ) AS StudentId
-                            , ID
-                            , Name
-                         from Student
+                       Select ('Student' || "ID" ) AS StudentId
+                            , "ID"
+                            , "Name"
+                         from "Student"
                        """
                        ];
 

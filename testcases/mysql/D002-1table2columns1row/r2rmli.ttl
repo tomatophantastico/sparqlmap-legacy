@@ -9,12 +9,12 @@
     
     rr:logicalTable [ 
                      rr:sqlQuery """
-                       SELECT ID,
-                              Name
-                         FROM Student
+                       SELECT "ID",
+                              "Name"
+                         FROM "Student"
                        """;
 					   
-			rr:sqlVersion rr:MySQL
+			rr:sqlVersion rr:SQL2008 				   
 					   
                        ];
 	

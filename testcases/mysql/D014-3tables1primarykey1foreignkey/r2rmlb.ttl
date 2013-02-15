@@ -11,11 +11,11 @@
 <TriplesMap1>
     a rr:TriplesMap;
     rr:logicalTable [ rr:sqlQuery """
-       SELECT concat("Department", deptno) AS deptId
-            , deptno
-            , dname
-            , loc
-       FROM DEPT
+       SELECT ('Department' || "deptno") AS deptId
+            , "deptno"
+            , "dname"
+            , "loc"
+       FROM "DEPT"
        """ ];
 
     rr:subjectMap [ rr:column "deptId"; rr:termType rr:BlankNode;
@@ -49,16 +49,16 @@
 <TriplesMap2>
     a rr:TriplesMap;
     rr:logicalTable [ rr:sqlQuery """
-       SELECT concat("http://example.com/emp/", empno) AS empURI
-            , empno
-            , ename
-            , concat("http://example.com/emp/job/" job) AS jobTypeURI
-            , job
-            , deptno
-            , concat("http://example.com/emp/etype/" , etype) AS empTypeURI
-            , etype
-            , concat("http://example.com/graph/" , job  , "/"  , etype) AS graphURI
-       FROM EMP
+       SELECT ('http://example.com/emp/' || "empno") AS empURI
+            , "empno"
+            , "ename"
+            , ('http://example.com/emp/job/'|| "job") AS jobTypeURI
+            , "job"
+            , "deptno"
+            , ('http://example.com/emp/etype/'|| "etype") AS empTypeURI
+            , "etype"
+            , ('http://example.com/graph/'|| "job" || '/' || "etype") AS graphURI
+       FROM "EMP"
        """ ];
 
     rr:subjectMap [ rr:column "empURI"; ];

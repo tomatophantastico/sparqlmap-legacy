@@ -8,30 +8,46 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 
 import org.aksw.sparqlmap.SparqlMap;
 import org.aksw.sparqlmap.automapper.DB2R2RML;
+import org.aksw.sparqlmap.db.Connector;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.openjena.atlas.logging.Log;
+import org.openjena.riot.RiotLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.PropertiesPropertySource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.test.jdbc.JdbcTestUtils;
 
+import com.hp.hpl.jena.graph.Graph;
+import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.sparql.core.DatasetGraph;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 
 @RunWith(value = Parameterized.class)
-public abstract class R2RMLTest extends R2RMLTestCaseAbstract{
+public abstract class R2RMLTest {
 	
 	public static String baseUri = "http://example.com/base/";
 	
@@ -45,7 +61,7 @@ public abstract class R2RMLTest extends R2RMLTestCaseAbstract{
 	
 	
 	
-	
+		private static Logger log = LoggerFactory.getLogger(R2RMLTest.class);
 
 
 
@@ -201,9 +217,9 @@ public abstract class R2RMLTest extends R2RMLTestCaseAbstract{
 	
 	
 	public void createDM(String wheretowrite) throws ClassNotFoundException, SQLException, FileNotFoundException{
-		Connection conn = getConnection();
+		Connection conn = getConnector().getConnection();
 		
-		DB2R2RML db2r2rml = new DB2R2RML(conn, "http://example.com/base/mapping/", "http://example.com/base/data/", "http://example.com/base/vocab/",";");
+		DB2R2RML db2r2rml = new DB2R2RML(conn, "http://example.com/base/", "http://example.com/base/", "http://example.com/base/",";");
 		
 		Model mapping = db2r2rml.getMydbData();
 		conn.close();
@@ -222,6 +238,170 @@ public abstract class R2RMLTest extends R2RMLTestCaseAbstract{
 				+ "-sparqlmap." + outfname.split("\\.")[1];
 	}
 	
+	
+
+	/**
+	 * returns a brand new Database connection which must be closed afterwards
+	 * @return
+	 * @throws ClassNotFoundException 
+	 * @throws SQLException 
+	 */
+	public abstract Connector getConnector();
+	
+	
+	/**
+	 * creates the properties to put into the spring container.
+	 * @return
+	 */
+	public abstract Properties getDBProperties();
+	
+	/**
+	 * closes the connection
+	 * @param conn
+	 */
+	public void closeConnection(Connection conn){
+		//crappy connection handling is ok here.
+		try {
+			conn.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
+	
+	/**
+	 * load the file into the database
+	 * @param file
+	 * @return
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 * @throws IOException 
+	 */
+	public void loadFileIntoDB(String file) throws ClassNotFoundException, SQLException, IOException{
+		ResourceDatabasePopulator rdp = new ResourceDatabasePopulator();
+		
+		rdp.addScript(new FileSystemResource(file));
+		Connection conn = getConnector().getConnection();
+		conn.setAutoCommit(true);
+		rdp.populate(conn);
+		conn.close();
+
+//		String sql2Execute = FileUtils.readFileToString(new File(file));
+//		loadStringIntoDb(sql2Execute);
+
+		
+	}
+
+
+	public void loadStringIntoDb(String sql2Execute)
+			throws ClassNotFoundException, SQLException {
+		Connection conn = getConnector().getConnection();
+		conn.setAutoCommit(true);
+	
+		
+		java.sql.Statement stmt = conn.createStatement();
+		stmt.execute(sql2Execute);
+		
+		stmt.close();
+		conn.close();
+	}
+	
+	
+	/**
+	 * deletes all tables of the database
+	 * @return true if delete was successfull
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+	public void flushDatabase() throws ClassNotFoundException, SQLException{
+		List<String> tablesToDelete = getTablesInDb();
+		Connection conn = getConnector().getConnection();
+
+		// brute force delete of the tables int there
+		for (String table : tablesToDelete) {
+
+			try {
+
+				java.sql.Statement stmt = conn.createStatement();
+				stmt.execute("DROP TABLE \"" + table + "\" CASCADE");
+				stmt.close();
+
+			} catch (SQLException e) {
+				log.info("brute force delete threw error, nothing unusual");
+			}
+		}
+
+		conn.close();
+		
+	}
+	
+	public List<String> getTablesInDb() throws SQLException {
+		List<String> tables = new ArrayList<String>(); 
+		Connection conn = getConnector().getConnection();
+		ResultSet res =  conn.getMetaData().getTables(null, null, null, new String[] {"TABLE"});
+		while(res.next()){
+			String tcat  = res.getString("TABLE_CAT"); 
+	          String tschem =res.getString("TABLE_SCHEM");
+	           String tname = res.getString("TABLE_NAME");
+	           String ttype = res.getString("TABLE_TYPE");
+	           String tremsarks = res.getString("REMARKS");
+	           tables.add(tname);
+		}
+		conn.close();
+		return tables;
+	}
+
+
+	/**
+	 * compares the two files for equality
+	 * @param outputLocation2
+	 * @param referenceOutput2
+	 * @return true if they are equal
+	 * @throws FileNotFoundException 
+	 */
+	
+	public boolean compare(String outputLocation, String referenceOutput) throws FileNotFoundException {
+		
+		Model m1 = ModelFactory.createDefaultModel();
+		String fileSuffixout = outputLocation.substring(outputLocation.lastIndexOf(".")+1).toUpperCase();
+		
+		if(fileSuffixout.equals("NQ")){
+			DatasetGraph dsgout = RiotLoader.load(outputLocation);
+			DatasetGraph dsdref = RiotLoader.load(referenceOutput);
+			
+			if (dsgout.isEmpty() != dsdref .isEmpty()){
+				  return false;
+			}
+			
+			Iterator<Node> iout = dsgout.listGraphNodes();
+			Iterator<Node> iref = dsdref.listGraphNodes();
+		
+			    while (iout.hasNext())
+			    {
+			      Node outNode = (Node)iout.next();
+			      Graph outgraph =  dsgout.getGraph(outNode);
+			      Graph refGRaf = dsdref.getGraph(outNode);
+			      if (!outgraph.isIsomorphicWith(refGRaf))
+			        return false;
+			    }
+			    return true;
+			    
+		}else {
+		//if(fileSuffixout.equals("TTL")){
+			m1.read(new FileInputStream(outputLocation),null,"TTL");
+			Model m2 = ModelFactory.createDefaultModel();
+			m2.read(new FileInputStream(referenceOutput),null,"TTL");
+			
+			if(m1.isIsomorphicWith(m2)){
+				return true;
+			}else{
+				return false;
+			}
+		}
+		
+	
+	}
 	
 
 }

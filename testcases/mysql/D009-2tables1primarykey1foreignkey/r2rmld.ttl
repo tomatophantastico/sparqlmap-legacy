@@ -9,9 +9,9 @@
    a rr:TriplesMap;
         
    rr:logicalTable [ rr:sqlQuery """
-        SELECT Name, COUNT(Sport) as SPORTCOUNT
-        FROM Student
-        GROUP BY Name
+        SELECT "Name", COUNT("Sport") as SPORTCOUNT
+        FROM "Student"
+        GROUP BY "Name"
         """ ];
 	
     rr:subjectMap [ rr:template "http://example.com/resource/student_{\"Name\"}"; ]; 

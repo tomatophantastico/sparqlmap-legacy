@@ -3,9 +3,15 @@
 @prefix mapping:  <http://example.com/base/> .
 @prefix vocab:   <http://example.com/base/> .
 
-vocab:TriplesMap2
+vocab:Target
       rr:logicalTable
               [ rr:tableName "\"Target\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"key2attr2\""
+                        ] ;
+                rr:predicate <http://example.com/base/Target#key2attr2>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -27,12 +33,6 @@ vocab:TriplesMap2
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"key2attr2\""
-                        ] ;
-                rr:predicate <http://example.com/base/Target#key2attr2>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
                         [ rr:column "\"key2attr1\""
                         ] ;
                 rr:predicate <http://example.com/base/Target#key2attr1>
@@ -42,35 +42,35 @@ vocab:TriplesMap2
                 rr:template "http://example.com/base/Target/PK={\"PK\"}"
               ] .
 
-vocab:TriplesMap1
+vocab:Source
       rr:logicalTable
               [ rr:tableName "\"Source\""
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "\"attrB\""
-                        ] ;
-                rr:predicate <http://example.com/base/Source#attrB>
-              ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
                         [ rr:joinCondition
-                                  [ rr:child "\"key2attr2\"" ;
-                                    rr:parent "\"attrA\""
+                                  [ rr:child "\"attrA\"" ;
+                                    rr:parent "\"key2attr2\""
                                   ] ;
                           rr:joinCondition
-                                  [ rr:child "\" key2attr1\"" ;
-                                    rr:parent "\" attrB\""
+                                  [ rr:child "\"attrB\"" ;
+                                    rr:parent "\"key2attr1\""
                                   ] ;
-                          rr:parentTriplesMap vocab:TriplesMap2
+                          rr:parentTriplesMap vocab:Target
                         ] ;
-                rr:predicate <http://example.com/base/Source#attrA; attrB>
+                rr:predicate <http://example.com/base/Source#ref-attrA;attrB>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "\"attrA\""
                         ] ;
                 rr:predicate <http://example.com/base/Source#attrA>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"attrB\""
+                        ] ;
+                rr:predicate <http://example.com/base/Source#attrB>
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
