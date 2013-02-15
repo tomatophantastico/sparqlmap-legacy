@@ -13,6 +13,7 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionWithString;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
@@ -617,6 +618,26 @@ public class TermMap{
 
 	public void setCompChecker(CompatibilityChecker cchecker) {
 		this.cchecker = cchecker;
+	}
+	
+	
+	
+	
+	
+	public static TermMap getNullTermMap(){
+		
+		List<Expression> nullExpressions = new ArrayList<Expression>();
+		
+		 for(int i = 0; i<6;i++){
+			 nullExpressions.add(new NullValue());
+		 }
+		   
+		   
+		   
+		
+		TermMap nullTm = new TermMap(null, nullExpressions);
+		return nullTm;
+		
 	}
 	
 	

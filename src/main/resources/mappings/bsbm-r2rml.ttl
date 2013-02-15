@@ -180,7 +180,7 @@ mapping:ProductFeature
 
 mapping:ProductFeatureProduct
       rr:logicalTable
-              [ rr:sqlQuery "SELECT p.nr as nr, p.producer as producer , pfp.productfeature as productfeature FROM product p JOIN productfeatureproduct pfp ON (p.nr = pfp.product)"
+              [ rr:sqlQuery """SELECT "p"."nr" as "nr", "p"."producer" as "producer" , "pfp"."productfeature" as "productfeature" FROM "product" "p" JOIN "productfeatureproduct" "pfp" ON ("p"."nr" = "pfp"."product")"""
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
@@ -227,12 +227,12 @@ mapping:Person
                         ] ;
                 rr:predicate foaf:name
               ] ;
-      rr:predicateObjectMap
-              [ rr:objectMap
-                        [ rr:column "publisher"
-                        ] ;
-                rr:predicate dc:publisher
-              ] ;
+       rr:predicateObjectMap [
+    		rr:predicate dc:publisher;
+    		rr:objectMap [
+        		 rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite{publisher}/RatingSite{publisher}"
+        	];
+    	];
       rr:subjectMap
               [ rr:class foaf:Person ;
                 rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite{publisher}/Reviewer{nr}"
@@ -282,7 +282,8 @@ mapping:Offer
     	
     	rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "price"
+                        [ rr:column "price";
+                          rr:dataType bsbm-vocab:USD
                         ] ;
                 rr:predicate bsbm-vocab:price
               ] ;
@@ -310,6 +311,13 @@ mapping:Offer
                           rr:termType rr:IRI
                         ] ;
                 rr:predicate bsbm-vocab:offerWebpage
+              ] ;
+       rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "publishDate" ;
+                          rr:datatype xsd:date
+                        ] ;
+                rr:predicate dc:date
               ] ;   
     	            
       rr:predicateObjectMap
@@ -326,7 +334,14 @@ mapping:Vendor
       rr:subjectMap
               [ rr:class bsbm-vocab:Vendor ;
                 rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromVendor{nr}/Vendor{nr}"
-              ] ;                     
+              ] ; 
+       rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "publishDate" ;
+                          rr:datatype xsd:date
+                        ] ;
+                rr:predicate dc:date
+              ] ;                           
        rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "label";
@@ -361,7 +376,16 @@ mapping:Producer
       rr:subjectMap
               [ rr:class bsbm-vocab:Vendor ;
                 rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer{nr}/Producer{nr}"
-              ] ;                     
+              ] ;   
+              
+              
+       rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "publishDate" ;
+                          rr:datatype xsd:date
+                        ] ;
+                rr:predicate dc:date
+              ] ;                         
        rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "label";
@@ -392,7 +416,7 @@ mapping:Producer
                
 mapping:ProductTypeProduct
 	rr:logicalTable[
-		rr:sqlQuery """ SELECT p.nr, p.producer, ptp.producttype from product p join producttypeproduct ptp on (ptp.product = p.nr) """;
+		rr:sqlQuery """ SELECT "p"."nr" as "nr", "p"."producer" as "producer", "ptp"."producttype" as "producttype" from "product" "p" join "producttypeproduct" "ptp" on ("ptp"."product" = "p"."nr") """;
 		];
 	rr:predicateObjectMap [
     	rr:predicate rdf:type;

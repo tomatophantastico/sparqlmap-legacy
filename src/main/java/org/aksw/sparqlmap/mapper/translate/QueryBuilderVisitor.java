@@ -1,10 +1,14 @@
 package org.aksw.sparqlmap.mapper.translate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import net.sf.jsqlparser.expression.Expression;
@@ -24,6 +28,7 @@ import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SetOperationList;
+import net.sf.jsqlparser.statement.select.SubSelect;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
@@ -35,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.BiMap;
+import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.sparql.algebra.OpVisitorBase;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
@@ -50,7 +56,8 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	private DataTypeHelper dataTypeHelper;
 	private ColumnHelper columnhelper;
 	ExpressionConverter exprconv;
-
+	//defines if the filters should be pushed into the unions
+	private boolean pushFilters = true;
 	
 
 	private static Logger log = LoggerFactory
@@ -201,15 +208,66 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	@Override
 	public void visit(OpFilter opfilter){
 		PlainSelectWrapper wrap  = (PlainSelectWrapper) this.selectBody2Wrapper.get(selects.peek());
-		List<Expr> filters = opfilter.getExprs().getList();
-		List<Expr> realFilterS= new ArrayList<Expr>();
-		for(Expr filter: filters){
-			realFilterS.add(filter);
+		
+		if(this.pushFilters == true && wrap.getSubselects().size()>0){
+			// try to stuff everything into the unions
+			for(Expr toPush : opfilter.getExprs().getList()){
+				
+				Set<String> filterVars = new HashSet<String>();
+				for(Var var: toPush.getVarsMentioned()){
+					filterVars.add(var.getName());
+				}
+			
+				
+				
+				boolean unpushable = false;
+				for(SubSelect subselect :wrap.getSubselects().keySet()){
+					Wrapper subSelectWrapper = wrap.getSubselects().get(subselect);
+					if(subSelectWrapper instanceof UnionWrapper){
+						//do that now for all plainselects of the union
+						for(PlainSelect ps: ((UnionWrapper)subSelectWrapper).getUnion().getPlainSelects()){
+							PlainSelectWrapper psw = (PlainSelectWrapper) selectBody2Wrapper.get(ps);
+							Set<String> pswVars = psw.getVarsMentioned();
+							if(pswVars.containsAll(filterVars)){
+								// if all filter variables are covered by the triples of the subselect, it can answer it.
+								psw.addFilterExpression(Arrays.asList(toPush));
+							}else if(Collections.disjoint(filterVars, pswVars)){
+								//if none are shared, than this filter simply does not matter for this wrapper 
+							}else{
+								//if there only some variables of the filter covered by the wrapper, answering in the top opration is neccessary.
+								unpushable = true;
+							}
+							
+
+						}
+						
+						
+					}else{
+						// do nothing else, here be dragons
+						unpushable = true;
+					}
+				}
+				if(unpushable){
+					//so the filter could not be pushed, we need to evaluate in the upper select
+					wrap.addFilterExpression(new ArrayList<Expr>(Arrays.asList(toPush)));
+				}
+			}
+			
+			
+			
+			
+		}else{
+			//no filter pushing, just put it in
+			
+			wrap.addFilterExpression(new ArrayList<Expr>(opfilter.getExprs().getList()));
 		}
 		
 		
 		
-		wrap.addFilterExpression(realFilterS);
+		
+		
+	
+		
 	}
 	
 
@@ -226,10 +284,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		// applicable or we add the col directly to the bgpSelect
 
 		for (Triple triple : opBGP.getPattern().getList()) {
-			
-			
-			bgpSelect.addSubselect(generateUnionFromItem(bgpSelect,triple), false);
-
+			addTripleBindings(bgpSelect,triple,false);
 		}
 
 		this.selects.push(bgpSelect.getSelectBody());
@@ -238,46 +293,66 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		super.visit(opBGP);
 	}
 	
-	private Wrapper generateUnionFromItem( PlainSelectWrapper bgpSelect, Triple triple) {
+	private Wrapper addTripleBindings( PlainSelectWrapper psw, Triple triple, boolean isOptional) {
 
-		// do we need to create a union?
+		
 		
 		Collection<TripleMap> trms = queryBinding.getBindingMap().get(triple);
 		
-		List<PlainSelectWrapper> pselects = new ArrayList<PlainSelectWrapper>();
-		
-		for (TripleMap trm : trms) {
-			for (PO po : trm.getPos()) {
 
-				PlainSelectWrapper plainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,fopt);
-				//build a new sql select query for this pattern
-				plainSelect.addTripleQuery(trm.getSubject(), triple
-						.getSubject().getName(), po.getPredicate(),triple
-						.getPredicate().getName(),po.getObject(),triple.getObject().getName(), false);
-				pselects.add(plainSelect);
-				
-			}
-			
-		}
-		
-		
-		
-		
-		
-		
-		if(pselects.size()==1){
-			return pselects.iterator().next();
-		} else if (pselects.size()==0){
-			throw new ImplementationException("Unmappable Triple (" + triple.toString()+") encountered. Implement the nohing match component");
+		// do we need to create a union?
+		if(trms.size()==1&&trms.iterator().next().getPos().size()==1){
+			TripleMap trm = trms.iterator().next();
+			PO po = trm.getPos().iterator().next();
+			//no we do not need
+			psw.addTripleQuery(trm.getSubject(), triple
+					.getSubject().getName(), po.getPredicate(),triple
+					.getPredicate().getName(),po.getObject(),triple.getObject().getName(), isOptional);
+			return psw;
+		}else if(trms.size()==0){
+			// no triple maps found.
+			//bind to null values instead.
+			psw.addTripleQuery(TermMap.getNullTermMap(), triple
+					.getSubject().getName(), TermMap.getNullTermMap(),triple
+					.getPredicate().getName(),TermMap.getNullTermMap(),triple.getObject().getName(), isOptional);
+			return psw; 
 			
 		}else{
+			//multiple triple maps, so we contruct a union
+			List<PlainSelectWrapper> pselects = new ArrayList<PlainSelectWrapper>();
+			
+			for (TripleMap trm : trms) {
+				for (PO po : trm.getPos()) {
+
+					PlainSelectWrapper plainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,fopt);
+					//build a new sql select query for this pattern
+					plainSelect.addTripleQuery(trm.getSubject(), triple
+							.getSubject().getName(), po.getPredicate(),triple
+							.getPredicate().getName(),po.getObject(),triple.getObject().getName(), isOptional);
+					pselects.add(plainSelect);
+					
+				}
+				
+			}
 			UnionWrapper union = new UnionWrapper(this.selectBody2Wrapper,dataTypeHelper);
 			for (PlainSelectWrapper plainSelectWrapper : pselects) {
 				union.addPlainSelectWrapper(plainSelectWrapper);
 
 			}
+			
+			psw.addSubselect(union,isOptional);
 			return union;
 		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	
 
 	}
 

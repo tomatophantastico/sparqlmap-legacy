@@ -225,15 +225,15 @@ public class R2RMLModel {
 
 		for (TripleMap tripleMap : tripleMaps.values()) {
 			CompatibilityChecker ccs = new SimpleCompatibilityChecker(
-					tripleMap.getSubject());
+					tripleMap.getSubject(),this.dbconf,this.dth);
 			tripleMap.getSubject().setCompChecker(ccs);
 
 			for (PO po : tripleMap.pos) {
 				CompatibilityChecker ccp = new SimpleCompatibilityChecker(
-						po.getPredicate());
+						po.getPredicate(),this.dbconf,this.dth);
 				po.getPredicate().setCompChecker(ccp);
 				CompatibilityChecker cco = new SimpleCompatibilityChecker(
-						po.getObject());
+						po.getObject(),this.dbconf,this.dth);
 				po.getObject().setCompChecker(cco);
 			}
 		}

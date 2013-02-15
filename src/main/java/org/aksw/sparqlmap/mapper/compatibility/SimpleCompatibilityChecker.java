@@ -2,8 +2,10 @@ package org.aksw.sparqlmap.mapper.compatibility;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.StringValue;
@@ -11,8 +13,12 @@ import net.sf.jsqlparser.schema.Column;
 
 import org.aksw.sparqlmap.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.config.syntax.r2rml.TermMap;
+import org.aksw.sparqlmap.db.DBAccess;
 import org.aksw.sparqlmap.mapper.translate.DataTypeHelper;
+import org.aksw.sparqlmap.mapper.translate.FilterUtil;
 import org.aksw.sparqlmap.mapper.translate.ImplementationException;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 
 import com.google.common.base.Splitter;
 import com.hp.hpl.jena.graph.Node;
@@ -25,9 +31,25 @@ import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueNode;
 public class SimpleCompatibilityChecker implements CompatibilityChecker{
 	
 	private TermMap termMap;
+	private DataTypeHelper dth;
+	//contains the cast type of the column, that would naturally be used (e.g. an tinyint will get for postgres NUMERIC)
+	private Map<String,String> colname2castType = new HashMap<String, String>(); 
 	
-	public SimpleCompatibilityChecker(TermMap tm) {
+	public SimpleCompatibilityChecker(TermMap tm, DBAccess dba, DataTypeHelper dth) {
 		this.termMap = tm;
+		this.dth = dth;
+		
+		//we now create the colname2castType
+		for(Expression expression: tm.getExpressions()){
+			if(DataTypeHelper.uncast(expression) instanceof Column){
+				 String columnName = ((Column) DataTypeHelper.uncast(expression)).getColumnName();
+				Integer dt = dba.getDataType(tm.getTripleMap().from, columnName);
+				 
+				 colname2castType.put( columnName ,dth.getCastTypeString(dt));
+			}
+		}
+		
+		
 	}
 	
 
@@ -259,14 +281,23 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 		int i = 0;
 		while (nodeUri.length()>0&&i<termMap.getLength()){
 			if(i%2==0){
-				String tmString = ((net.sf.jsqlparser.expression.StringValue)DataTypeHelper.uncast(tmExprs.get(i))).getNotExcapedValue(); 
-				if(nodeUri.startsWith(tmString)){
-					nodeUri = nodeUri.substring(tmString.length());
+				if(DataTypeHelper.uncast(tmExprs.get(i)) instanceof StringValue){
+					String tmString = ((net.sf.jsqlparser.expression.StringValue)DataTypeHelper.uncast(tmExprs.get(i))).getNotExcapedValue(); 
+					if(nodeUri.startsWith(tmString)){
+						nodeUri = nodeUri.substring(tmString.length());
+					}else{
+						return false;
+					}
 				}else{
-					return false;
+					//as it is not a Stringvalue, it must be a column, which is allowed here for values not to be encoded
+					//we can return true
+					
+					return true;
 				}
 			}else{
-			
+				//here be a column
+				Column column = ((Column)DataTypeHelper.uncast(tmExprs.get(i))); 
+
 				String potentialColContent; 
 				if(tmExprs.size()>(i+2)){
 					String nextString = ((net.sf.jsqlparser.expression.StringValue)DataTypeHelper.uncast(tmExprs.get(i+1))).getNotExcapedValue();
@@ -278,9 +309,19 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 				}else{
 					potentialColContent = nodeUri; 
 				}
-				// do some col testing here
-				//if(tmcol.cancontain(potentialColContent)) ....
-				//now it is just true...
+				// do some col schema testing here
+		
+				//check if  col is a number, that the string can be cast to a number 
+				String colNaturalCastType = colname2castType.get(column.getColumnName());
+				if(colNaturalCastType.equals(dth.getNumericCastType())){
+					if(!NumberUtils.isNumber(potentialColContent)){
+						return false;
+					}
+				}
+				
+				if(potentialColContent.isEmpty()){
+					return false;
+				}
 				nodeUri = nodeUri.substring(potentialColContent.length());
 			}
 			i++;

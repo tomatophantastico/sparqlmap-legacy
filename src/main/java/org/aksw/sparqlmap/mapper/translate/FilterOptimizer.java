@@ -97,70 +97,9 @@ public class FilterOptimizer {
 			}
 			if (func != null && stringOrig != null) {
 				if (func.getName().toLowerCase().equals("concat")) {
-					String toReduce = stringOrig.getNotExcapedValue();
-					List<Expression> parameter = new ArrayList<Expression>();
-					for(Object oexp: func.getParameters()
-							.getExpressions()){
-						parameter.add(DataTypeHelper.uncast((Expression) oexp));
-					}
-						
-					int psize = parameter.size();
-					
-					for (int i = 0; i < psize; i += 2) {
-						if (parameter.get(i) instanceof StringValue) {
-
-							String value = ((StringValue) parameter.get(i))
-									.getNotExcapedValue();
-							Column col = null;
-							String prereadsuffix = null;
-							if ((i + 1 < psize)
-									&& parameter.get(i + 1) instanceof Column) {
-								col = (Column) parameter.get(i + 1);
-							}
-							if ((i + 2 < psize)
-									&& parameter.get(i + 2) instanceof StringValue) {
-								prereadsuffix = ((StringValue) parameter
-										.get(i + 2)).getNotExcapedValue();
-							}
-
-							if (toReduce.startsWith(value)) {
-								// delete this part
-								toReduce = toReduce.substring(value.length());
-								reduced = true;
-							}else{
-								break;
-							}
-
-							if (col != null && prereadsuffix != null &&
-							// is the static value at the end?
-							 
-									toReduce.contains(prereadsuffix) ) {
-								// no, there is a static part following
-								String colvalue = toReduce.substring(0,
-										toReduce.indexOf(prereadsuffix));
-								toReduce = toReduce.substring(toReduce
-										.indexOf(prereadsuffix));
-								stringNew.add(new StringValue("\"" + colvalue
-										+ "\""));
-								compareto.add(col);
-								reduced = true;
-							} else if (col != null) {
-								// yes, we are finished
-								stringNew.add(new StringValue("\"" + toReduce
-										+ "\""));
-								compareto.add(col);
-								reduced = true;
-							}
-						} else {
-							
-							
-							log.debug("No Filtershortcutting for " + sqlExpression);
-							return sqlExpression;
-//							throw new ImplementationException(
-//									"Should never come here, resource columns should always be string + col + string + col ...., but is: "
-//											+ func);
-						}
-					}
+					reduced = shortcutConcatExpressionStringBased(
+							sqlExpression, func, stringOrig, stringNew,
+							compareto);
 				}
 			}
 
@@ -217,6 +156,77 @@ public class FilterOptimizer {
 
 		// TODO Auto-generated method stub
 		return sqlExpression;
+	}
+	
+
+	private boolean shortcutConcatExpressionStringBased(
+			Expression sqlExpression, Function func, StringValue stringOrig,
+			List<Expression> stringNew, List<Expression> compareto ) {
+		boolean reduced = false;
+		String toReduce = stringOrig.getNotExcapedValue();
+		List<Expression> parameter = new ArrayList<Expression>();
+		for(Object oexp: func.getParameters()
+				.getExpressions()){
+			parameter.add(DataTypeHelper.uncast((Expression) oexp));
+		}
+			
+		int psize = parameter.size();
+		
+		for (int i = 0; i < psize; i += 2) {
+			if (parameter.get(i) instanceof StringValue) {
+
+				String value = ((StringValue) parameter.get(i))
+						.getNotExcapedValue();
+				Column col = null;
+				String prereadsuffix = null;
+				if ((i + 1 < psize)
+						&& parameter.get(i + 1) instanceof Column) {
+					col = (Column) parameter.get(i + 1);
+				}
+				if ((i + 2 < psize)
+						&& parameter.get(i + 2) instanceof StringValue) {
+					prereadsuffix = ((StringValue) parameter
+							.get(i + 2)).getNotExcapedValue();
+				}
+
+				if (toReduce.startsWith(value)) {
+					// delete this part
+					toReduce = toReduce.substring(value.length());
+					reduced = true;
+				}else{
+					break;
+				}
+
+				if (col != null && prereadsuffix != null &&
+				// is the static value at the end?
+				 
+						toReduce.contains(prereadsuffix) ) {
+					// no, there is a static part following
+					String colvalue = toReduce.substring(0,
+							toReduce.indexOf(prereadsuffix));
+					toReduce = toReduce.substring(toReduce
+							.indexOf(prereadsuffix));
+					stringNew.add(new StringValue("\"" + colvalue
+							+ "\""));
+					compareto.add(col);
+					reduced = true;
+				} else if (col != null) {
+					// yes, we are finished
+					stringNew.add(new StringValue("\"" + toReduce
+							+ "\""));
+					compareto.add(col);
+					reduced = true;
+				}
+			} else {
+				
+				
+				log.debug("No Filtershortcutting for " + sqlExpression);
+				//							throw new ImplementationException(
+//									"Should never come here, resource columns should always be string + col + string + col ...., but is: "
+//											+ func);
+			}
+		}
+		return reduced;
 	}
 
 }

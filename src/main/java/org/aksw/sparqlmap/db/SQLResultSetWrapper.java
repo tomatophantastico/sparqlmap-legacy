@@ -33,6 +33,7 @@ import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
+import com.hp.hpl.jena.vocabulary.RDFS;
 
 public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	
@@ -187,11 +188,15 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		Node node = null;
 		String litType = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_TYPE);
 		RDFDatatype dt = null;
-		if(litType!=null&&!litType.isEmpty()){
+		if(litType!=null&&!litType.isEmpty()&&!litType.equals(RDFS.Literal.getURI())){
 			dt = new BaseDatatype(litType);
 		}
 		
 		String lang =  rs.getString(var + ColumnHelper.COL_NAME_LITERAL_LANG);
+		
+		if(lang.equals(RDFS.Literal.getURI())){
+			lang = null;
+		}
 		
 		
 		

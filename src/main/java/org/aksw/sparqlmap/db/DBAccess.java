@@ -213,8 +213,9 @@ public class DBAccess {
 			
 			
 			public void visit(Table tableName) {
+				fromItemSb.append("");
 				tableName.accept(sdp);
-				
+				fromItemSb.append("");
 				//selectString.append(tableName.getName());
 				
 			}

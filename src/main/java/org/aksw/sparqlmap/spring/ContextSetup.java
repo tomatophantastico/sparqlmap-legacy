@@ -50,7 +50,7 @@ public abstract class ContextSetup {
 		try {
 		Map<String, Properties> props = new HashMap<String, Properties>();
 		if(!dir.exists()||!dir.isDirectory()){
-			log.debug("could not read from " + dir + ", as it is not existant or not a directory");
+			log.info("could not read from " + dir + ", as it is not existant or not a directory");
 		}
 		//read sparqlmap properties file
 

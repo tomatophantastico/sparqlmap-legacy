@@ -78,11 +78,9 @@ public class PlainSelectWrapper implements Wrapper {
 		registerTo.put(plainSelect, this);
 	}
 
-//	public void addTripleQuery(TermMap subject, String subjectAlias,
-//			TermMap object, String objectAlias, boolean isOptional) {
-//		addTripleQuery(subject, subjectAlias, null, null, object, objectAlias,
-//				isOptional);
-//	}
+public Map<SubSelect, Wrapper> getSubselects() {
+	return subselects;
+}
 
 	public void addTripleQuery(TermMap origSubject, String subjectAlias,
 			TermMap origPredicate, String predicateAlias,
@@ -197,32 +195,32 @@ public class PlainSelectWrapper implements Wrapper {
 		TermMap cloneTerm = term.clone("_dupVar_" + dupcounter++);
 
 	
-		Set<EqualsTo> newEqs = new HashSet<EqualsTo>();
-		
-		for(int fromItemCount = 0;fromItemCount <term.getFromItems().size();fromItemCount++){
-			FromItem fri = term.getFromItems().get(fromItemCount);
-			FromItem clfri = cloneTerm.getFromItems().get(fromItemCount);
-	
-		
-			
-			for(EqualsTo eq : getFromItem2joincondition().get(fri.getAlias())){
-				Expression rightUncast = DataTypeHelper.uncast(eq.getRightExpression());
-				
-				if(rightUncast instanceof Column){
-					EqualsTo clonedEq =  new EqualsTo();					
-					clonedEq.setLeftExpression(cloneEqualsExpression(eq.getLeftExpression(),fri,clfri));
-					
-					clonedEq.setRightExpression(cloneEqualsExpression(eq.getRightExpression(),fri,clfri));
-					
-					newEqs.add(clonedEq);	
-				}
-			}
-		}
-		for (EqualsTo clonedEq : newEqs) {
-			addJoinCondition(clonedEq);
-			//fromItem2joincondition.put(((Column)DataTypeHelper.uncast(clonedEq.getLeftExpression())).getTable(), clonedEq);
-			//fromItem2joincondition.put(((Column)DataTypeHelper.uncast(clonedEq.getRightExpression())).getTable(), clonedEq);
-		}
+//		Set<EqualsTo> newEqs = new HashSet<EqualsTo>();
+//		
+//		for(int fromItemCount = 0;fromItemCount <term.getFromItems().size();fromItemCount++){
+//			FromItem fri = term.getFromItems().get(fromItemCount);
+//			FromItem clfri = cloneTerm.getFromItems().get(fromItemCount);
+//	
+//		
+//			
+//			for(EqualsTo eq : getFromItem2joincondition().get(fri.getAlias())){
+//				Expression rightUncast = DataTypeHelper.uncast(eq.getRightExpression());
+//				
+//				if(rightUncast instanceof Column){
+//					EqualsTo clonedEq =  new EqualsTo();					
+//					clonedEq.setLeftExpression(cloneEqualsExpression(eq.getLeftExpression(),fri,clfri));
+//					
+//					clonedEq.setRightExpression(cloneEqualsExpression(eq.getRightExpression(),fri,clfri));
+//					
+//					newEqs.add(clonedEq);	
+//				}
+//			}
+//		}
+//		for (EqualsTo clonedEq : newEqs) {
+//			addJoinCondition(clonedEq);
+//			//fromItem2joincondition.put(((Column)DataTypeHelper.uncast(clonedEq.getLeftExpression())).getTable(), clonedEq);
+//			//fromItem2joincondition.put(((Column)DataTypeHelper.uncast(clonedEq.getRightExpression())).getTable(), clonedEq);
+//		}
 		
 		return cloneTerm;
 	}
@@ -235,8 +233,12 @@ public class PlainSelectWrapper implements Wrapper {
 				String origCastType = DataTypeHelper.getCastType(castedCol);
 				
 				
-				Column clonedcolumn = new Column((Table)newFi, ((Column) DataTypeHelper.uncast(castedCol)).getColumnName());
-		 //= FilterUtil.createColumn(newFi.getAlias(), ((Column) DataTypeHelper.uncast(castedCol)).getColumnName());
+				Column clonedcolumn = ColumnHelper.createColumn(newFi.getAlias(), ((Column) DataTypeHelper.uncast(castedCol)).getColumnName());
+						
+						//new Column((Table)newFi, ((Column) DataTypeHelper.uncast(castedCol)).getColumnName());  
+						
+						//
+		 //= ColumnHelper.createColumn(newFi.getAlias(), ((Column) DataTypeHelper.uncast(castedCol)).getColumnName());
 				return dth.cast(clonedcolumn, origCastType);
 			}
 		}
@@ -708,100 +710,7 @@ public class PlainSelectWrapper implements Wrapper {
 			
 		}
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 
-//		Iterator<FromItem> fis = _fromItems.values().iterator();
-//		FromItem mainfrom = fis.next();
-//		plainSelect.setFromItem(mainfrom);
-//		
-//		
-//		
-//		//we fill the map
-//		
-//		
-//		
-//		Set<String> fromItemsInTheQuery = new HashSet<String>();
-//		fromItemsInTheQuery.add(mainfrom.toString());
-//		
-//		
-//		while (fis.hasNext()) {
-//			FromItem fi = fis.next();
-//			
-//			fromItemsInTheQuery.add(fi.toString());
-//			
-//			Join join = new Join();
-//			join.setRightItem(fi);
-//			Collection<EqualsTo> fiEqs = _fromItem2joincondition.get(fi);
-//			Set<Expression> conditionsWithBothFromItemsPresent = new HashSet<Expression>();
-//			for (EqualsTo eq : fiEqs) {
-//				FromItem fi1 = ((Column)DataTypeHelper.uncast(eq.getLeftExpression())).getTable();
-//				FromItem fi2 = ((Column)DataTypeHelper.uncast(eq.getLeftExpression())).getTable();
-//				
-//				if(fromItemsInTheQuery.contains(fi1.toString())&&fromItemsInTheQuery.contains(fi2.toString())){
-//					conditionsWithBothFromItemsPresent.add(eq);
-//				}
-//			}
-//			
-//			
-//			if(conditionsWithBothFromItemsPresent.size()>0){
-//				join.setOnExpression(FilterUtil.conjunctFilters(conditionsWithBothFromItemsPresent));
-//			}
-//			
-//			plainSelect.getJoins().add(join);
-//		}
-		
-		
-		
-//		Set<EqualsTo> mainFromJoinCond = new HashSet<EqualsTo>(_fromItem2joincondition.get(plainSelect.getFromItem()));
-		
-//		if (fromItem2joincondition.containsKey(plainSelect.getFromItem())) {
-//			for (Expression ex : fromItem2joincondition.get(plainSelect.getFromItem())) {
-//				addSQLFilter(ex);
-//			}
-//		}
-
-//		while (fis.hasNext()) {
-//			FromItem fi = fis.next();
-//			//get the condition, that maps this FromItem with the one in the select
-//			
-//			Set<EqualsTo> additionalFiJoinConds = new HashSet<EqualsTo>(_fromItem2joincondition.get(fi));
-//			additionalFiJoinConds.retainAll(mainFromJoinCond);
-//			
-//			Set<EqualsTo> leftovers = new HashSet<EqualsTo>(_fromItem2joincondition.get(fi));
-//			leftovers.removeAll(additionalFiJoinConds);
-//			mainFromJoinCond.addAll(leftovers);
-//			
-//			Join join = new Join();
-//			join.setRightItem(fi);
-//
-//			if (additionalFiJoinConds.size()>0) {
-//				
-//				List<Expression> simplified = new ArrayList<Expression>();
-//				
-//				for (EqualsTo equalsTo : additionalFiJoinConds) {
-//					simplified.add(filterUtil.shortCutFilter(equalsTo));
-//				}
-//
-//				join.setOnExpression(this
-//						.conjunctFilters(new ArrayList<Expression>(
-//								simplified)));
-//			} else {
-//				join.setSimple(true);
-//			}
-//			plainSelect.getJoins().add(join);
-//		}
-		
-		
-		
-		
 		
 		
 		// adding the optionals here
@@ -815,7 +724,6 @@ public class PlainSelectWrapper implements Wrapper {
 			plainSelect.getJoins().add(ojoin);
 		}
 		
-
 	}
 	
 	

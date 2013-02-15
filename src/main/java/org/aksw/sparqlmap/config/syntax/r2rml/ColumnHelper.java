@@ -24,6 +24,8 @@ import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.TypeMapper;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.vocabulary.RDF;
+import com.hp.hpl.jena.vocabulary.RDFS;
 
 
 @Component
@@ -85,9 +87,15 @@ public class ColumnHelper {
 		baseExpressions.add(dth.cast(sqlTypeVal,
 				dth.getNumericCastType()));
 		if (datatype == null) {
+			if(type==COL_VAL_TYPE_LITERAL){
+				baseExpressions.add(dth.cast(
+						new StringValue("\""+RDFS.Literal.getURI()+"\""),
+						dth.getStringCastType()));
+			}else{
 			baseExpressions.add(dth.cast(
-					new net.sf.jsqlparser.expression.NullValue(),
+					new StringValue("\"" +RDFS.Resource.getURI() + "\""),
 					dth.getStringCastType()));
+			}
 		} else {
 			baseExpressions.add(dth.cast(
 					new StringValue("\""
@@ -104,12 +112,22 @@ public class ColumnHelper {
 		} else if (langColumn != null) {
 			baseExpressions.add(dth.cast(langColumn, dth.getStringCastType()));
 		} else {
-			baseExpressions.add(dth.cast(new NullValue(), dth.getStringCastType()));
+			if(type==COL_VAL_TYPE_LITERAL){
+				baseExpressions.add(dth.cast(
+						new StringValue("\"" +RDFS.Literal.getURI() + "\""),
+						dth.getStringCastType()));
+			}else{
+			baseExpressions.add(dth.cast(
+					new StringValue("\"" +RDFS.Resource.getURI()+"\""),
+					dth.getStringCastType()));
+			}
 		}
 		if (graph == null) {
+			
 			baseExpressions.add(dth.cast(
-					new net.sf.jsqlparser.expression.NullValue(),
+					new StringValue("\"" +RDFS.Resource.getURI()+ "\""),
 					dth.getStringCastType()));
+
 		} else {
 			baseExpressions.add(graph);
 		}
