@@ -283,7 +283,7 @@ mapping:Offer
     	rr:predicateObjectMap
               [ rr:objectMap
                         [ rr:column "price";
-                          rr:dataType bsbm-vocab:USD
+                          rr:datatype bsbm-vocab:USD
                         ] ;
                 rr:predicate bsbm-vocab:price
               ] ;
