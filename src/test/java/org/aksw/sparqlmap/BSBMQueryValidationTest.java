@@ -6,8 +6,8 @@ import java.io.ByteArrayOutputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import org.aksw.sparqlmap.SparqlMap.ReturnType;
-import org.aksw.sparqlmap.mapper.AlgebraBasedMapper;
+import org.aksw.sparqlmap.core.SparqlMap.ReturnType;
+import org.aksw.sparqlmap.core.mapper.AlgebraBasedMapper;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -173,7 +173,7 @@ public class BSBMQueryValidationTest extends BSBMBaseTest{
 	public String processQuery(String queryShortname, String queryString) {
 		ByteArrayOutputStream result = new ByteArrayOutputStream();
 		try {
-			r2r.executeSparql(queryString,ReturnType.XML,result);
+			r2r.executeSparql(queryString,ReturnType.XML,result,null);
 		} catch (SQLException e) {
 			
 			log.error("Error:",e);

@@ -23,22 +23,22 @@
 					</execution>
 				</executions>
 			</plugin>
-        <plugin>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <configuration>
-                <archive>
-                    <manifest>
-                        <mainClass>sparqlmap.dump</mainClass>
-                    </manifest>
-                </archive>
-                <descriptorRefs>
-                    <descriptorRef>jar-with-dependencies</descriptorRef>
-                </descriptorRefs>
-            </configuration>
-        </plugin>
-  
-			
-			
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>sparqlmap.dump</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+			</plugin>
+
+
+
 			<!-- plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-deploy-plugin</artifactId> 
 				<executions> <execution> <phase>deploy</phase> <goals> <goal>deploy-file</goal> 
 				</goals> <configuration> <packaging>jar</packaging> <generatePom>true</generatePom> 
@@ -57,8 +57,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>2.0.2</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>1.7</source>
+					<target>1.7</target>
 				</configuration>
 			</plugin>
 
@@ -74,7 +74,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
+
 		</plugins>
 		<pluginManagement>
 			<plugins>
@@ -113,23 +113,24 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	
-	<reporting>
-	<plugins>
-	  <plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-pmd-plugin</artifactId>
-						<configuration>
-							<linkXref>true</linkXref>
-							<sourceEncoding>UTF-8</sourceEncoding>
-							<minimumTokens>30</minimumTokens>
-							<targetJdk>1.6</targetJdk>
-						</configuration>
-					</plugin></plugins>
-	</reporting>
-	
 
-	
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<configuration>
+					<linkXref>true</linkXref>
+					<sourceEncoding>UTF-8</sourceEncoding>
+					<minimumTokens>30</minimumTokens>
+					<targetJdk>1.7</targetJdk>
+				</configuration>
+			</plugin>
+		</plugins>
+	</reporting>
+
+
+
 	<repositories>
 		<repository>
 			<id>java sun maven</id>
@@ -171,7 +172,7 @@
 			<url>http://maven.aksw.org/archiva/repository/snapshots</url>
 		</repository>
 	</repositories>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -186,9 +187,11 @@
 			<artifactId>jena-arq</artifactId>
 			<version>2.9.2</version>
 		</dependency>
-
-
-
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-ext</artifactId>
+			<version>1.7.5</version>
+		</dependency>
 		<dependency>
 			<groupId>org.ostermiller</groupId>
 			<artifactId>utils</artifactId>
@@ -204,7 +207,7 @@
 			<artifactId>jsqlparser</artifactId>
 			<version>0.8.1.SPARQLMAP-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
@@ -231,7 +234,7 @@
 		<dependency>
 			<groupId>postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>9.1-901.jdbc4</version>
+			<version>9.1-901-1.jdbc4</version>
 		</dependency>
 
 
@@ -243,7 +246,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
+			<artifactId>spring-web</artifactId>
 			<version>3.2.1.RELEASE</version>
 			<exclusions>
 				<exclusion>
@@ -252,11 +255,25 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-	    <dependency>
-			<groupId>org.aksw.sparqlmap</groupId>
-			<artifactId>automapper</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>
+				<dependency>
+				<groupId>org.aksw.commons</groupId>
+				<artifactId>util</artifactId>
+				<version>0.5-SNAPSHOT</version>
+				<scope>compile</scope>
+				<exclusions>
+				<exclusion>
+					<artifactId>slf4j-ext</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+			</exclusions>
+			</dependency>
+ 			<dependency>
+				<groupId>org.aksw.commons</groupId>
+				<artifactId>sparql</artifactId>
+				<version>0.5-SNAPSHOT</version>
+				<scope>compile</scope>
+			</dependency> 
+
 
 		<dependency>
 			<groupId>commons-cli</groupId>
@@ -268,6 +285,17 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-jdbc</artifactId>
 			<version>3.2.1.RELEASE</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc6</artifactId>
+			<version>11.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.2</version>
 		</dependency>
 	</dependencies>
 

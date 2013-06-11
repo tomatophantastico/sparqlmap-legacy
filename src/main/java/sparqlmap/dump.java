@@ -4,7 +4,7 @@ import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import org.aksw.sparqlmap.SparqlMap;
+import org.aksw.sparqlmap.core.SparqlMap;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.OptionBuilder;
@@ -51,9 +51,8 @@ public class dump extends AbstractSparqlMapCommanLineOperation{
 		SparqlMap r2r = ctxt.getBean(SparqlMap.class);
 		try {
 			r2r.dump(out);
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (Throwable e) {
+			log.error("Error occurred: ",e);
 		}
 		
 	}

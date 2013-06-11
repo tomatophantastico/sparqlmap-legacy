@@ -12,9 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import org.aksw.sparqlmap.automapper.DB2R2RML;
-import org.aksw.sparqlmap.db.DBAccess;
-import org.aksw.sparqlmap.db.DBAccessConfigurator;
+
+import org.aksw.sparqlmap.core.SparqlMap;
+import org.aksw.sparqlmap.core.automapper.Automapper;
+import org.aksw.sparqlmap.core.db.DBAccess;
+import org.aksw.sparqlmap.core.db.DBAccessConfigurator;
 import org.apache.commons.io.FileUtils;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.PropertiesPropertySource;
@@ -136,7 +138,7 @@ public class R2RMLComplianceTest {
 					
 							Connection conn = dbSetupConn.getConnection();
 
-							DB2R2RML db2r2rml = new DB2R2RML(conn, "http://example.com/base/mapping/", "http://example.com/base/data/", "http://example.com/base/vocab/",";");
+							Automapper db2r2rml = new Automapper(conn, "http://example.com/base/mapping/", "http://example.com/base/data/", "http://example.com/base/vocab/",";");
 							
 							
 							//String dburl = "http:" + dbconn.getDbConnString().split(":")[2]+ "/";

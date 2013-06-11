@@ -1,5 +1,6 @@
 package org.aksw.sparqlmap.beautifier;
 
+import org.aksw.sparqlmap.core.beautifier.SparqlBeautifier;
 import org.junit.Test;
 
 import com.hp.hpl.jena.query.QueryFactory;

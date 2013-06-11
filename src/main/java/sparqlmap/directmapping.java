@@ -4,7 +4,7 @@ import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import org.aksw.sparqlmap.SparqlMap;
+import org.aksw.sparqlmap.core.SparqlMap;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;

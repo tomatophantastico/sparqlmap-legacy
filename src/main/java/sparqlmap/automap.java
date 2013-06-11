@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import org.aksw.sparqlmap.automapper.AutomapperWrapper;
+import org.aksw.sparqlmap.core.automapper.AutomapperWrapper;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;

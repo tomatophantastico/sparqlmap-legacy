@@ -7,8 +7,8 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Properties;
 
-import org.aksw.sparqlmap.SparqlMap;
-import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLValidationException;
+import org.aksw.sparqlmap.core.SparqlMap;
+import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLValidationException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;

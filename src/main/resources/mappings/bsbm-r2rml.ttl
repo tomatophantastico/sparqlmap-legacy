@@ -112,22 +112,24 @@ mapping:Product
        rr:predicateObjectMap [
     		rr:predicate  bsbm-vocab:producer;
     		rr:objectMap [
-        		rr:parentTriplesMap mapping:Producer;
-        		rr:joinCondition [
-            		rr:child "producer";
-            		rr:parent "nr";
-            	];
+        		rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer{producer}/Producer{producer}"
+	       		#rr:parentTriplesMap mapping:Producer;
+        		#rr:joinCondition [
+            	#	rr:child "producer";
+            	#	rr:parent "nr";
+            	#];
         	];
     	];      
               
       rr:predicateObjectMap [
     		rr:predicate dc:publisher;
     		rr:objectMap [
-        		rr:parentTriplesMap mapping:Producer;
-        		rr:joinCondition [
-            		rr:child "publisher";
-            		rr:parent "nr";
-            	];
+    			rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer{producer}/Producer{producer}"
+        		#rr:parentTriplesMap mapping:Producer;
+        		#rr:joinCondition [
+            	#	rr:child "publisher";
+            	#	rr:parent "nr";
+            	#];
         	];
     	];        
               
@@ -184,12 +186,13 @@ mapping:ProductFeatureProduct
               ] ;
       rr:predicateObjectMap
               [ rr:objectMap
-                        [ 
-                        rr:parentTriplesMap mapping:ProductFeature ;
-                        rr:joinCondition [
-                        	rr:parent "nr";
-                        	rr:child "productfeature"
-                        	];
+                        [
+                         rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature{productfeature}"
+                        #rr:parentTriplesMap mapping:ProductFeature ;
+                        #rr:joinCondition [
+                        #	rr:parent "nr";
+                        #	rr:child "productfeature"
+                        #	];
                         ];
                 rr:predicate bsbm-vocab:productFeature
               ] ;
@@ -252,6 +255,7 @@ mapping:Offer
       rr:predicateObjectMap [
     		rr:predicate bsbm-vocab:product;
     		rr:objectMap [
+    		
         		rr:parentTriplesMap mapping:Product;
         		rr:joinCondition [
             		rr:child "product";
@@ -262,21 +266,24 @@ mapping:Offer
       rr:predicateObjectMap [
     		rr:predicate dc:publisher;
     		rr:objectMap [
-        		rr:parentTriplesMap mapping:Vendor;
-        		rr:joinCondition [
-            		rr:child "vendor";
-            		rr:parent "nr";
-            	];
+    		rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromVendor{vendor}/Vendor{vendor}"
+        		#rr:parentTriplesMap mapping:Vendor;
+        		#rr:joinCondition [
+            	#	rr:child "vendor";
+            	#	rr:parent "nr";
+            	#];
         	];
     	];
     	 rr:predicateObjectMap [
     		rr:predicate bsbm-vocab:vendor;
     		rr:objectMap [
-        		rr:parentTriplesMap mapping:Vendor;
-        		rr:joinCondition [
-            		rr:child "vendor";
-            		rr:parent "nr";
-            	];
+    			rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromVendor{vendor}/Vendor{vendor}"
+    		
+        		#rr:parentTriplesMap mapping:Vendor;
+        		#rr:joinCondition [
+            	#	rr:child "vendor";
+            	#	rr:parent "nr";
+            	#];
         	];
     	];
     	
@@ -363,7 +370,7 @@ mapping:Vendor
               ] ; 
        rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:template "http://downlode.org/rdf/iso-3166/countries{\"country\"}";
+                        [ rr:template "http://downlode.org/rdf/iso-3166/countries#{\"country\"}";
                         ] ;
                 rr:predicate bsbm-vocab:country
               ] .
@@ -407,7 +414,7 @@ mapping:Producer
               ] ; 
        rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:template "http://downlode.org/rdf/iso-3166/countries{\"country\"}";
+                        [ rr:template "http://downlode.org/rdf/iso-3166/countries#{\"country\"}";
                         ] ;
                 rr:predicate bsbm-vocab:country
               ] .
@@ -421,11 +428,12 @@ mapping:ProductTypeProduct
 	rr:predicateObjectMap [
     	rr:predicate rdf:type;
     		rr:objectMap [
-        		rr:parentTriplesMap mapping:ProductType;
-        		rr:joinCondition [
-            		rr:child "producttype";
-            		rr:parent "nr";
-            	];
+        		rr:template "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductType{producttype}"
+        		#rr:parentTriplesMap mapping:ProductType;
+        		#rr:joinCondition [
+            	#	rr:child "producttype";
+            	#	rr:parent "nr";
+            	#];
         	];
     	];
       rr:subjectMap
@@ -505,7 +513,8 @@ mapping:review
               ] ; 
     	rr:predicateObjectMap
               [ rr:objectMap
-                        [ rr:column "text"
+                        [ rr:column "text";
+                     
                         ] ;
                 rr:predicate rev:text 
               ] ;                                 

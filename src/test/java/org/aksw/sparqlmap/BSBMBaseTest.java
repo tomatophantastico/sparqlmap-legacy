@@ -1,7 +1,8 @@
 package org.aksw.sparqlmap;
 
-import org.aksw.sparqlmap.db.DBAccess;
-import org.aksw.sparqlmap.spring.ContextSetup;
+import org.aksw.sparqlmap.core.SparqlMap;
+import org.aksw.sparqlmap.core.db.DBAccess;
+import org.aksw.sparqlmap.core.spring.ContextSetup;
 import org.junit.Before;
 import org.springframework.context.ApplicationContext;
 
