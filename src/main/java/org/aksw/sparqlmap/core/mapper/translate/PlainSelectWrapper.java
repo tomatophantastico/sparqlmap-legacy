@@ -931,4 +931,9 @@ public class PlainSelectWrapper implements Wrapper {
 		this.plainSelect.setLimit(lim);
 	}
 
+	public void addNullTriple(String s, String p, String o) {
+		
+	}
+
+
 }

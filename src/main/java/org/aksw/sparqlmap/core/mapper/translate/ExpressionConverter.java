@@ -11,6 +11,8 @@ import java.util.Map;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.TimestampValue;
 import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
@@ -52,10 +54,12 @@ import com.hp.hpl.jena.sparql.expr.E_LogicalNot;
 import com.hp.hpl.jena.sparql.expr.E_LogicalOr;
 import com.hp.hpl.jena.sparql.expr.E_NotEquals;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
+import com.hp.hpl.jena.sparql.expr.E_SameTerm;
 import com.hp.hpl.jena.sparql.expr.E_Str;
 import com.hp.hpl.jena.sparql.expr.E_Subtract;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprFunction;
+import com.hp.hpl.jena.sparql.expr.ExprFunction2;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
 import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueDT;
 import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueDouble;
@@ -90,8 +94,12 @@ public class ExpressionConverter {
 
 			TermMap tc = colstring2col.get(colstring2var.inverse().get(
 					expr.getVarName()));
-
-			expression = tc.getExpression();
+			if(tc !=null){
+				expression = tc.getExpression();
+			}else{
+				expression = new NullValue();
+			}
+			
 
 		} else if (expr instanceof NodeValueNode
 				&& ((NodeValueNode) expr).getNode() instanceof Node_URI) {
@@ -379,7 +387,7 @@ public class ExpressionConverter {
 					colstring2col);
 			Expression right = getBestExpression(or.getArg2(), colstring2var,
 					colstring2col);
-			sqlExpression = new OrExpression(left, right);
+			sqlExpression = new Parenthesis(new OrExpression(left, right));
 
 		} else if (exp instanceof E_Add) {
 
@@ -407,9 +415,9 @@ public class ExpressionConverter {
 			sqlSub.setRightExpression(right);
 			sqlExpression = sqlSub;
 
-		} else if (exp instanceof E_Equals) {
+		} else if (exp instanceof E_Equals || exp instanceof E_SameTerm) {
 
-			E_Equals eq = (E_Equals) exp;
+			ExprFunction2 eq = (ExprFunction2) exp;
 			Expression left = getBestExpression(eq.getArg1(), colstring2var,
 					colstring2col);
 			Expression right = getBestExpression(eq.getArg2(), colstring2var,
@@ -452,7 +460,7 @@ public class ExpressionConverter {
 			sqlExpression = dth.cast(
 					getBestExpression(str.getArg(), colstring2var,
 							colstring2col), dth.getStringCastType());
-		} else {
+		}  else {
 
 			throw new ImplementationException("Filter " + exp.toString()
 					+ " not yet implemented");

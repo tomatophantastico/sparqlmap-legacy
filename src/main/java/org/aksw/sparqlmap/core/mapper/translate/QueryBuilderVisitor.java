@@ -355,9 +355,10 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		}else if(trms.size()==0){
 			// no triple maps found.
 			//bind to null values instead.
-			psw.addTripleQuery(TermMap.getNullTermMap(), triple
-					.getSubject().getName(), TermMap.getNullTermMap(),triple
-					.getPredicate().getName(),TermMap.getNullTermMap(),triple.getObject().getName(), isOptional);
+			psw.addTripleQuery(TermMap.getNullTermMap(dataTypeHelper), triple
+					.getSubject().getName(), TermMap.getNullTermMap(dataTypeHelper),triple
+					.getPredicate().getName(),TermMap.getNullTermMap(dataTypeHelper),triple.getObject().getName(), isOptional);
+			
 			return psw; 
 			
 		}else{

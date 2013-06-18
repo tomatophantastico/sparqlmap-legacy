@@ -38,12 +38,11 @@ public class TermMap{
 	private Map<String,FromItem>  alias2logicalTable;
 	
 	//  for each fromItem 
-	protected Set<EqualsTo> joinConditions;
+	protected Set<EqualsTo> joinConditions = new HashSet<EqualsTo>();
 	
 	protected TripleMap trm;
 		
-	private TermMap original;
-	
+
 	private CompatibilityChecker cchecker;
 
 	/**
@@ -66,8 +65,6 @@ public class TermMap{
 			}
 			if(joinConditions!=null){
 				this.joinConditions = joinConditions;
-			}else{
-				this.joinConditions = new HashSet<EqualsTo>();
 			}
 			//expressions = new ArrayList<Expression>();
 		
@@ -88,7 +85,6 @@ public class TermMap{
 		//read the header
 		
 		Expression typeExpr =exprs.remove(0);
-		Long type = ((LongValue) DataTypeHelper.uncast(typeExpr)).getValue();
 		SelectExpressionItem typeSei = new SelectExpressionItem();
 		typeSei.setExpression(typeExpr);
 		typeSei.setAlias(colalias + ColumnHelper.COL_NAME_RDFTYPE);
@@ -539,7 +535,6 @@ public class TermMap{
 		
 		
 		TermMap clone = new TermMap(this.dth, clonedExpressions,clonedFromItems,clonedJoinConditions,trm);
-		clone.original = this;
 		
 		return clone;
 	}
@@ -628,13 +623,20 @@ public class TermMap{
 	
 	
 	
-	public static TermMap getNullTermMap(){
+	public static TermMap getNullTermMap(DataTypeHelper dth){
+		
+		
 		
 		List<Expression> nullExpressions = new ArrayList<Expression>();
 		
-		 for(int i = 0; i<6;i++){
-			 nullExpressions.add(new NullValue());
-		 }
+		nullExpressions.add(new NullValue());
+		nullExpressions.add(dth.cast(new LongValue("1"), dth.getNumericCastType()));
+		nullExpressions.add(new NullValue());
+		nullExpressions.add(new NullValue());
+		nullExpressions.add(new NullValue());
+		nullExpressions.add(new NullValue());
+		nullExpressions.add(new NullValue());
+		
 		   
 		   
 		   

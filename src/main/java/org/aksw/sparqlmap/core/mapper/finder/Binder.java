@@ -20,10 +20,13 @@ import com.hp.hpl.jena.graph.Triple.Field;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.OpVisitorByTypeBase;
 import com.hp.hpl.jena.sparql.algebra.OpWalker;
+import com.hp.hpl.jena.sparql.algebra.Table;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpJoin;
 import com.hp.hpl.jena.sparql.algebra.op.OpLeftJoin;
+import com.hp.hpl.jena.sparql.algebra.op.OpTable;
 import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
+import com.hp.hpl.jena.sparql.algebra.table.TableUnit;
 import com.hp.hpl.jena.sparql.expr.Expr;
 
 
@@ -103,18 +106,24 @@ public class Binder {
 		@Override
 		public void visit(OpLeftJoin opLeftJoin) {
 			log.debug("Visiting opLeftJoin"+opLeftJoin);
-			Collection<Triple> rightSideTriples = triples.pop();
-			Collection<Triple> leftSideTriples = triples.pop();
-			//we now merge the bindings for each and every triple we got here.
 			
-			boolean changed =  mergeBinding(partitionBindings(rightSideTriples), partitionBindings(leftSideTriples));
-
-			//if we modified any binding, we have to walk this part of the Op-Tree again.
-			
-			if(changed){
-				OpWalker.walk(opLeftJoin, this);
+			if(opLeftJoin.getLeft() instanceof OpTable && ((OpTable)opLeftJoin.getLeft()).getTable() instanceof TableUnit){
+				//leftjoin without triples. do nothing
+				
+			}else{
+				Collection<Triple> rightSideTriples = triples.pop();
+				Collection<Triple> leftSideTriples = triples.pop();
+				//we now merge the bindings for each and every triple we got here.
+				
+				boolean changed =  mergeBinding(partitionBindings(rightSideTriples), partitionBindings(leftSideTriples));
+	
+				//if we modified any binding, we have to walk this part of the Op-Tree again.
+				
+				if(changed){
+					OpWalker.walk(opLeftJoin, this);
+				}
+				mergeAndPutOnStack(leftSideTriples, rightSideTriples);
 			}
-			mergeAndPutOnStack(leftSideTriples, rightSideTriples);
 		}
 		
 		
