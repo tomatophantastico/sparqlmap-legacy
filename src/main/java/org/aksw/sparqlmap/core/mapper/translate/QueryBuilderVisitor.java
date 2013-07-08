@@ -132,72 +132,72 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	@Override
 	public void visit(OpGraph opGraph) {
-		PlainSelectWrapper wrap = (PlainSelectWrapper) selectBody2Wrapper.get(selects.peek());
-		
-		if(opGraph.getNode() instanceof Var){
-			Var gvar = (Var) opGraph.getNode();
-			
-			List<SelectExpressionItem> newGraphSeis = new	ArrayList<SelectExpressionItem>();
-//			newGraphSeis.addAll();
+//		PlainSelectWrapper wrap = (PlainSelectWrapper) selectBody2Wrapper.get(selects.peek());
+//		
+//		if(opGraph.getNode() instanceof Var){
+//			Var gvar = (Var) opGraph.getNode();
 //			
-//			ColumnHelper.getExpression(col, rdfType, sqlType, datatype, lang, lanColumn, dth, graph)
+//			List<SelectExpressionItem> newGraphSeis = new	ArrayList<SelectExpressionItem>();
+////			newGraphSeis.addAll();
+////			
+////			ColumnHelper.getExpression(col, rdfType, sqlType, datatype, lang, lanColumn, dth, graph)
+////			
+////			new TermMap(dataTypeHelper, ColumnHelper.getBaseExpressions(ColumnHelper.COL_VAL_TYPE_RESOURCE, 2, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, dataTypeHelper, null, null, null, null));
 //			
-//			new TermMap(dataTypeHelper, ColumnHelper.getBaseExpressions(ColumnHelper.COL_VAL_TYPE_RESOURCE, 2, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, dataTypeHelper, null, null, null, null));
-			
-			
-			
-			//new Select Item, using the first 
-			SelectExpressionItem graph_sei = new SelectExpressionItem();
-			graph_sei.setAlias(gvar.getName() + ColumnHelper.COL_NAME_GRAPH);
-			List<Expression> additionalFilters = new ArrayList<Expression>();
-			
-			for(SelectItem si : wrap.getSelectExpressionItems()){
-				SelectExpressionItem sei  = (SelectExpressionItem) si;
-				
-				if(sei.getAlias().endsWith(ColumnHelper.COL_NAME_GRAPH) && sei.getExpression() instanceof Column){
-					if(graph_sei.getExpression()==null){
-						List<Expression> graphExprs =columnhelper.getExpression((Column)sei.getExpression(), ColumnHelper.COL_VAL_TYPE_RESOURCE, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, null, null, null, dataTypeHelper, null,null);
-						
-						TermMap tm = new TermMap(dataTypeHelper, graphExprs);
-						newGraphSeis.addAll(tm.getSelectExpressionItems(opGraph.getNode().getName()));
-						
-						
-						
-						graph_sei.setExpression(sei.getExpression());
-					}else{
-						IsNullExpression seiGraphIsNull = new IsNullExpression();
-						seiGraphIsNull.setNot(false);
-						seiGraphIsNull.setLeftExpression(graph_sei.getExpression());
-						
-						IsNullExpression thisGRaphIsNull = new IsNullExpression();
-						thisGRaphIsNull.setNot(false);
-						thisGRaphIsNull.setLeftExpression(sei.getExpression());
-						
-						AndExpression andNull = new AndExpression(seiGraphIsNull, thisGRaphIsNull);
-						
-						
-						EqualsTo eq = new EqualsTo();
-						
-						eq.setLeftExpression(graph_sei.getExpression());
-						eq.setRightExpression(sei.getExpression());
-						
-						
-						OrExpression or = new OrExpression(new Parenthesis(andNull), new Parenthesis(eq));
-						
-						
-						additionalFilters.add(or);
-					}
-				}
-			}
-			
-			
-			wrap.getSelectExpressionItems().addAll(newGraphSeis);
-			
-			
-			wrap.addSQLFilter(FilterUtil.conjunctFilters(additionalFilters));
-			
-			
-		}
+//			
+//			
+//			//new Select Item, using the first 
+//			SelectExpressionItem graph_sei = new SelectExpressionItem();
+//			graph_sei.setAlias(gvar.getName() + ColumnHelper.COL_NAME_GRAPH);
+//			List<Expression> additionalFilters = new ArrayList<Expression>();
+//			
+//			for(SelectItem si : wrap.getSelectExpressionItems()){
+//				SelectExpressionItem sei  = (SelectExpressionItem) si;
+//				
+//				if(sei.getAlias().endsWith(ColumnHelper.COL_NAME_GRAPH) && sei.getExpression() instanceof Column){
+//					if(graph_sei.getExpression()==null){
+//						List<Expression> graphExprs =columnhelper.getExpression((Column)sei.getExpression(), ColumnHelper.COL_VAL_TYPE_RESOURCE, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, null, null, null, dataTypeHelper, null,null);
+//						
+//						TermMap tm = new TermMap(dataTypeHelper, graphExprs);
+//						newGraphSeis.addAll(tm.getSelectExpressionItems(opGraph.getNode().getName()));
+//						
+//						
+//						
+//						graph_sei.setExpression(sei.getExpression());
+//					}else{
+//						IsNullExpression seiGraphIsNull = new IsNullExpression();
+//						seiGraphIsNull.setNot(false);
+//						seiGraphIsNull.setLeftExpression(graph_sei.getExpression());
+//						
+//						IsNullExpression thisGRaphIsNull = new IsNullExpression();
+//						thisGRaphIsNull.setNot(false);
+//						thisGRaphIsNull.setLeftExpression(sei.getExpression());
+//						
+//						AndExpression andNull = new AndExpression(seiGraphIsNull, thisGRaphIsNull);
+//						
+//						
+//						EqualsTo eq = new EqualsTo();
+//						
+//						eq.setLeftExpression(graph_sei.getExpression());
+//						eq.setRightExpression(sei.getExpression());
+//						
+//						
+//						OrExpression or = new OrExpression(new Parenthesis(andNull), new Parenthesis(eq));
+//						
+//						
+//						additionalFilters.add(or);
+//					}
+//				}
+//			}
+//			
+//			
+//			wrap.getSelectExpressionItems().addAll(newGraphSeis);
+//			
+//			
+//			wrap.addSQLFilter(FilterUtil.conjunctFilters(additionalFilters));
+//			
+//			
+//		}
 		
 		
 		

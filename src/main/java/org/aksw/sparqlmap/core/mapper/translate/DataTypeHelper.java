@@ -40,9 +40,7 @@ public abstract  class DataTypeHelper {
 		suffix2datatype.put(ColumnHelper.COL_NAME_LITERAL_STRING, this.getStringCastType());
 		suffix2datatype.put(ColumnHelper.COL_NAME_LITERAL_TYPE, this.getStringCastType());
 		suffix2datatype.put(ColumnHelper.COL_NAME_RDFTYPE, this.getNumericCastType());
-		suffix2datatype.put(ColumnHelper.COL_NAME_RES_LENGTH, this.getNumericCastType());
 		suffix2datatype.put(ColumnHelper.COL_NAME_RESOURCE_COL_SEGMENT, this.getStringCastType());
-		suffix2datatype.put(ColumnHelper.COL_NAME_SQL_TYPE, this.getNumericCastType());
 	}
 	
 	

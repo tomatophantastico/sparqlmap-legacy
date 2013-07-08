@@ -91,21 +91,7 @@ public class TermMap{
 		
 		seis.add(typeSei);
 		
-		//read the lengthfield
-		Expression resLength=exprs.remove(0);
-		Long length = ((LongValue) DataTypeHelper.uncast(resLength)).getValue();
-		SelectExpressionItem resLengthSei = new SelectExpressionItem();
-		resLengthSei.setAlias(colalias + ColumnHelper.COL_NAME_RES_LENGTH);
-		resLengthSei.setExpression(resLength);
-		seis.add(resLengthSei);
-		
-		
-		//read the litypefield
-		Expression sqlTypeExpr = exprs.remove(0);
-		SelectExpressionItem sqlTypeSei = new SelectExpressionItem();
-		sqlTypeSei.setAlias(colalias + ColumnHelper.COL_NAME_SQL_TYPE);
-		sqlTypeSei.setExpression(sqlTypeExpr);
-		seis.add(sqlTypeSei);
+			
 		
 		//read the litypefield
 		Expression litTypeExpr = exprs.remove(0);
@@ -121,59 +107,49 @@ public class TermMap{
 		litnangSei.setExpression(litlangExpr);
 		seis.add(litnangSei);
 		
-		//read the graph
-		Expression graphExpr = exprs.remove(0);
-		SelectExpressionItem graphSei  = new SelectExpressionItem();
-		graphSei.setAlias(colalias + ColumnHelper.COL_NAME_GRAPH);
-		graphSei.setExpression(graphExpr);
-		seis.add(graphSei);		
+	
+		//add the string col
+		SelectExpressionItem stringsei = new SelectExpressionItem();
+		stringsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_STRING);
+		stringsei.setExpression(exprs.remove(0));
+		seis.add(stringsei);
+		
+		//add the numeric col
+		SelectExpressionItem numSei = new SelectExpressionItem();
+		numSei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_NUMERIC);
+		numSei.setExpression(exprs.remove(0));
+		seis.add(numSei);
+		
+		//add the data col
+		SelectExpressionItem dateSei = new SelectExpressionItem();
+		dateSei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_DATE);
+		dateSei.setExpression(exprs.remove(0));
+		seis.add(dateSei);
 		
 		
+		//add the bool col
+		SelectExpressionItem boolsei = new SelectExpressionItem();
+		boolsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_BOOL);
+		boolsei.setExpression(exprs.remove(0));
+		seis.add(boolsei);
+		
+		
+		//add the binary col
+		SelectExpressionItem binsei = new SelectExpressionItem();
+		binsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_BINARY);
+		binsei.setExpression(exprs.remove(0));
+		seis.add(binsei);
+			
 		
 		
 		//add all the resource expressions
-		for (int i = 0; i < length; i++) {
+		int i = 0;
+		for (Expression expr: exprs) {
 			SelectExpressionItem resSei = new SelectExpressionItem();
-			resSei.setAlias(colalias + ColumnHelper.COL_NAME_RESOURCE_COL_SEGMENT + i);
-			resSei.setExpression(exprs.remove(0));
+			resSei.setAlias(colalias + ColumnHelper.COL_NAME_RESOURCE_COL_SEGMENT + i++);
+			resSei.setExpression(expr);
 			seis.add(resSei);
 		}
-			
-			
-		//Literal, the rest must be literal expressions, decide upon the cast type
-		for (Expression expr : exprs) {
-			String castType = DataTypeHelper.getCastType(expr);
-			if(castType.equals(dataTypeHelper.getStringCastType())){
-				SelectExpressionItem stringsei = new SelectExpressionItem();
-				stringsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_STRING);
-				stringsei.setExpression(expr);
-				seis.add(stringsei);
-				
-			}else if( castType.equals(dataTypeHelper.getNumericCastType())){
-				SelectExpressionItem numSei = new SelectExpressionItem();
-				numSei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_NUMERIC);
-				numSei.setExpression(expr);
-				seis.add(numSei);
-			}else if(castType.equals(dataTypeHelper.getDateCastType())){
-				SelectExpressionItem dateSei = new SelectExpressionItem();
-				dateSei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_DATE);
-				dateSei.setExpression(expr);
-				seis.add(dateSei);
-			}else if(castType.equals(dataTypeHelper.getBooleanCastType())){
-				SelectExpressionItem boolsei = new SelectExpressionItem();
-				boolsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_BOOL);
-				boolsei.setExpression(expr);
-				seis.add(boolsei);
-			}else if(castType.equals(dataTypeHelper.getBinaryDataType())){
-				SelectExpressionItem binsei = new SelectExpressionItem();
-				binsei.setAlias(colalias + ColumnHelper.COL_NAME_LITERAL_BINARY);
-				binsei.setExpression(expr);
-				seis.add(binsei);
-			}else
-			{
-				throw new ImplementationException("Cast type not supported: " + castType);
-			}			
-		}	
 		return seis;
 	}
 	
@@ -199,28 +175,7 @@ public class TermMap{
 		return expressions;
 	}
 	
-	public Expression getExpression(){		
-		
-		
-		if(getResourceExpression()!=null && getLiteralExpression()!=null){
-			List<Expression> exprs = new ArrayList<Expression>();
-			exprs.add(this.getResourceExpression());
-			exprs.add(this.getLiteralExpression());
-			FilterUtil.coalesce(exprs.toArray(new Expression[0]));
-		}
-		if(getLiteralExpression()!=null){
-			return getLiteralExpression();
-		}
-		if(getResourceExpression()!=null){
-			return getResourceExpression();
-		}
-		
-		//should never get here
-		throw new ImplementationException("Sth. went horribly wrong");
-		
-		
-		 
-	}
+
 	
 	
 	protected DataTypeHelper getDataTypeHelper(){
@@ -228,7 +183,13 @@ public class TermMap{
 	}
 	
 	public String toString(){
-		return getExpression().toString();
+		StringBuffer out = new StringBuffer();
+		for(Expression exp: expressions ){
+			out.append(exp.toString());
+			out.append("|");
+		}
+		
+		return out.toString();
 	}
 	
 	
@@ -325,194 +286,6 @@ public class TermMap{
 	}
 	
 	
-	/**
-	 * returns the expressions, representing the literal of this term. If it has any. Uncasting might be required.
-	 * @return
-	 */
-	public Expression getLiteralStringExpression(){
-		
-		for(Expression expr: getLiteralExpressions()){
-			String type = DataTypeHelper.getCastType(expr);
-			if(type != null && type.equals(dth.getStringCastType())){
-				return expr;
-			}
-		
-			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_STRING)){
-				return expr;
-			}
-		}
-		return null;
-	}
-	
-	private Expression getLiteralBoolExpression() {
-		for(Expression expr: getLiteralExpressions()){
-			String type = DataTypeHelper.getCastType(expr);
-			if(type != null && type.equals(dth.getBooleanCastType())){
-				return expr;
-			}
-		
-			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BOOL)){
-				return expr;
-			}
-		}
-		return null;
-	}
-	
-	public Expression getLiteralNumericExpression(){
-		for(Expression expr: getLiteralExpressions()){
-			String type = DataTypeHelper.getCastType(expr);
-			if(type != null && type.equals(dth.getNumericCastType())){
-				return expr;
-			}
-			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_NUMERIC)){
-				return expr;
-			}
-		}
-		return null;
-	}
-	
-	public Expression getLiteralBinaryExpression(){
-		for(Expression expr: getLiteralExpressions()){
-			String type = DataTypeHelper.getCastType(expr);
-			if(type != null && type.equals(dth.getBinaryDataType())){
-				return expr;
-			}
-			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_BINARY)){
-				return expr;
-			}
-		}
-		return null;
-	}
-	
-	public Expression getLiteralDateExpression(){
-		for(Expression expr: getLiteralExpressions()){
-			String type = DataTypeHelper.getCastType(expr);
-			if(type != null && type.equals(dth.getDateCastType())){
-				return expr;
-			}
-			if(DataTypeHelper.uncast(expr)instanceof Column &&((Column)DataTypeHelper.uncast(expr)).getColumnName().endsWith(ColumnHelper.COL_NAME_LITERAL_DATE)){
-				return expr;
-			}
-		}
-		return null;
-	}
-	
-	public List<Expression> getResourceExpressions(){
-		List<Expression> expressions = new ArrayList<Expression>();
-		
-		
-		
-		
-		int length = getLength();
-		for(int i = 0; i < length; i++){
-			expressions.add(getExpressions().get(i+6));
-		}
-		return expressions;
-	}
-	
-	
-	public Expression getResourceExpression(){
-		if(getResourceExpressions()!=null && getResourceExpressions().size()>0){
-		Expression concat = FilterUtil.concat(getResourceExpressions().toArray(new Expression[0]));
-		return concat;
-		}
-			return null;
-		
-		
-	}
-	
-	public Expression getLiteralExpression(){
-		List<Expression> lits = new ArrayList<Expression>();
-		if(getLiteralDateExpression()!=null){
-		lits.add(getLiteralDateExpression());
-		}
-		if(getLiteralNumericExpression()!=null){
-			lits.add(getLiteralNumericExpression());
-		}
-		if (getLiteralStringExpression()!=null){
-			lits.add(getLiteralStringExpression());
-		}
-		if (getLiteralBoolExpression()!=null){
-			lits.add(getLiteralBoolExpression());
-		}
-		if (getLiteralBinaryExpression()!=null){
-			lits.add(getLiteralBinaryExpression());
-		}
-		
-		if(lits.size()>1){
-			return FilterUtil.coalesce(lits.toArray(new Expression[0]));
-		}else if(lits.size() == 1){
-			return lits.get(0);
-		}
-		return null;
-		
-	}
-	
-	
-	
-	
-
-
-	public List<Expression> getLiteralExpressions(){
-		//jump to the literals
-				List<Expression> expressions = new ArrayList<Expression>(getExpressions());
-				int length = getLength();
-				for(int i = 0; i< length+6; i++){
-					expressions.remove(0);
-				}
-				return expressions;		
-	}
-	
-	
-	
-	public Integer getLength(){
-		if(DataTypeHelper.uncast(getExpressions().get(1)) instanceof LongValue){
-			return  (int) ((LongValue)DataTypeHelper.uncast(getExpressions().get(1))).getValue();			
-		}else{
-			int i = 0;
-			for (Expression exp : getExpressions()) {
-				if(exp instanceof Column && ((Column)exp).getColumnName().contains(ColumnHelper.COL_NAME_RESOURCE_COL_SEGMENT)){
-					i++;
-				}
-			}
-			return i;
-		}
-		
-		
-		
-	}
-	
-	public Integer getType(){
-		if(DataTypeHelper.uncast(getExpressions().get(0)) instanceof LongValue){
-			return  (int) ((LongValue)DataTypeHelper.uncast(getExpressions().get(0))).getValue();
-		}else{
-			return null;
-		}
-		
-		
-	}
-	
-	public Integer getSqlType(){
-		if(DataTypeHelper.uncast(getExpressions().get(2)) instanceof LongValue){
-			return  (int) ((LongValue)DataTypeHelper.uncast(getExpressions().get(2))).getValue();
-		}else{
-			return null;
-		}
-		
-	}
-	public Expression getLanguage(){
-		
-		return DataTypeHelper.uncast(getExpressions().get(4));
-
-	}
-	public String  getDataType(){
-		if(DataTypeHelper.uncast(getExpressions().get(5)) instanceof net.sf.jsqlparser.expression.StringValue){
-			return  (String) ((StringValue)DataTypeHelper.uncast(getExpressions().get(3))).getValue();
-		}else{
-			return null;
-		}
-		
-	}
 	
 	
 	

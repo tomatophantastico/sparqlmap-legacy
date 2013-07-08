@@ -18,7 +18,7 @@ public class TripleMap {
 	public FromItem from;
 	TermMap subject;
 	Set<PO> pos = new LinkedHashSet<PO>();
-	
+	TermMap graph;
 	
 	
 	
@@ -28,16 +28,6 @@ public class TripleMap {
 		this.from = from;
 	}
 	
-//	public TripleMap(FromItem from) {
-//		super();
-//		this.from = from;
-//		if(from instanceof Table){
-//			name = "TripleMap_" + ((Table)from).getName();
-//		}else{
-//			name = "TripleMap_" + nameCounter++;
-//		}
-//	}
-
 
 	
 	public void addPO(TermMap predicate,TermMap object){

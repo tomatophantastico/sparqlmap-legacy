@@ -20,10 +20,14 @@ import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.Lists;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.TypeMapper;
+import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
+import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.sparql.util.NodeFactory;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
@@ -33,25 +37,23 @@ public class ColumnHelper {
 	
 	public static String R2R_COL_SUFFIX = "_R2R";
 	public static String COL_NAME_RDFTYPE = R2R_COL_SUFFIX + "_01TP";
-	public static String COL_NAME_RES_LENGTH = R2R_COL_SUFFIX + "_02RL";
-	public static String COL_NAME_SQL_TYPE = R2R_COL_SUFFIX + "_03SQT";
-	public static String COL_NAME_LITERAL_TYPE = R2R_COL_SUFFIX + "_04LITT";
-	public static String COL_NAME_LITERAL_LANG = R2R_COL_SUFFIX + "_05LITL";
-	public static String COL_NAME_GRAPH = R2R_COL_SUFFIX + "_06G";
-	public static String COL_NAME_RESOURCE_COL_SEGMENT = R2R_COL_SUFFIX
-			+ "_07S";
+	public static String COL_NAME_LITERAL_TYPE = R2R_COL_SUFFIX + "_02LITT";
+	public static String COL_NAME_LITERAL_LANG = R2R_COL_SUFFIX + "_03LITL";
 	public static String COL_NAME_LITERAL_STRING = R2R_COL_SUFFIX
-			+ "_08LITS";
+			+ "_04LS";
 	public static String COL_NAME_LITERAL_NUMERIC = R2R_COL_SUFFIX
-			+ "_09LITNM";
-	public static String COL_NAME_LITERAL_DATE = R2R_COL_SUFFIX + "_10LITD";
+			+ "_05LN";
+	public static String COL_NAME_LITERAL_DATE = R2R_COL_SUFFIX + "_6LD";
 	public static String COL_NAME_LITERAL_BOOL = R2R_COL_SUFFIX
-			+ "_11LITB";
-	public static String COL_NAME_LITERAL_BINARY = R2R_COL_SUFFIX + "12_LIT0";
-	public static String COL_NAME_ORDER_BY = R2R_COL_SUFFIX + "_13OB";
-
+			+ "_07LB";
+	public static String COL_NAME_LITERAL_BINARY = R2R_COL_SUFFIX + "08_L0";
+	public static String COL_NAME_RESOURCE_COL_SEGMENT = R2R_COL_SUFFIX
+			+ "_09R";
+	public static String COL_NAME_ORDER_BY = R2R_COL_SUFFIX + "_XXOB";
+	
 	public static String COL_NAME_INTERNAL = "B";
 
+	
 	public static Integer COL_VAL_TYPE_RESOURCE = 1;
 	public static Integer COL_VAL_TYPE_LITERAL = 2;
 	public static Integer COL_VAL_TYPE_BLANK = 3;
@@ -59,6 +61,8 @@ public class ColumnHelper {
 	public static Integer COL_VAL_SQL_TYPE_RESOURCE = -9999;
 	public static Integer COL_VAL_SQL_TYPE_CONSTLIT = -9998;
 	public static Integer COL_VAL_RES_LENGTH_LITERAL = 0;
+	
+	public static Integer MIN_COL_COUNT = 8;
 
 	public static String colnameBelongsToVar(String colalias) {
 		return colalias.substring(0, colalias.indexOf(R2R_COL_SUFFIX));
@@ -75,17 +79,15 @@ public class ColumnHelper {
 	DataTypeHelper dth;
 
 	public List<Expression> getBaseExpressions(Integer type,
-			Integer resLength, Integer sqlType, DataTypeHelper dth,
-			String datatype, String lang, Column langColumn, Expression graph) {
+			Integer resLength, 
+			String datatype, String lang, Column langColumn) {
 		List<Expression> baseExpressions = new ArrayList<Expression>();
 		LongValue typeVal = new LongValue(Integer.toString(type));
 		baseExpressions.add(dth.cast(typeVal, dth.getNumericCastType()));
 		LongValue lengthVal = new LongValue(Integer.toString(resLength));
 		baseExpressions
 				.add(dth.cast(lengthVal, dth.getNumericCastType()));
-		LongValue sqlTypeVal = new LongValue(Integer.toString(sqlType));
-		baseExpressions.add(dth.cast(sqlTypeVal,
-				dth.getNumericCastType()));
+
 		if (datatype == null) {
 			if(type==COL_VAL_TYPE_LITERAL){
 				baseExpressions.add(dth.cast(
@@ -122,16 +124,7 @@ public class ColumnHelper {
 					dth.getStringCastType()));
 			}
 		}
-		if (graph == null) {
-			
-			baseExpressions.add(dth.cast(
-					new StringValue("\"" +RDFS.Resource.getURI()+ "\""),
-					dth.getStringCastType()));
-
-		} else {
-			baseExpressions.add(graph);
-		}
-
+		
 		return baseExpressions;
 	}
 	
@@ -146,24 +139,23 @@ public class ColumnHelper {
 	 * @param dth
 	 * @return
 	 */
-	public List<Expression> getExpression(RDFNode node,
-			DataTypeHelper dth,Expression graph) {
+	public List<Expression> getExpression(Node node,
+			DataTypeHelper dth) {
 		List<Expression> texprs = new ArrayList<Expression>();
 
-		if (node.isURIResource()) {
+		if (node.isURI()) {
 			texprs.addAll(getBaseExpressions(COL_VAL_TYPE_RESOURCE, 1,
-					COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null,graph));
+					 null, null, null));
 			//texprs.add(dth.cast(new StringValue("\"\""), dth.getStringCastType()));
-			texprs.add(asExpression(node.asResource().getURI(), dth));
+			texprs.add(asExpression(node.getURI(), dth));
 		} else if (node.isLiteral()) {
 			texprs.addAll(getBaseExpressions(COL_VAL_TYPE_LITERAL, 0,
-					COL_VAL_SQL_TYPE_CONSTLIT, dth, node.asLiteral()
-							.getDatatypeURI(), node.asLiteral().getLanguage(),
-					null,graph));
+					  node.getLiteralDatatype().toString(), node.getLiteralLanguage(),
+					null));
 			
 			//get the cast type
 			
-			Literal nodeL = (Literal) node.asLiteral();
+			Literal nodeL = (Literal) node;
 
 			texprs.add(dth.cast(new StringValue("\"" + nodeL.getLexicalForm() + "\""), dth.getCastTypeString(nodeL.getDatatype())));
 		} else {
@@ -190,7 +182,7 @@ public class ColumnHelper {
 	 */
 	public List<Expression> getExpression(Column col, Integer rdfType,
 			Integer sqlType, String datatype, String lang, Column lanColumn,
-			DataTypeHelper dth, Expression graph, String baseUri) {
+			DataTypeHelper dth) {
 		List<Expression> texprs = new ArrayList<Expression>();
 
 		if (rdfType.equals(COL_VAL_TYPE_LITERAL)) {
@@ -203,8 +195,8 @@ public class ColumnHelper {
 			}
 
 			texprs.addAll(getBaseExpressions(rdfType,
-					COL_VAL_RES_LENGTH_LITERAL, sqlType, dth, datatype, lang,
-					null,graph));
+					COL_VAL_RES_LENGTH_LITERAL, datatype, lang,
+					null));
 			RDFDatatype rdfdt = tm.getTypeByName(datatype); 
 			if(datatype==null||rdfdt==null){
 				texprs.add(dth.cast(col, dth.getCastTypeString(sqlType)));
@@ -214,8 +206,8 @@ public class ColumnHelper {
 
 		} else if (rdfType.equals(COL_VAL_TYPE_RESOURCE)||rdfType.equals(COL_VAL_TYPE_BLANK)) {
 			texprs.addAll(getBaseExpressions(rdfType,
-					1, COL_VAL_SQL_TYPE_RESOURCE, dth, datatype, lang,
-					null,graph));
+					1,  datatype, lang,
+					null));
 //			texprs.add(dth.cast(new StringValue("\"\""), dth.getStringCastType()));
 			texprs.add(dth.cast(col, dth.getStringCastType()));
 
@@ -265,7 +257,7 @@ public class ColumnHelper {
 		if(dth.hasRowIdFunction()){
 			List<Expression> texprs =  new ArrayList<Expression>();
 			texprs.addAll(getBaseExpressions(rdfType, 2,
-					COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null,graph));
+					null, null, null));
 			//first an empty string to maintain the string-column scheme
 			texprs.addAll(dth.getRowIdFunction(fi.getAlias()));
 			return texprs;
@@ -286,8 +278,8 @@ public class ColumnHelper {
 			datatype = DataTypeHelper.getRDFDataType(sqlType).getURI();
 		}
 		texprs.addAll(getBaseExpressions(rdfType,
-				COL_VAL_RES_LENGTH_LITERAL, sqlType, dth, datatype, lang,
-				lanColumn,graph));
+				COL_VAL_RES_LENGTH_LITERAL, datatype, lang,
+				lanColumn));
 
 		// now create a big concat statement.
 		List<Expression> toConcat = new ArrayList<Expression>();
@@ -318,7 +310,7 @@ public class ColumnHelper {
 			altSeq.set(0, baseUri);
 		}
 		newExprs.addAll(getBaseExpressions(rdfType, altSeq.size(),
-				COL_VAL_SQL_TYPE_RESOURCE, dth, null, null, null,graph));
+				null, null, null));
 		for (int i = 0; i < altSeq.size(); i++) {
 			if (i % 2 == 1) {
 				String colName = R2RMLModel.unescape(altSeq.get(i));
@@ -429,5 +421,49 @@ public class ColumnHelper {
 
 	}
 
+	public List<Expression> createBooleanExpressions(Expression boolExpr, DataTypeHelper dth){
+
+		
+		getBaseExpressions(COL_VAL_TYPE_LITERAL, 0,  XSDDatatype.XSDboolean.toString(), null, null);
+		
+		return getExpression(bool, dth);
+	}
+
+
+	
+	public static Expression getTermType(List<Expression> expressions){
+		return expressions.get(0);
+	}
+	public static Expression  getDataType(List<Expression> expressions){
+		return expressions.get(1);	
+	}
+	public static Expression getLanguage(List<Expression> expressions){
+		return expressions.get(2);
+	}
+	
+	public static Expression getLiteralStringExpression(List<Expression> expressions){
+		return expressions.get(3);
+	}
+	public static Expression getLiteralNumericExpression(List<Expression> expressions){
+		return expressions.get(4);
+	}
+	
+	public static Expression getLiteralDateExpression(List<Expression> expressions){
+		return expressions.get(5);
+	}
+	public static Expression getLiteralBoolExpression(List<Expression> expressions) {
+		
+		return expressions.get(6);
+	}
+	
+	public static Expression getLiteralBinaryExpression(List<Expression> expressions){
+		return expressions.get(7);
+	}
+	
+
+	public static List<Expression> getResourceExpressions(List<Expression> expressions){
+		
+		return expressions.subList(8, expressions.size());
+	}
 
 }

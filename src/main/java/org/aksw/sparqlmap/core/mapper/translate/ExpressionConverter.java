@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
@@ -30,6 +31,7 @@ import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 
+import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.apache.commons.lang.reflect.MethodUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +47,7 @@ import com.hp.hpl.jena.sparql.expr.E_Bound;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_Function;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
+import com.hp.hpl.jena.sparql.expr.E_IsURI;
 import com.hp.hpl.jena.sparql.expr.E_Lang;
 import com.hp.hpl.jena.sparql.expr.E_LangMatches;
 import com.hp.hpl.jena.sparql.expr.E_LessThan;
@@ -85,64 +88,6 @@ public class ExpressionConverter {
 	@Autowired
 	FilterOptimizer fopt;
 	
-	private  Expression getBestExpression(Expr expr,
-			BiMap<String, String> colstring2var,
-			Map<String, TermMap> colstring2col) {
-		Expression expression = null;
-
-		if (expr.isVariable()) {
-
-			TermMap tc = colstring2col.get(colstring2var.inverse().get(
-					expr.getVarName()));
-			if(tc !=null){
-				expression = tc.getExpression();
-			}else{
-				expression = new NullValue();
-			}
-			
-
-		} else if (expr instanceof NodeValueNode
-				&& ((NodeValueNode) expr).getNode() instanceof Node_URI) {
-
-			Node_URI nodeU = (Node_URI) ((NodeValueNode) expr).getNode();
-			// String id =this.mconf.getIdForInstanceUri(nodeU.getURI());
-			// if(id!=null){
-			// expression = new StringValue("'"+id+"'");
-			// }else{
-			expression = new StringValue("'" + nodeU.getURI() + "'");
-			// }
-
-		} else if (expr instanceof NodeValueDT) {
-			NodeValueDT nvdt = (NodeValueDT) expr;
-
-			Timestamp ts = new Timestamp(nvdt.getDateTime().toGregorianCalendar().getTime().getTime());
-			expression = new TimestampValue("'" + ts.toString() + "'");
-
-		} else if (expr instanceof NodeValueInteger) {
-			expression = new LongValue(((NodeValueInteger) expr).getInteger()
-					.toString());
-
-		} else if (expr instanceof NodeValueDouble) {
-			expression = new LongValue(String.valueOf(((NodeValueDouble) expr)
-					.getDouble()));
-		} else if (expr instanceof NodeValueString) {
-			expression = new StringValue(
-					((NodeValueString) expr).asQuotedString());
-		} else if (expr instanceof NodeValueDouble) {
-			expression = new LongValue(String.valueOf(((NodeValueDouble) expr)
-					.getDouble()));
-
-		}  else {
-			expression = getSQLExpression(expr, colstring2var, colstring2col);
-//			log.warn("encountered unknown variable data type: "
-//					+ expr.getClass().getCanonicalName());
-		}
-
-		// just to be sure:
-
-		return expression;
-
-	}
 	
 	/**
 	 * simple implementation of the order by expression
@@ -174,11 +119,13 @@ public class ExpressionConverter {
 
 			} else if (expr instanceof ExprFunction) {
 
-				Expression expression = getBestExpression(expr,
+				List<Expression> expressions = getSQLExpressions(expr,
 						colstring2var, colstring2col);
-
-				OrderByExpressionElement ob = new OrderByExpressionElement(expression);
-				obys.add(ob);
+				for(Expression expression: expressions){
+					OrderByExpressionElement ob = new OrderByExpressionElement(expression);
+					obys.add(ob);
+				}
+				
 
 			} else {
 				log.error("Cannot handle " + expr.toString() + " in order by");
@@ -189,50 +136,44 @@ public class ExpressionConverter {
 	}
 	
 	
-	public Expression getSQLExpression(Expr exp,
+	/**
+	 * convert SPARQL expressions into a SQL expression that evaluates into a boolean value;
+	 * @param exp
+	 * @param colstring2var
+	 * @param colstring2col
+	 * @return
+	 */
+	public Expression getSQLWhereExpression(Expr exp,BiMap<String, String> colstring2var,
+			Map<String, TermMap> colstring2col){
+		
+		return ColumnHelper.getLiteralBoolExpression(getSQLExpressions(exp, colstring2var, colstring2col));
+		
+		
+	}
+	
+	public  List<Expression> getSQLExpressions(Expr exp,
 			BiMap<String, String> colstring2var,
 			Map<String, TermMap> colstring2col) {
 
-		Expression sqlExpression = null;
+		Expression[] sqlExpressions = null;
 		if (exp instanceof E_GreaterThan) {
 			E_GreaterThan sparqlGt = (E_GreaterThan) exp;
 			GreaterThan gt = new GreaterThan();
-			gt.setLeftExpression(getBestExpression(sparqlGt.getArg1(),
+			gt.setLeftExpression(getSQLExpression(sparqlGt.getArg1(),
 					colstring2var, colstring2col));
-			gt.setRightExpression(getBestExpression(sparqlGt.getArg2(),
+			gt.setRightExpression(getSQLExpression(sparqlGt.getArg2(),
 					colstring2var, colstring2col));
-			sqlExpression = gt;
+			sqlExpressions = gt;
 
 		} else if (exp instanceof E_LessThan) {
 			E_LessThan sparqlLt = (E_LessThan) exp;
 			MinorThan mt = new MinorThan();
-			mt.setLeftExpression(getBestExpression(sparqlLt.getArg1(),
+			mt.setLeftExpression(getSQLExpression(sparqlLt.getArg1(),
 					colstring2var, colstring2col));
-			mt.setRightExpression(getBestExpression(sparqlLt.getArg2(),
+			mt.setRightExpression(getSQLExpression(sparqlLt.getArg2(),
 					colstring2var, colstring2col));
-			sqlExpression = mt;
-		} else
-//		// check for special case of not bound
-//		if (exp instanceof E_LogicalNot) {
-//			Expr negatedExp = ((E_LogicalNot) exp).getArg();
-//			if (negatedExp instanceof E_Bound) {
-//				E_Bound boundExpr = (E_Bound) negatedExp;
-//				IsNullExpression isNull = new IsNullExpression();
-//				Expression left = colstring2col.get(
-//						colstring2var.inverse().get(
-//								boundExpr.getArg().getVarName()))
-//						.getExpression();
-//				isNull.setLeftExpression(left);
-//				isNull.setNot(true);
-//				sqlExpression = isNull;
-//
-//			} else {
-//				throw new ImplementationException(
-//						"unsupported negated filter encountered");
-//			}
-//
-//		} else 
-			if (exp instanceof E_LangMatches) {
+			sqlExpressions = mt;
+		} else	if (exp instanceof E_LangMatches) {
 			//check against the lang 
 			
 			E_LangMatches lm = (E_LangMatches) exp;
@@ -250,7 +191,7 @@ public class ExpressionConverter {
 			
 			eq.setLeftExpression(toLower);
 			eq.setRightExpression(new StringValue("\"" + lang.toLowerCase() + "\""));
-			sqlExpression = eq;
+			sqlExpressions = eq;
 			
 			
 			
@@ -267,12 +208,12 @@ public class ExpressionConverter {
 				//resolve var directly to take the 
 				TermMap tc = colstring2col.get(colstring2var.inverse().get(var.getName()));
 				
-				sqlExpression = tc.getLanguage();
+				sqlExpressions = tc.getLanguage();
 				
 				
 				// in the odd case, lang() is applied on a literal, do this
 			}else if(arg instanceof NodeValueNode ){
-				sqlExpression = new StringValue(((NodeValueNode)arg).asNode().getLiteralLanguage());
+				sqlExpressions = new StringValue(((NodeValueNode)arg).asNode().getLiteralLanguage());
 			}else{
 				throw new ImplementationException("Should not happen");
 			}
@@ -280,13 +221,13 @@ public class ExpressionConverter {
 
 		} else if (exp instanceof E_Bound) {
 			E_Bound bound = (E_Bound) exp;
-			Expression tobebound = getBestExpression(bound.getArg(), colstring2var, colstring2col);
+			Expression tobebound = getSQLExpression(bound.getArg(), colstring2var, colstring2col);
 			
 			IsNullExpression isnull  = new IsNullExpression();
 			isnull.setNot(true);
 			isnull.setLeftExpression(tobebound);
 			
-			sqlExpression = isnull;
+			sqlExpressions = isnull;
 		} else if (exp instanceof E_LogicalNot) {
 			E_LogicalNot not = (E_LogicalNot) exp;
 			Expression expr = getSQLExpression(not.getArg(), colstring2var, colstring2col);
@@ -328,10 +269,10 @@ public class ExpressionConverter {
 			}
 			
 			if(negatedExpr !=null){
-				sqlExpression = negatedExpr;
+				sqlExpressions = negatedExpr;
 			}else{
 				log.error("Unable to negate expr" + exp.toString() + " nevertheless continuing");
-				sqlExpression = expr;
+				sqlExpressions = expr;
 			}
 			
 			
@@ -359,95 +300,95 @@ public class ExpressionConverter {
 									regex.getArg(2).toString().length() - 1)
 					+ "%'"));
 
-			sqlExpression = like;
+			sqlExpressions = like;
 		} else if (exp instanceof E_NotEquals) {
 			E_NotEquals ne = (E_NotEquals) exp;
 
 			NotEqualsTo sqlNe = new NotEqualsTo();
-			sqlNe.setLeftExpression(getBestExpression(ne.getArg1(),
+			sqlNe.setLeftExpression(getSQLExpression(ne.getArg1(),
 					colstring2var, colstring2col));
-			sqlNe.setRightExpression(getBestExpression(ne.getArg2(),
+			sqlNe.setRightExpression(getSQLExpression(ne.getArg2(),
 					colstring2var, colstring2col));
-			sqlExpression = sqlNe;
+			sqlExpressions = sqlNe;
 
 		} else if (exp instanceof E_LogicalAnd) {
 			E_LogicalAnd and = (E_LogicalAnd) exp;
 
-			Expression left = getBestExpression(and.getArg1(), colstring2var,
+			Expression left = getSQLExpression(and.getArg1(), colstring2var,
 					colstring2col);
-			Expression right = getBestExpression(and.getArg2(), colstring2var,
+			Expression right = getSQLExpression(and.getArg2(), colstring2var,
 					colstring2col);
 
-			sqlExpression = new AndExpression(left, right);
+			sqlExpressions = new AndExpression(left, right);
 
 		} else if (exp instanceof E_LogicalOr) {
 
 			E_LogicalOr or = (E_LogicalOr) exp;
-			Expression left = getBestExpression(or.getArg1(), colstring2var,
+			Expression left = getSQLExpression(or.getArg1(), colstring2var,
 					colstring2col);
-			Expression right = getBestExpression(or.getArg2(), colstring2var,
+			Expression right = getSQLExpression(or.getArg2(), colstring2var,
 					colstring2col);
-			sqlExpression = new Parenthesis(new OrExpression(left, right));
+			sqlExpressions = new Parenthesis(new OrExpression(left, right));
 
 		} else if (exp instanceof E_Add) {
 
 			E_Add add = (E_Add) exp;
-			Expression left = getBestExpression(add.getArg1(), colstring2var,
+			Expression left = getSQLExpression(add.getArg1(), colstring2var,
 					colstring2col);
-			Expression right = getBestExpression(add.getArg2(), colstring2var,
+			Expression right = getSQLExpression(add.getArg2(), colstring2var,
 					colstring2col);
 
 			Addition sqlAdd = new Addition();
 			sqlAdd.setLeftExpression(left);
 			sqlAdd.setRightExpression(right);
-			sqlExpression = sqlAdd;
+			sqlExpressions = sqlAdd;
 
 		} else if (exp instanceof E_Subtract) {
 
 			E_Subtract sub = (E_Subtract) exp;
-			Expression left = getBestExpression(sub.getArg1(), colstring2var,
+			Expression left = getSQLExpression(sub.getArg1(), colstring2var,
 					colstring2col);
-			Expression right = getBestExpression(sub.getArg2(), colstring2var,
+			Expression right = getSQLExpression(sub.getArg2(), colstring2var,
 					colstring2col);
 
 			Subtraction sqlSub = new Subtraction();
 			sqlSub.setLeftExpression(left);
 			sqlSub.setRightExpression(right);
-			sqlExpression = sqlSub;
+			sqlExpressions = sqlSub;
 
 		} else if (exp instanceof E_Equals || exp instanceof E_SameTerm) {
 
 			ExprFunction2 eq = (ExprFunction2) exp;
-			Expression left = getBestExpression(eq.getArg1(), colstring2var,
+			Expression left = getSQLExpression(eq.getArg1(), colstring2var,
 					colstring2col);
-			Expression right = getBestExpression(eq.getArg2(), colstring2var,
+			Expression right = getSQLExpression(eq.getArg2(), colstring2var,
 					colstring2col);
 
 			EqualsTo sqlEq = new EqualsTo();
 			sqlEq.setLeftExpression(left);
 			sqlEq.setRightExpression(right);
-			sqlExpression = sqlEq;
+			sqlExpressions = sqlEq;
 
 		} else if (exp instanceof E_LessThanOrEqual) {
 
 			E_LessThanOrEqual leq = (E_LessThanOrEqual) exp;
-			Expression left = getBestExpression(leq.getArg1(), colstring2var,
+			Expression left = getSQLExpression(leq.getArg1(), colstring2var,
 					colstring2col);
-			Expression right = getBestExpression(leq.getArg2(), colstring2var,
+			Expression right = getSQLExpression(leq.getArg2(), colstring2var,
 					colstring2col);
 
 			MinorThanEquals mt = new MinorThanEquals();
 
 			mt.setLeftExpression(left);
 			mt.setRightExpression(right);
-			sqlExpression = mt;
+			sqlExpressions = mt;
 
 		} else if (exp instanceof E_Function) {
 			E_Function func = (E_Function) exp;
 			if (func.getFunctionIRI().equals(XSD.xdouble.toString())) {
 
-				sqlExpression = dth.cast(
-						getBestExpression(func.getArg(1), colstring2var,
+				sqlExpressions = dth.cast(
+						getSQLExpression(func.getArg(1), colstring2var,
 								colstring2col), dth.getNumericCastType());
 			} else {
 				throw new ImplementationException("E_Function for "
@@ -457,19 +398,89 @@ public class ExpressionConverter {
 		} else if (exp instanceof E_Str) {
 			E_Str str = (E_Str) exp;
 
-			sqlExpression = dth.cast(
-					getBestExpression(str.getArg(), colstring2var,
+			sqlExpressions = dth.cast(
+					getSQLExpression(str.getArg(), colstring2var,
 							colstring2col), dth.getStringCastType());
-		}  else {
+		} else if (exp instanceof E_IsURI) { 
+			E_IsURI isUri = (E_IsURI) exp;
+			
+			Expression tocheck = getSQLExpression(isUri.getArg(), colstring2var, colstring2col);
+			
+			tocheck.toString();
+			
+			
+			
+			
+		} else if (exp.isVariable()) {
+
+			TermMap tc = colstring2col.get(colstring2var.inverse().get(
+					exp.getVarName()));
+			if(tc !=null){
+				sqlExpressions = tc.getExpression();
+			}else{
+				sqlExpressions = new NullValue();
+			}
+			
+
+		} else if (exp instanceof NodeValueNode
+				&& ((NodeValueNode) exp).getNode() instanceof Node_URI) {
+
+			Node_URI nodeU = (Node_URI) ((NodeValueNode) exp).getNode();
+			
+			sqlExpressions = new StringValue("'" + nodeU.getURI() + "'");
+
+		} else if (exp instanceof NodeValueDT) {
+			NodeValueDT nvdt = (NodeValueDT) exp;
+
+			Timestamp ts = new Timestamp(nvdt.getDateTime().toGregorianCalendar().getTime().getTime());
+			sqlExpressions = new TimestampValue("'" + ts.toString() + "'");
+
+		} else if (exp instanceof NodeValueInteger) {
+			sqlExpressions = new LongValue(((NodeValueInteger) exp).getInteger()
+					.toString());
+
+		} else if (exp instanceof NodeValueDouble) {
+			sqlExpressions = new LongValue(String.valueOf(((NodeValueDouble) exp)
+					.getDouble()));
+		} else if (exp instanceof NodeValueString) {
+			sqlExpressions = new StringValue(
+					((NodeValueString) exp).asQuotedString());
+		} else if (exp instanceof NodeValueDouble) {
+			sqlExpressions = new LongValue(String.valueOf(((NodeValueDouble) exp)
+					.getDouble()));
+
+		} else {
 
 			throw new ImplementationException("Filter " + exp.toString()
 					+ " not yet implemented");
 		}
 		//sqlExpression = checkCompatibility(sqlExpression);
 
-		sqlExpression = fopt.shortCut(sqlExpression);
+		sqlExpressions = fopt.shortCut(sqlExpressions);
 
-		return sqlExpression;
+		return sqlExpressions;
+	}
+	
+	
+	
+	
+	private List<Expression> translateXPathTest(BinaryExpression test, List<Expression> left, List<Expression> right){
+		//check if both are literal
+		//we try to keep the sql as clean as possible. 
+		//Therefore we check here and only if the answer is not know at query rewriting time we push the if/else clauses into the sql.
+		
+		
+		
+		if(){
+			
+		}
+		ColumnHelper colHelper = new ColumnHelper();
+		colHelper.getExpression(col, rdfType, sqlType, datatype, lang, lanColumn, dth, graph, baseUri)
+		
+		
+		
+		
+		return null;
 	}
 
 }

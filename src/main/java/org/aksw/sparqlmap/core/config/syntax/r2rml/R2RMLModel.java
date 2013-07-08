@@ -507,15 +507,14 @@ public class R2RMLModel {
 			col.setColumnName(tmqrs.column);
 			List<Expression> oexprs = columnhelper.getExpression(col,
 					otermtype, dbconf.getDataType(fromItem, tmqrs.column),
-					datatype, tmqrs.lang, null, dth, graph,
-					tmUri.getNameSpace());
+					datatype, tmqrs.lang, null, dth);
 			tm = new TermMap(dth, oexprs, Arrays.asList(fromItem), null,
 					triplemap);
 		} else if (tmqrs.constant != null) {
 			// use constant term
 
 			List<Expression> oexprs = columnhelper.getExpression(
-					tmqrs.constant, dth, graph);
+					tmqrs.constant.asNode(), dth);
 			tm = new TermMap(dth, oexprs, Arrays.asList(fromItem), null,
 					triplemap);
 		} else if (tmqrs.template != null) {
