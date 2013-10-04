@@ -1,0 +1,109 @@
+@prefix rr:      <http://www.w3.org/ns/r2rml#> .
+@prefix data:    <http://example.com/base/> .
+@prefix mapping:  <http://example.com/base/> .
+@prefix vocab:   <http://example.com/base/> .
+
+vocab:DEPT
+      rr:logicalTable
+              [ rr:tableName "\"DEPT\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"loc\""
+                        ] ;
+                rr:predicate <http://example.com/base/DEPT#loc>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"dname\""
+                        ] ;
+                rr:predicate <http://example.com/base/DEPT#dname>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"deptno\""
+                        ] ;
+                rr:predicate <http://example.com/base/DEPT#deptno>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:DEPT ;
+                rr:template "http://example.com/base/DEPT={\"deptno\"};DEPT={\"dname\"};DEPT={\"loc\"}" ;
+                rr:termType rr:BlankNode
+              ] .
+
+vocab:LIKES
+      rr:logicalTable
+              [ rr:tableName "\"LIKES\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"likeType\""
+                        ] ;
+                rr:predicate <http://example.com/base/LIKES#likeType>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"id\""
+                        ] ;
+                rr:predicate <http://example.com/base/LIKES#id>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"likedObj\""
+                        ] ;
+                rr:predicate <http://example.com/base/LIKES#likedObj>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:LIKES ;
+                rr:template "http://example.com/base/LIKES={\"id\"};LIKES={\"likeType\"};LIKES={\"likedObj\"}" ;
+                rr:termType rr:BlankNode
+              ] .
+
+vocab:EMP
+      rr:logicalTable
+              [ rr:tableName "\"EMP\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"job\""
+                        ] ;
+                rr:predicate <http://example.com/base/EMP#job>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"etype\""
+                        ] ;
+                rr:predicate <http://example.com/base/EMP#etype>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"deptno\"" ;
+                                    rr:parent "\"deptno\""
+                                  ] ;
+                          rr:parentTriplesMap vocab:DEPT
+                        ] ;
+                rr:predicate <http://example.com/base/EMP#ref-deptno>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"empno\""
+                        ] ;
+                rr:predicate <http://example.com/base/EMP#empno>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"ename\""
+                        ] ;
+                rr:predicate <http://example.com/base/EMP#ename>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"deptno\""
+                        ] ;
+                rr:predicate <http://example.com/base/EMP#deptno>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:EMP ;
+                rr:template "http://example.com/base/EMP/empno={\"empno\"}"
+              ] .

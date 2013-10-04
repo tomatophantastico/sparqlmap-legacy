@@ -1,0 +1,6 @@
+_:BLives2 <http://example.com/city> "Madrid" .
+_:BLives1 <http://example.com/city> "London" .
+_:BLives3 <http://example.com/city> "London" .
+_:BIOUs2 <http://xmlns.com/foaf/0.1/name> "Sue Jones" .
+_:BIOUs1 <http://xmlns.com/foaf/0.1/name> "Bob Smith" .
+_:BIOUs3 <http://xmlns.com/foaf/0.1/name> "Bob Smith" .

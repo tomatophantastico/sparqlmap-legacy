@@ -1,0 +1,6 @@
+_:BIOUs2 <http://xmlns.com/foaf/0.1/name> "Sue Jones" .
+_:BIOUs2 <http://example.com/amount> "2.0E1"^^<http://www.w3.org/2001/XMLSchema#double> .
+_:BIOUs1 <http://xmlns.com/foaf/0.1/name> "Bob Smith" .
+_:BIOUs1 <http://example.com/amount> "3.0E1"^^<http://www.w3.org/2001/XMLSchema#double> .
+_:BIOUs3 <http://xmlns.com/foaf/0.1/name> "Bob Smith" .
+_:BIOUs3 <http://example.com/amount> "3.0E1"^^<http://www.w3.org/2001/XMLSchema#double> .

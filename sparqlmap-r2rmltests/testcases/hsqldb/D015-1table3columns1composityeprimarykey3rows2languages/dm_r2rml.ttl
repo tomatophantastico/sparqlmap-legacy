@@ -1,0 +1,31 @@
+@prefix rr:      <http://www.w3.org/ns/r2rml#> .
+@prefix data:    <http://example.com/base/> .
+@prefix mapping:  <http://example.com/base/> .
+@prefix vocab:   <http://example.com/base/> .
+
+vocab:Country
+      rr:logicalTable
+              [ rr:tableName "\"Country\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"Name\""
+                        ] ;
+                rr:predicate <http://example.com/base/Country#Name>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"Lan\""
+                        ] ;
+                rr:predicate <http://example.com/base/Country#Lan>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"Code\""
+                        ] ;
+                rr:predicate <http://example.com/base/Country#Code>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Country ;
+                rr:template "http://example.com/base/Country/Code={\"Code\"};Lan={\"Lan\"}"
+              ] .

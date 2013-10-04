@@ -1,0 +1,6 @@
+<http://example.com/Patient10> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> .
+<http://example.com/Patient10> <http://example.com/photo> <data:image/png;hex,%3FPNG%0D%0A%1A%0A%00%00%00%0DIHDR%00%00%00%05%00%00%00%05%08%06%00%00%00%3Fo%26%3F%00%00%00%1CIDAT%08%3Fc%3F%3F%3F%3F%3F%7F%06%20%05%3F%20%12%3F%3F1%3F%3FX%3F%04%00%0E%3F5%3F%3F%3F%0E%1F%00%00%00%00IEND%3FB%60%3F> .
+<http://example.com/Patient12> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> .
+<http://example.com/Patient12> <http://example.com/photo> <data:image/png;hex,%3FPNG%0D%0A%1A%0A%00%00%00%0DIHDR%00%00%00%05%00%00%00%05%08%06%00%00%00%3Fo%26%3F%00%00%00%1CIDAT%08%3Fc%3F%3F%3F%3F%3F%7F%06%20%05%3F%20%12%3F%3F1%3F%3FX%3F%04%00%0E%3F5%3F%3F%3F%0E%1F%00%00%00%00IEND%3FB%60%3F> .
+<http://example.com/Patient11> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Person> .
+<http://example.com/Patient11> <http://example.com/photo> <data:image/png;hex,%3FPNG%0D%0A%1A%0A%00%00%00%0DIHDR%00%00%00%05%00%00%00%05%08%06%00%00%00%3Fo%26%3F%00%00%00%1CIDAT%08%3Fc%3F%3F%3F%3F%3F%7F%06%20%05%3F%20%12%3F%3F1%3F%3FX%3F%04%00%0E%3F5%3F%3F%3F%0E%1F%00%00%00%00IEND%3FB%60%3F> .

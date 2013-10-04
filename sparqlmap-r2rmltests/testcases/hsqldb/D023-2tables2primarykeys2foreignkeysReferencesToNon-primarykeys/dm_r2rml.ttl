@@ -1,0 +1,84 @@
+@prefix rr:      <http://www.w3.org/ns/r2rml#> .
+@prefix data:    <http://example.com/base/> .
+@prefix mapping:  <http://example.com/base/> .
+@prefix vocab:   <http://example.com/base/> .
+
+vocab:Target
+      rr:logicalTable
+              [ rr:tableName "\"Target\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"key2attr1\""
+                        ] ;
+                rr:predicate <http://example.com/base/Target#key2attr1>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"PK\""
+                        ] ;
+                rr:predicate <http://example.com/base/Target#PK>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"key2attr2\""
+                        ] ;
+                rr:predicate <http://example.com/base/Target#key2attr2>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"key1attr1\""
+                        ] ;
+                rr:predicate <http://example.com/base/Target#key1attr1>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"key1attr2\""
+                        ] ;
+                rr:predicate <http://example.com/base/Target#key1attr2>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Target ;
+                rr:template "http://example.com/base/Target/PK={\"PK\"}"
+              ] .
+
+vocab:Source
+      rr:logicalTable
+              [ rr:tableName "\"Source\""
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"attrB\""
+                        ] ;
+                rr:predicate <http://example.com/base/Source#attrB>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"attrA\""
+                        ] ;
+                rr:predicate <http://example.com/base/Source#attrA>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:joinCondition
+                                  [ rr:child "\"attrB\"" ;
+                                    rr:parent "\"key2attr1\""
+                                  ] ;
+                          rr:joinCondition
+                                  [ rr:child "\"attrA\"" ;
+                                    rr:parent "\"key2attr2\""
+                                  ] ;
+                          rr:parentTriplesMap vocab:Target
+                        ] ;
+                rr:predicate <http://example.com/base/Source#ref-attrA;attrB>
+              ] ;
+      rr:predicateObjectMap
+              [ rr:objectMap
+                        [ rr:column "\"ID\""
+                        ] ;
+                rr:predicate <http://example.com/base/Source#ID>
+              ] ;
+      rr:subjectMap
+              [ rr:class vocab:Source ;
+                rr:template "http://example.com/base/Source/ID={\"ID\"}"
+              ] .

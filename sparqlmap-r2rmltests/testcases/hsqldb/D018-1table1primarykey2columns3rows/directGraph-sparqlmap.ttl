@@ -1,0 +1,9 @@
+_:BStudent3 <http://example.com/base/Student#ID> "30"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:BStudent3 <http://example.com/base/Student#Name> "David          " .
+_:BStudent3 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/Student> .
+_:BStudent2 <http://example.com/base/Student#ID> "20"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:BStudent2 <http://example.com/base/Student#Name> "Fernando       " .
+_:BStudent2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/Student> .
+_:BStudent1 <http://example.com/base/Student#ID> "10"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:BStudent1 <http://example.com/base/Student#Name> "Venus          " .
+_:BStudent1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.com/base/Student> .
