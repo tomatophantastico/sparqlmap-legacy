@@ -102,7 +102,6 @@ public class PostgreSQLDataTypeHelper extends DataTypeHelper {
 
 	@Override
 	public boolean hasRowIdFunction() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 

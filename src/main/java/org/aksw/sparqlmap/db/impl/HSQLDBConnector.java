@@ -8,11 +8,6 @@ import org.slf4j.LoggerFactory;
 
 public class HSQLDBConnector extends Connector {
 	
-	
-	
-	
-
-
 
 	public HSQLDBConnector(String dbUrl, String username, String password,
 			Integer poolminconnections, Integer poolmaxconnections) {

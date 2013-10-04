@@ -63,25 +63,6 @@ public class HSQLDBDataTypeHelper extends DataTypeHelper {
 		return false;
 	}
 
-//	@Override
-//	public List<Expression> getRowIdFunction(String fromAlias) {
-//		List<Expression> expressions=  new ArrayList<Expression>();
-//		if(fromAlias!=null){
-//			StringValue fromAliasValue = new StringValue("\"" + fromAlias + "\"");
-//			expressions.add(cast(fromAliasValue, getStringCastType()));
-//			
-//		}else{
-//			StringValue fromAliasValue = new StringValue("\"\"");
-//			expressions.add(cast(fromAliasValue, getStringCastType()));
-//		}
-//		
-//		Function rownum = new Function();
-//		rownum.setName("ROWNUM");
-//		expressions.add(cast(rownum, getStringCastType()));
-//		return expressions;
-//
-//	}
-
 
 
 }
