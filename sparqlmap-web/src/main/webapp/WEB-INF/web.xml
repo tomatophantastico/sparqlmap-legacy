@@ -1,0 +1,46 @@
+<!DOCTYPE web-app PUBLIC
+ "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd" >
+
+<web-app>
+ 
+ 
+  <servlet-mapping>
+    <servlet-name>sparql-jena</servlet-name>
+    <url-pattern>/sparql</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>sparql</servlet-name>
+    <url-pattern>/sparqlmap</url-pattern>
+  </servlet-mapping>
+  
+  
+  <display-name>SparqlMap</display-name>
+  <servlet>
+    <servlet-name>sparql</servlet-name>
+    <servlet-class>org.aksw.sparqlmap.web.servlets.SPARQLServlet</servlet-class>
+  </servlet>
+    <servlet>
+    <servlet-name>sparql-jena</servlet-name>
+    <servlet-class>org.aksw.sparqlmap.web.servlets.SPARQLDumpJenaServlet</servlet-class>
+  </servlet>
+   
+  
+  <listener>
+  <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+</listener>
+  <context-param>
+      <param-name>contextClass</param-name>
+      <param-value>
+          org.springframework.web.context.support.AnnotationConfigWebApplicationContext
+      </param-value>
+  </context-param>
+  <context-param>
+    <param-name>contextInitializerClasses</param-name>
+    <param-value>org.aksw.sparqlmap.web.spring.SparqlMapContextLoader</param-value>
+</context-param>
+<context-param>
+      <param-name>contextConfigLocation</param-name>
+      <param-value>org.aksw.sparqlmap</param-value>
+  </context-param>
+</web-app>
