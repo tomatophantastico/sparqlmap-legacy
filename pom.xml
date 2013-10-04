@@ -4,7 +4,7 @@
 	<groupId>org.aksw</groupId>
 	<artifactId>sparqlmap</artifactId>
 	<packaging>jar</packaging>
-	<version>0.6.1-SNAPSHOT</version>
+	<version>0.6.1</version>
 	<name>SparqlMap</name>
 	<url>http://aksw.org/projects/sparqlmap</url>
 
