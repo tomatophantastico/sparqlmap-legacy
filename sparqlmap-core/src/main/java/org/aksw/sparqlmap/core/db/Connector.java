@@ -18,6 +18,7 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.jolbox.bonecp.BoneCPConfig;
@@ -29,21 +30,18 @@ import com.jolbox.bonecp.BoneCPDataSource;
  */
 public abstract class Connector {
 	
-	
-	public Connector(String dbUrl, String username, String password, Integer poolminconnections, Integer poolmaxconnections){
-		
-		try {
-			Class.forName(getJDBCDriverClassString());
-		} catch (ClassNotFoundException e) {
-			log.error("JDB class not found", e);
-		}
+	private static Logger log = LoggerFactory.getLogger(Connector.class);
 
-		
-		BoneCPConfig conf = getBoneCPConfig(dbUrl, username, password,poolminconnections,poolmaxconnections);
-		connectionPool = new BoneCPDataSource(conf);
+	public Connector( ){
 	}
 	
-	private static Logger log = LoggerFactory.getLogger(Connector.class);
+	
+	
+	
+	public void setDs(BoneCPDataSource ds){
+		this.connectionPool =ds; 
+	}
+	
 
 	public Connection getConnection() throws SQLException{
 		return connectionPool.getConnection(); 
@@ -59,33 +57,10 @@ public abstract class Connector {
 	}
 	
 	
-	private BoneCPDataSource connectionPool = null;
+	protected BoneCPDataSource connectionPool = null;
 	
 	
-	public BoneCPConfig getBoneCPConfig(String dbUrl, String username, String password, Integer poolminconnections, Integer poolmaxconnections){
-
-		if (poolmaxconnections==null){
-			poolmaxconnections =10;
-		}
-		if (poolminconnections == null){
-			poolminconnections = 5;
-		}
-		
-		
-		BoneCPConfig config = new BoneCPConfig();
-		config.setJdbcUrl(dbUrl); 
-		config.setUsername(username); 
-		config.setPassword(password);
-		config.setMinConnectionsPerPartition(poolminconnections);
-		config.setMaxConnectionsPerPartition(poolmaxconnections);
-		config.setPartitionCount(1);
-		
-		
-		return config;
-		
-	}
-
-
+	
 	public List<SelectExpressionItem> getSelectItemsForTable(Table table){
 		List<SelectExpressionItem> items = new ArrayList<SelectExpressionItem>();
 		Connection conn = null;
@@ -119,7 +94,7 @@ public abstract class Connector {
 		return items;
 	}
 	
-	public abstract String getJDBCDriverClassString();
+	public abstract String getDBName();
 
 
 	public Map<String,Integer> getDataTypeForTable(Table table){

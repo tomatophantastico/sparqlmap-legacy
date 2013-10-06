@@ -233,14 +233,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		}
 		
 		
-		
-		// node =
-		// Node.createLiteral(rs.getString(var+ColumnHelper.LITERAL_COL_STRING));
-
-		// determine the data type
-		int sqldatatype = rs.getInt(var
-				+ ColumnHelper.COL_NAME_SQL_TYPE);
-		
+	
 
 		String literalValue;
 		

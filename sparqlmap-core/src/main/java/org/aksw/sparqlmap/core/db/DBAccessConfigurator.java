@@ -4,6 +4,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.annotation.PostConstruct;
@@ -23,30 +28,68 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import com.google.common.reflect.Reflection;
+import com.jolbox.bonecp.BoneCPConfig;
+import com.jolbox.bonecp.BoneCPDataSource;
+
 @Component
 public class DBAccessConfigurator {
 	
-	private String dbUrl;
-	
-	private String username;
-	
-	private String password;
-	
-	private String poolminconnections;
-	
-	private String poolmaxconnections;
 	
 	@Autowired
 	private Environment env;
 	
 	
+	private String dbname;
+	
+	private BoneCPDataSource bcp;
+	
+	
 	@PostConstruct
-	public void setprivateValues(){
-		dbUrl = env.getProperty("jdbc.url");
-		username = env.getProperty("jdbc.username");
-		password = env.getProperty("jdbc.password");
-		poolminconnections = env.getProperty("jdbc.poolminconnections");
-		poolmaxconnections = env.getProperty("jdbc.poolmaxconnections");
+	public void setUpConnection() throws SQLException{
+		
+			
+		String dbUrl = env.getProperty("jdbc.url");
+		String username = env.getProperty("jdbc.username");
+		String password = env.getProperty("jdbc.password");
+		Integer poolminconnections = env.getProperty("jdbc.poolminconnections")!=null?Integer.parseInt(env.getProperty("jdbc.poolminconnections")):null;
+		Integer poolmaxconnections = env.getProperty("jdbc.poolmaxconnections")!=null?Integer.parseInt(env.getProperty("jdbc.poolmaxconnections")):null;
+		
+		
+		BoneCPConfig config = createConfig(dbUrl, username, password,
+				poolminconnections, poolmaxconnections);
+		bcp  = new BoneCPDataSource(config);
+		
+		Connection conn = bcp.getConnection();
+		dbname = conn.getMetaData().getDatabaseProductName();
+		conn.close();
+		
+						
+	}
+	
+	
+	
+
+
+	public static BoneCPConfig createConfig(String dbUrl, String username,
+			String password, Integer poolminconnections,
+			Integer poolmaxconnections) {
+		if (poolmaxconnections==null){
+			poolmaxconnections =10;
+		}
+		if (poolminconnections == null){
+			poolminconnections = 5;
+		}
+		
+		
+		BoneCPConfig config = new BoneCPConfig();
+		config.setJdbcUrl(dbUrl); 
+		config.setUsername(username); 
+		config.setPassword(password);
+		config.setMinConnectionsPerPartition(poolminconnections);
+		config.setMaxConnectionsPerPartition(poolmaxconnections);
+		config.setPartitionCount(1);
+		return config;
 	}
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DBAccessConfigurator.class);
@@ -55,87 +98,79 @@ public class DBAccessConfigurator {
 	public  DBAccessConfigurator() {
 	}
 	
-    public DBAccessConfigurator(File databaseConfFileName) throws FileNotFoundException, IOException {
-		
-		Properties props = new Properties();
-		props.load(new FileInputStream(databaseConfFileName));
-		init(props);
-		
-	}
-	public DBAccessConfigurator(Properties props){
-		
-		init(props);
-		
-	}
+//    public DBAccessConfigurator(File databaseConfFileName) throws FileNotFoundException, IOException {
+//		
+//		Properties props = new Properties();
+//		props.load(new FileInputStream(databaseConfFileName));
+//		init(props);
+//		
+//	}
+//	public DBAccessConfigurator(Properties props){
+//		
+//		init(props);
+//		
+//	}
 
-	public String getDbConnString() {
-		return dbUrl;
-	}
-
-	public String getUsername() {
-		return username;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-	
 	@Bean
 	public DataTypeHelper getDataTypeHelper() {
-		String dbname =  getJdbcDBName();
-		if(dbname.equals(DBAccess.MYSQL)){
-			return new MySQLDataTypeHelper();
-		}else if(dbname.equals(DBAccess.POSTGRES) ){
-			return new PostgreSQLDataTypeHelper();
-		}else if(dbname.equals(DBAccess.HSQLDB)){
+		
+		
+		if(dbname.equals(HSQLDBDataTypeHelper.getDBName())){
 			return new HSQLDBDataTypeHelper();
-		}else if(dbname.equals(DBAccess.ORACLE)){
+		}else if(dbname.equals(MySQLDataTypeHelper.getDBName())){
+			return new MySQLDataTypeHelper();
+		}else if(dbname.equals(PostgreSQLDataTypeHelper.getDBName())){
+			return new PostgreSQLDataTypeHelper();
+		}else if(dbname.equals(OracleDataTypeHelper.getDBName())){
 			return new OracleDataTypeHelper();
-		}		else{
-			throw new ImplementationException("Unknown Database string " + dbname + " encountered");
 		}
+		
+		
+		throw new ImplementationException("Unknown Database " + dbname + " encountered");
+
 	}
-	
-	
-	
-	public String getJdbcDBName(){
-		if(env!=null)
-		log.info("url is: " + env.getProperty("jdbc.url"));
-		return dbUrl.split(":")[1];
-	}
-	
-	
-	private void init(Properties props) {
-		this.dbUrl = props.getProperty("jdbc.url");
-		this.username = props.getProperty("jdbc.username");
-		this.password = props.getProperty("jdbc.password");
-		this.poolminconnections = props.getProperty("jdbc.poolminconnections");
-		this.poolmaxconnections = props.getProperty("jdbc.poolmaxconnections");
-	}
-	
 	
 	@Bean
 	public DBAccess getDBAccess(){
-		log.info("Creating DB Access for: " + dbUrl + "|" + username + ", etc." );
 		
-		String dbname =  getJdbcDBName();
-		Connector dbConnector = null;
-		if(dbname.equals(DBAccess.MYSQL)){
-			dbConnector = new MySQLConnector(dbUrl, username, password, new Integer(poolminconnections), new Integer(poolmaxconnections));
-		}else if(dbname.equals(DBAccess.POSTGRES)){
-			dbConnector = new PostgeSQLConnector(dbUrl, username, password, new Integer(poolminconnections), new Integer(poolmaxconnections));
-		}else if(dbname.equals(DBAccess.HSQLDB)){
-			dbConnector = new HSQLDBConnector(dbUrl, username, password, new Integer(poolminconnections), new Integer(poolmaxconnections));
-		}else if(dbname.equals(DBAccess.ORACLE)){
-			dbConnector = new OracleConnector(dbUrl, username, password, new Integer(poolminconnections), new Integer(poolmaxconnections));
-		}else 
-		{
-			throw new ImplementationException("Unknown Database string " + dbname + " encountered");
+		if(dbname.equals(PostgeSQLConnector.POSTGRES_DBNAME)){
+				PostgeSQLConnector conn = new PostgeSQLConnector();
+				conn.setDs(bcp);
+				return new DBAccess(conn);
+		}else if(dbname.equals(MySQLConnector.MYSQL_DBNAME)){
+			MySQLConnector conn = new MySQLConnector();
+			conn.setDs(bcp);
+			return new DBAccess(conn);
+		}else if(dbname.equals(HSQLDBConnector.HSQLDB_NAME)){
+			HSQLDBConnector conn = new HSQLDBConnector();
+			conn.setDs(bcp);
+			return new DBAccess(conn);
+		}else if(dbname.equals(OracleConnector.ORACLE_DBNAME)){
+			OracleConnector conn = new OracleConnector();
+			conn.setDs(bcp);
+			return new DBAccess(conn);
 		}
 		
-		DBAccess access = new DBAccess(dbConnector, dbname);
-		return access;
+		throw new ImplementationException("Unknown Database " + dbname + " encountered");
 	}
+	
+	
+	
+	
+	
+	public String getDBName(){
+		return dbname;
+	}
+	
+	
+//	private void init(Properties props) {
+//		this.dbUrl = props.getProperty("jdbc.url");
+//		this.username = props.getProperty("jdbc.username");
+//		this.password = props.getProperty("jdbc.password");
+//		this.poolminconnections = props.getProperty("jdbc.poolminconnections");
+//		this.poolmaxconnections = props.getProperty("jdbc.poolmaxconnections");
+//	}
+//	
 	
 	
 	

@@ -4,6 +4,7 @@ package org.aksw.sparqlmap.core.config.syntax.r2rml;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
@@ -20,15 +21,12 @@ import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Lists;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.TypeMapper;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.sparql.util.NodeFactory;
-import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
 
@@ -123,6 +121,13 @@ public class ColumnHelper {
 					new StringValue("\"" +RDFS.Resource.getURI()+"\""),
 					dth.getStringCastType()));
 			}
+		}
+		
+		
+		// if we deal with a resource, than add null expressions
+		if(type!=COL_VAL_TYPE_LITERAL){
+			
+			
 		}
 		
 		return baseExpressions;
@@ -421,12 +426,12 @@ public class ColumnHelper {
 
 	}
 
-	public List<Expression> createBooleanExpressions(Expression boolExpr, DataTypeHelper dth){
+	public void createBooleanExpressions(Expression boolExpr, DataTypeHelper dth){
 
 		
 		getBaseExpressions(COL_VAL_TYPE_LITERAL, 0,  XSDDatatype.XSDboolean.toString(), null, null);
 		
-		return getExpression(bool, dth);
+		//return getExpression(boolExpr, dth);
 	}
 
 
@@ -464,6 +469,16 @@ public class ColumnHelper {
 	public static List<Expression> getResourceExpressions(List<Expression> expressions){
 		
 		return expressions.subList(8, expressions.size());
+	}
+	public static List<Expression> getLiteralExpression(List<Expression> expressions){
+		List<Expression> exps =  new ArrayList<Expression>();
+		exps.add(getLiteralStringExpression(expressions));
+		exps.add(getLiteralNumericExpression(expressions));
+		exps.add(getLiteralDateExpression(expressions));
+		exps.add(getLiteralBoolExpression(expressions));
+		exps.add(getLiteralBinaryExpression(expressions));
+			
+		return exps;
 	}
 
 }

@@ -3,8 +3,14 @@ package org.aksw.sparqlmap.core.db.impl;
 import net.sf.jsqlparser.expression.Expression;
 
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
+import org.springframework.stereotype.Component;
 
 public class HSQLDBDataTypeHelper extends DataTypeHelper {
+	
+	
+	public static String getDBName() {
+		return HSQLDBConnector.HSQLDB_NAME;
+	}
 
 	@Override
 	public String getBinaryDataType() {
@@ -63,24 +69,6 @@ public class HSQLDBDataTypeHelper extends DataTypeHelper {
 		return false;
 	}
 
-//	@Override
-//	public List<Expression> getRowIdFunction(String fromAlias) {
-//		List<Expression> expressions=  new ArrayList<Expression>();
-//		if(fromAlias!=null){
-//			StringValue fromAliasValue = new StringValue("\"" + fromAlias + "\"");
-//			expressions.add(cast(fromAliasValue, getStringCastType()));
-//			
-//		}else{
-//			StringValue fromAliasValue = new StringValue("\"\"");
-//			expressions.add(cast(fromAliasValue, getStringCastType()));
-//		}
-//		
-//		Function rownum = new Function();
-//		rownum.setName("ROWNUM");
-//		expressions.add(cast(rownum, getStringCastType()));
-//		return expressions;
-//
-//	}
 
 
 

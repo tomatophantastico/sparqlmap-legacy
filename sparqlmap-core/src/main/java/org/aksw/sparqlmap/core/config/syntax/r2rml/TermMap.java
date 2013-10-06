@@ -76,6 +76,7 @@ public class TermMap{
 		this.expressions = expressions;
 			
 	}
+	
 
 
 	public List<SelectExpressionItem> getSelectExpressionItems( String colalias){
@@ -216,31 +217,6 @@ public class TermMap{
 	}
 
 
-//	private Expression cloneExpr(String suffix, Expression expression) {
-//		if(dth.uncast(expression) instanceof Column){
-//			Column origCol = (Column) dth.uncast(expression);
-//			Column copyCol = cloneExpression(origCol, suffix);
-//			return (dth.cast(copyCol,FilterUtil.getCastType(expression)));
-//		}else if(dth.uncast(expression) instanceof Function ){
-//			Function func = (Function) dth.uncast(expression);
-//			List<Expression> copiedConcat  = new ArrayList<Expression>(); 
-//			if(func.getName().equals(FilterUtil.CONCAT)){
-//				for(Object obj: func.getParameters().getExpressions()){
-//					Expression concExpr = (Expression) obj;
-//					copiedConcat.add(cloneExpr(suffix, concExpr));
-//				}
-//			}
-//			Function newFunc = new Function();
-//			newFunc.setName(func.getName());
-//			newFunc.setParameters(new ExpressionList(copiedConcat));
-//			return dth.cast(newFunc,FilterUtil.getCastType(expression));
-//			
-//
-//		} else{
-//			return (expression);
-//		}
-//	}
-	
 	protected Expression cloneExpression(Expression origExpr,String suffix){
 		if(origExpr instanceof net.sf.jsqlparser.schema.Column){
 			Column origColumn = (Column) origExpr;

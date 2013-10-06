@@ -150,7 +150,9 @@ public class SparqlBeautifier extends TransformCopy {
 	@Override
 	public Op transform(OpProject opProject, Op subOp) {
 		
-		OpVars.allVars(subOp);
+		
+		
+		OpVars.mentionedVars(subOp);
 		
 		
 		opProject.getVars();
@@ -168,7 +170,7 @@ public class SparqlBeautifier extends TransformCopy {
 		if(sparql.getProject().isEmpty()){
 		
 			sparql.setQueryResultStar(false);
-			Set<Var> vars = new HashSet<Var>( OpVars.allVars(query));
+			Set<Var> vars = new HashSet<Var>( OpVars.mentionedVars(query));
 			for (Var var : vars) {
 				sparql.getProject().add(var);
 

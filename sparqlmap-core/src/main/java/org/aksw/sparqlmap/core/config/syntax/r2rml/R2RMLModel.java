@@ -198,16 +198,6 @@ public class R2RMLModel {
 
 	}
 		
-		
-		
-		
-
-		
-
-
-
-
-
 
 	private void resolveRRClassStatements() {
 		String query = "PREFIX  rr:   <http://www.w3.org/ns/r2rml#> "
@@ -691,23 +681,7 @@ public class R2RMLModel {
 	//this method analyzes the r2rml file for the most common errors
 	public boolean validate(){
 		
-		
-		
-		//check if the uri starting with the r2rml prefix are all actually in r2rml
-		
-//		 StmtIterator stit = mapping.listStatements();
-//		 
-//		 while(stit.hasNext()){
-//			 Statement st = stit.next();
-//			 if(st.getSubject().toString().startsWith(R2RML.R2RML)){
-//				 this.r2rmlSchema.conta
-//			 }
-//		 }
-//		
-//		
-		
-		
-		
+	
 		boolean isValid = true;
 		
 		//do we have at least one triples map?
@@ -761,10 +735,6 @@ public class R2RMLModel {
 				List<RDFNode> subjectMaps = reasoningModel.listObjectsOfProperty(tripleMap,R2RML.subjectMap).toList();
 				
 								
-				
-				
-				
-				
 				//now checking for the predicateObject maps.
 				
 				List<RDFNode> poMaps = reasoningModel.listObjectsOfProperty(tripleMap,R2RML.predicateObjectMap).toList();
@@ -782,12 +752,7 @@ public class R2RMLModel {
 						||predicatemaps.get(0).asResource().hasProperty(R2RML.column))){
 						throw new R2RMLValidationException("predicate defintion not valid in triples map " + tripleMap.getURI());
 					}
-					
-					
-					
-					
-					
-					
+
 					List<RDFNode> objectmaps =  reasoningModel.listObjectsOfProperty(pomap.asResource(),  R2RML.objectMap).toList();
 					if(objectmaps.size()<1){
 						throw new R2RMLValidationException("Found predicateObjectmap without an object in triple map: " +  tripleMap.getURI() );
@@ -810,24 +775,8 @@ public class R2RMLModel {
 					}
 					
 				}
-				
-				
-				
-				
 			}
-			
-			
-			
 		}
-		
-		
-	
-		
-		
-		
- 
-		
-	
 		return isValid;
 		
 	}

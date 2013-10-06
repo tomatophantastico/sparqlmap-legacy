@@ -10,8 +10,15 @@ import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
+import org.springframework.stereotype.Component;
+
 
 public class PostgreSQLDataTypeHelper extends DataTypeHelper {
+	
+	
+	static public String getDBName() {
+		return PostgeSQLConnector.POSTGRES_DBNAME;
+	}
 
 	@Override
 	public String getStringCastType() {

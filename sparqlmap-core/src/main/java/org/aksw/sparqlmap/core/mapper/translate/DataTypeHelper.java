@@ -28,7 +28,7 @@ public abstract  class DataTypeHelper {
 	
 	@Autowired
 	private DBAccess dbaccess;
-	
+		
 	Map<String,String> suffix2datatype = new HashMap<String, String>();
 	
 	public DataTypeHelper() {

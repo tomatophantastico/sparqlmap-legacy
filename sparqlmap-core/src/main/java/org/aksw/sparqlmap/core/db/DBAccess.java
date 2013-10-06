@@ -29,7 +29,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
 
-
+/**
+ * A small wrapper around the connection pool that provides allows the execution of the translated SQL.
+ * Provides addition schema information.
+ * @author joerg
+ *
+ */
 public class DBAccess {
 	
 	@Autowired
@@ -37,18 +42,12 @@ public class DBAccess {
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(DBAccess.class);
 	
-	public static String POSTGRES = "postgresql";
-	public static String MYSQL = "mysql";
-	public static String HSQLDB = "hsqldb";
-	public static String ORACLE = "oracle";
-	public DBAccess(Connector dbConnector, String dbname) {
+	public DBAccess(Connector dbConnector) {
 		super();
 		this.dbConnector = dbConnector;
-		this.dbname = dbname;
 	}
 
 	private Connector dbConnector;
-	private String dbname;
 
 	public com.hp.hpl.jena.query.ResultSet executeSQL(String sql, String baseUri) throws SQLException{
 		return executeSQL(sql, baseUri, null);
@@ -208,7 +207,6 @@ public class DBAccess {
 			
 			return  resInteger;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			log.error("Using the query: " + query);
 			log.error("Querying for the datatype of " + colname  + ", from " + fromItemToString(fromItem) + " the following error was thrown: ",e);	
 			throw new R2RMLValidationException("Querying for the datatype of " + colname  + ", from " + fromItemToString(fromItem) + " the following error was thrown: ", e);

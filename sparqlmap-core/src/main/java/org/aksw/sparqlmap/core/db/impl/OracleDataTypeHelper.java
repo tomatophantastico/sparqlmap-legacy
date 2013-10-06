@@ -16,11 +16,17 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
+import org.springframework.stereotype.Component;
 
 import com.hp.hpl.jena.reasoner.rulesys.builtins.LessThan;
 import com.hp.hpl.jena.sparql.algebra.op.OpSlice;
 
+
 public class OracleDataTypeHelper extends DataTypeHelper {
+	
+	static public String getDBName() {
+		return OracleConnector.ORACLE_DBNAME;
+	}
 
 	@Override
 	public String getBinaryDataType() {

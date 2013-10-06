@@ -118,13 +118,18 @@ public class ExpressionConverter {
 				}
 
 			} else if (expr instanceof ExprFunction) {
-
-				List<Expression> expressions = getSQLExpressions(expr,
-						colstring2var, colstring2col);
-				for(Expression expression: expressions){
-					OrderByExpressionElement ob = new OrderByExpressionElement(expression);
+				
+				List<Expr> subexprs = ((ExprFunction) expr).getArgs();
+				
+				for (Expr subexpr : subexprs) {
+					Expression subobyExpr =  getSQLExpression(subexpr,
+							colstring2var, colstring2col);
+					OrderByExpressionElement ob = new OrderByExpressionElement(subobyExpr);
 					obys.add(ob);
+					
 				}
+
+				
 				
 
 			} else {
@@ -136,26 +141,26 @@ public class ExpressionConverter {
 	}
 	
 	
-	/**
-	 * convert SPARQL expressions into a SQL expression that evaluates into a boolean value;
-	 * @param exp
-	 * @param colstring2var
-	 * @param colstring2col
-	 * @return
-	 */
-	public Expression getSQLWhereExpression(Expr exp,BiMap<String, String> colstring2var,
-			Map<String, TermMap> colstring2col){
-		
-		return ColumnHelper.getLiteralBoolExpression(getSQLExpressions(exp, colstring2var, colstring2col));
-		
-		
-	}
+//	/**
+//	 * convert SPARQL expressions into a SQL expression that evaluates into a boolean value;
+//	 * @param exp
+//	 * @param colstring2var
+//	 * @param colstring2col
+//	 * @return
+//	 */
+//	public Expression getSQLWhereExpression(Expr exp,BiMap<String, String> colstring2var,
+//			Map<String, TermMap> colstring2col){
+//		
+//		return ColumnHelper.getLiteralBoolExpression(getSQLExpression(exp, colstring2var, colstring2col));
+//		
+//		
+//	}
 	
-	public  List<Expression> getSQLExpressions(Expr exp,
+	public  Expression getSQLExpression(Expr exp,
 			BiMap<String, String> colstring2var,
 			Map<String, TermMap> colstring2col) {
 
-		Expression[] sqlExpressions = null;
+		Expression sqlExpressions = null;
 		if (exp instanceof E_GreaterThan) {
 			E_GreaterThan sparqlGt = (E_GreaterThan) exp;
 			GreaterThan gt = new GreaterThan();
@@ -208,7 +213,7 @@ public class ExpressionConverter {
 				//resolve var directly to take the 
 				TermMap tc = colstring2col.get(colstring2var.inverse().get(var.getName()));
 				
-				sqlExpressions = tc.getLanguage();
+				sqlExpressions = ColumnHelper.getLanguage(tc.getExpressions());
 				
 				
 				// in the odd case, lang() is applied on a literal, do this
@@ -276,11 +281,6 @@ public class ExpressionConverter {
 			}
 			
 			
-		
-			
-			
-			
-			
 		} else if (exp instanceof E_Regex) {
 			E_Regex regex = (E_Regex) exp;
 
@@ -289,8 +289,8 @@ public class ExpressionConverter {
 			Expression leftExp = null;
 			String var = regex.getArg(1).toString().substring(1);
 
-			leftExp = colstring2col.get(colstring2var.inverse().get(var))
-					.getExpression();
+			leftExp = FilterUtil.concat(colstring2col.get(colstring2var.inverse().get(var))
+					.getExpressions().toArray(new Expression[0]));
 
 			like.setLeftExpression(leftExp);
 			like.setRightExpression(new StringValue("'%"
@@ -416,7 +416,7 @@ public class ExpressionConverter {
 			TermMap tc = colstring2col.get(colstring2var.inverse().get(
 					exp.getVarName()));
 			if(tc !=null){
-				sqlExpressions = tc.getExpression();
+				sqlExpressions = FilterUtil.concat(tc.getExpressions().toArray(new Expression[0]));
 			}else{
 				sqlExpressions = new NullValue();
 			}
@@ -471,11 +471,11 @@ public class ExpressionConverter {
 		
 		
 		
-		if(){
+		if(false){
 			
 		}
 		ColumnHelper colHelper = new ColumnHelper();
-		colHelper.getExpression(col, rdfType, sqlType, datatype, lang, lanColumn, dth, graph, baseUri)
+		//colHelper.getExpression(col, rdfType, sqlType, datatype, lang, lanColumn, dth, graph, baseUri)
 		
 		
 		

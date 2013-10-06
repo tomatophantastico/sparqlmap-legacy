@@ -254,7 +254,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 			if (!dupe) {
 
-				Expression sqlEx = exprconv.getSQLWhereExpression(expr,
+				Expression sqlEx = exprconv.getSQLExpression(expr,
 						colstring2var, colstring2TermMap);
 				if (sqlEx != null) {
 					addSQLFilter(sqlEx);

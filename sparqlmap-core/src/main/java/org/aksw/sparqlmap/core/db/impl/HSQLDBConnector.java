@@ -1,24 +1,16 @@
 package org.aksw.sparqlmap.core.db.impl;
 
-import java.util.Properties;
-
 import org.aksw.sparqlmap.core.db.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import com.jolbox.bonecp.BoneCPDataSource;
 
 public class HSQLDBConnector extends Connector {
 	
-	
-	
-	
 
-
-
-	public HSQLDBConnector(String dbUrl, String username, String password,
-			Integer poolminconnections, Integer poolmaxconnections) {
-		super(dbUrl, username, password, poolminconnections, poolmaxconnections);
-	}
-
+	public static final String HSQLDB_NAME = null;
 
 
 
@@ -26,13 +18,9 @@ public class HSQLDBConnector extends Connector {
 	private static Logger log = LoggerFactory.getLogger(HSQLDBConnector.class);
 	
 	
-	
-
-
 	@Override
-	public String getJDBCDriverClassString() {
-		
-		return "org.hsqldb.jdbcDriver";
+	public String getDBName() {
+		return HSQLDB_NAME;
 	}
 
 	

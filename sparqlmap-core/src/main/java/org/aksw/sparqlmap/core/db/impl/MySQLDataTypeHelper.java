@@ -1,17 +1,16 @@
 package org.aksw.sparqlmap.core.db.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.StringExpression;
-import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.schema.Column;
 
-import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
+import org.springframework.stereotype.Component;
 
 public class MySQLDataTypeHelper extends DataTypeHelper {
+	
+	
+	public static  String getDBName() {
+		return MySQLConnector.MYSQL_DBNAME;
+	}
 
 	@Override
 	public String getStringCastType() {

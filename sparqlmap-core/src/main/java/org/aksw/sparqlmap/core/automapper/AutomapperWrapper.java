@@ -55,7 +55,7 @@ public class AutomapperWrapper {
 		Automapper automapper = new Automapper(conn,baseUri,baseUri,baseUri,";");
 		Model dmR2rml = automapper.getMydbData();
 		if(dmR2rmlDump!=null&&!dmR2rml.isEmpty()){
-			dmR2rml.write(new FileOutputStream(new File(dbconf.getJdbcDBName()+"-dm.ttl")), "TTL");
+			dmR2rml.write(new FileOutputStream(new File(dbconf.getDBName()+"-dm.ttl")), "TTL");
 		}
 		conn.close();
 		return dmR2rml;

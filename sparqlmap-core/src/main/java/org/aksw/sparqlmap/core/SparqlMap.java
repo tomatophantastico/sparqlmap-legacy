@@ -4,11 +4,9 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,13 +22,10 @@ import org.aksw.sparqlmap.core.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.core.mapper.Mapper;
 import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.apache.commons.math3.stat.StatUtils;
-import org.openjena.riot.out.NQuadsWriter;
-import org.openjena.riot.out.NTriplesWriter;
-import org.openjena.riot.system.JenaWriterRdfJson;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.profiler.Profiler;
-import org.slf4j.profiler.ProfilerRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -46,8 +41,6 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.sparql.algebra.AlgebraGenerator;
-import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.core.DatasetGraph;
 import com.hp.hpl.jena.sparql.core.DatasetGraphFactory;
 import com.hp.hpl.jena.sparql.core.Quad;
@@ -63,19 +56,17 @@ public class SparqlMap {
 	
 	String baseUri;
 	boolean continueWithInvalidUris = true;
-
-//	public SparqlMap(String baseUri) {
-//		super();
-//		this.baseUri = baseUri;
-//	}
-	@Autowired
-	public Environment env;
 	
 	@PostConstruct
 	public void loadBaseUri(){
 		baseUri = env.getProperty("sm.baseuri");
 		continueWithInvalidUris = new Boolean(env.getProperty("sm.continuewithinvaliduris","true"));
 	}
+
+	@Autowired
+	public Environment env;
+	
+	
 
 	@Autowired
 	public Mapper mapper;
@@ -112,6 +103,11 @@ public class SparqlMap {
 	private Logger log = LoggerFactory.getLogger(SparqlMap.class);
 
 	public enum ReturnType {JSON,XML}
+	
+	
+	public void  executeSparql(String qstring, ReturnType rt, OutputStream out) throws SQLException{
+		executeSparql(qstring,  rt,  out, null);
+	}
 	
 	/**
 	 * Takes some of the functionality of QueryExecutionbase
@@ -213,8 +209,10 @@ public class SparqlMap {
 	private void writeModel(ReturnType rt, OutputStream out, Model model) {
 		switch (rt) {
 		case JSON:
-			JenaWriterRdfJson writer = new JenaWriterRdfJson();
-			writer.write(model, out, null);
+			
+			
+			RDFDataMgr.write(out, model, RDFFormat.RDFJSON);
+	
 			break;
 
 		default:
@@ -282,13 +280,13 @@ public class SparqlMap {
 					}
 				}
 				if(++i%1000==0){
-					NQuadsWriter.write(out, graph);
+					RDFDataMgr.write(out, graph, RDFFormat.NQUADS);
 				}
 			}
 			if(usesGraph){
-				NQuadsWriter.write(writer, graph);
+				RDFDataMgr.write(out, graph, RDFFormat.NQUADS);
 			}else{
-				NTriplesWriter.write(writer, graph.getGraph(null));
+				RDFDataMgr.write(out, graph, RDFFormat.NTRIPLES);
 			}
 			
 			writer.flush();
@@ -321,6 +319,11 @@ public class SparqlMap {
 	}
 	
 	int querycount = 0;
+	public ResultSet executeSparql(Query query) throws SQLException{
+		return  executeSparql( query, null);
+	}
+	
+	
 	public ResultSet executeSparql(Query query, String queryname) throws SQLException{
 		Multimap<String, Long> prof= getProfiler(queryname);
 		Stopwatch sw = null;

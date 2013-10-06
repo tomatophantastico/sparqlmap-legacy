@@ -1,15 +1,7 @@
 package org.aksw.sparqlmap.core;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import org.aksw.commons.util.StopWatch;
 import org.aksw.sparqlmap.core.mapper.finder.QueryInformation;
-import org.slf4j.profiler.Profiler;
-import org.slf4j.profiler.ProfilerRegistry;
 
-import com.google.common.base.Stopwatch;
-import com.hp.hpl.jena.graph.query.Mapping;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.sparql.algebra.Op;
 

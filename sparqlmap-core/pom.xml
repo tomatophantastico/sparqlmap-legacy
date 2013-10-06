@@ -2,11 +2,15 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.aksw</groupId>
-	<artifactId>sparqlmap</artifactId>
+	<artifactId>sparqlmap-core</artifactId>
 	<packaging>jar</packaging>
-	<version>0.6.1</version>
-	<name>SparqlMap</name>
-	<url>http://aksw.org/projects/sparqlmap</url>
+	<name>SparqlMap core features</name>
+  <version>${project.version}</version>
+	<parent>
+	    <groupId>org.aksw.sparqlmap</groupId>
+	    <artifactId>sparqlmap-master</artifactId>
+	    <version>${project.version}</version>
+	</parent>
 
 	<build>
 		<plugins>
@@ -114,20 +118,7 @@
 		</pluginManagement>
 	</build>
 
-	<reporting>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-pmd-plugin</artifactId>
-				<configuration>
-					<linkXref>true</linkXref>
-					<sourceEncoding>UTF-8</sourceEncoding>
-					<minimumTokens>30</minimumTokens>
-					<targetJdk>1.7</targetJdk>
-				</configuration>
-			</plugin>
-		</plugins>
-	</reporting>
+	
 
 
 
@@ -185,7 +176,7 @@
 		<dependency>
 			<groupId>org.apache.jena</groupId>
 			<artifactId>jena-arq</artifactId>
-			<version>2.9.2</version>
+			<version>${jena.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -255,6 +246,13 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		
 				<dependency>
 				<groupId>org.aksw.commons</groupId>
 				<artifactId>util</artifactId>
@@ -281,11 +279,6 @@
 			<version>1.2</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
-			<version>3.2.1.RELEASE</version>
-		</dependency>
 		
 		<dependency>
 			<groupId>com.oracle</groupId>
@@ -300,16 +293,4 @@
 	</dependencies>
 
 
-	<distributionManagement>
-		<repository>
-			<id>internal</id>
-			<name>AKSW Release Repo</name>
-			<url>http://maven.aksw.org/archiva/repository/internal/</url>
-		</repository>
-		<snapshotRepository>
-			<id>aksw.snapshots</id>
-			<name>AKSW Snapshot Repo</name>
-			<url>http://maven.aksw.org/archiva/repository/snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
 </project>

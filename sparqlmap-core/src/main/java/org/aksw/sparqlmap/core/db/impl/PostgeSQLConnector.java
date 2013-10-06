@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -16,24 +15,18 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import org.aksw.sparqlmap.core.db.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 
 public class PostgeSQLConnector extends Connector {
 	
 	
-	
-	
-	public PostgeSQLConnector(String dbUrl, String username, String password,
-			Integer poolminconnections, Integer poolmaxconnections) {
-		super(dbUrl, username, password, poolminconnections, poolmaxconnections);
-		// TODO Auto-generated constructor stub
-	}
+	public static final String POSTGRES_DBNAME = "PostgreSQL";
 
 
+	
 
 	private static Logger log = LoggerFactory.getLogger(MySQLConnector.class);
-	
-	
-	
 	
 
 	@Override
@@ -65,8 +58,6 @@ public class PostgeSQLConnector extends Connector {
 	}
 
 
-	
-
 	@Override
 	public Map<String,Integer> getDataTypeForTable(Table table) {
 		
@@ -95,14 +86,10 @@ public class PostgeSQLConnector extends Connector {
 	}
 	
 
-
-	@Override
-	public String getJDBCDriverClassString() {
-		
-		return "org.postgresql.Driver";
-	}
-
-	
+@Override
+public String getDBName() {
+	return POSTGRES_DBNAME;
+}
 	
 	
 }

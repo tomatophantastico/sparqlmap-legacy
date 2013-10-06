@@ -1,13 +1,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.aksw.sparqlmap</groupId>
-  <artifactId>r2rmltestcases</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <artifactId>sparqlmap-r2rmltest</artifactId>
+  <version>${project.version}</version>
+  <name>SparqlMap R2RML Test Suite</name>
+	<parent>
+	    <groupId>org.aksw.sparqlmap</groupId>
+	    <artifactId>sparqlmap-master</artifactId>
+	    <version>${project.version}</version>
+	</parent>
   <dependencies>
   	<dependency>
   		<groupId>org.aksw</groupId>
   		<artifactId>sparqlmap</artifactId>
-  		<version>0.6.1-SNAPSHOT</version>
+  		<version>${project.version}</version>
   	</dependency>
   	<dependency>
   		<groupId>org.hsqldb</groupId>
@@ -15,11 +21,7 @@
   		<version>2.2.9</version>
   		<classifier>jdk6debug</classifier>
   	</dependency>
-  	<dependency>
-  		<groupId>junit</groupId>
-  		<artifactId>junit</artifactId>
-  		<version>4.11</version>
-  	</dependency>
+
   	<dependency>
   		<groupId>org.hsqldb</groupId>
   		<artifactId>sqltool</artifactId>
@@ -28,12 +30,12 @@
   	<dependency>
   		<groupId>org.springframework</groupId>
   		<artifactId>spring-jdbc</artifactId>
-  		<version>3.2.1.RELEASE</version>
+  		<version>${spring.version}</version>
   	</dependency>
   	<dependency>
   		<groupId>org.springframework</groupId>
   		<artifactId>spring-test</artifactId>
-  		<version>3.2.1.RELEASE</version>
+  		<version>${spring.version}</version>
   	</dependency>
   </dependencies>
 </project>

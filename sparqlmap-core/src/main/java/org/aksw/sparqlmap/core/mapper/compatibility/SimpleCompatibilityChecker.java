@@ -55,17 +55,25 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 
 	@Override
 	public boolean isCompatible(TermMap termMap2) {
+		
+		
+		boolean compatibleType = false;
+		
+		ColumnHelper.getResourceExpressions(termMap.getExpressions());
+		
+		Expression termMapType = ColumnHelper.getTermType(this.termMap.getExpressions());
+		Expression termMap2Type = ColumnHelper.getTermType(termMap2.getExpressions());
 
-		if(termMap.getType().equals(termMap2.getType())){
+		if(isCompatible(termMapType, termMap2Type)){
 			
-			if(termMap.getType().equals(ColumnHelper.COL_VAL_TYPE_LITERAL)){
+			if(termMapType.equals(ColumnHelper.COL_VAL_TYPE_LITERAL)){
 				//we check for datatype and language
 				
-				String datatype1  = termMap.getDataType();
-				String datatype2  = termMap2.getDataType();
+				Expression datatype1  = ColumnHelper.getDataType(termMap.getExpressions());
+				Expression datatype2  = ColumnHelper.getDataType(termMap2.getExpressions());
 				
 				if(datatype1!=null && datatype2!=null){
-					if(!termMap.getDataType().equals(termMap2.getDataType())){
+					if(!isCompatible(datatype1, datatype2)){
 						return false;
 					}
 				}else if(datatype1!=null && datatype2==null||datatype2!=null && datatype1==null){
@@ -77,8 +85,8 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 			}else {
 				//is either blank node or resource, so we evaluate the resource constructor
 				
-				List<Expression> resourceExpr1 = termMap.getResourceExpressions();
-				List<Expression> resourceExpr2 = termMap2.getResourceExpressions();
+				List<Expression> resourceExpr1 = ColumnHelper.getResourceExpressions(termMap.getExpressions());
+				List<Expression> resourceExpr2 = ColumnHelper.getResourceExpressions(termMap2.getExpressions());
 								
 
 				//the uri separator split list. Currently only split for  "/"
@@ -271,7 +279,7 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 
 
 	private boolean isCompatibleUri(Node n) {
-		List<Expression> tmExprs = termMap.getResourceExpressions();
+		List<Expression> tmExprs = ColumnHelper.getResourceExpressions(termMap.getExpressions());
 		
 		if(tmExprs.isEmpty()){
 			return false;
@@ -279,7 +287,7 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 		
 		String nodeUri = n.getURI();
 		int i = 0;
-		while (nodeUri.length()>0&&i<termMap.getLength()){
+		while (nodeUri.length()>0&&i<tmExprs.size()){
 			if(i%2==0){
 				if(DataTypeHelper.uncast(tmExprs.get(i)) instanceof StringValue){
 					String tmString = ((net.sf.jsqlparser.expression.StringValue)DataTypeHelper.uncast(tmExprs.get(i))).getNotExcapedValue(); 
@@ -338,22 +346,23 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 
 	private boolean isCompatibleLiteral(Node n) {
 		//if the term map has no literal expressions, it cannot produce a literal
-		if(termMap.getLiteralExpressions().isEmpty()){
+		if(ColumnHelper.getLiteralExpression(termMap.getExpressions()).isEmpty()){
 			return false;
 		}
 		
 		//we check for the datatype
 		//if exactly one of them is null, then it is false
-		if((n.getLiteralDatatypeURI() != null && termMap.getDataType() ==null) ||(n.getLiteralDatatypeURI() == null && termMap.getDataType() !=null)){
+		if((n.getLiteralDatatypeURI() != null && ColumnHelper.getDataType(termMap.getExpressions()) ==null) 
+				||(n.getLiteralDatatypeURI() == null && ColumnHelper.getDataType(termMap.getExpressions()) !=null)){
 			return false;
 		}
 		//if they are not null and different
-		if((n.getLiteralDatatypeURI() != null && termMap.getDataType() !=null) && !n.getLiteralDatatypeURI().equals(termMap.getDataType())){
+		if((n.getLiteralDatatypeURI() != null && ColumnHelper.getDataType(termMap.getExpressions()) !=null) && !n.getLiteralDatatypeURI().equals(ColumnHelper.getDataType(termMap.getExpressions()))){
 			return false;
 		}
 		// if the language does not match
 		String lang = n.getLiteralLanguage();
-		Expression langExpr = termMap.getLanguage();
+		Expression langExpr = ColumnHelper.getLanguage(termMap.getExpressions());
 		if(lang!=null){
 			throw new ImplementationException("Implement language compatibility check.");
 		}
@@ -364,7 +373,15 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 	}
 	
 	
-	public boolean isColumnCompatible(Column c1, Column c2){
+	public static boolean isCompatible(Expression e1, Expression e2){
+		Expression v1 = DataTypeHelper.uncast(e1);
+		Expression v2 = DataTypeHelper.uncast(e2);
+		
+		if(v1 instanceof Expression && v2 instanceof Expression){
+			return v2.equals(v1);
+			
+		}
+		
 		return true;
 	}
 
@@ -395,9 +412,6 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 				
 			}
 		}
-		
-		
-		
 		return isCompatible;
 		
 		

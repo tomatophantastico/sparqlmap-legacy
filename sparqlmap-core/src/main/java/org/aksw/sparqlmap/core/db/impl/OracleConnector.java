@@ -5,37 +5,26 @@ import java.util.Properties;
 import org.aksw.sparqlmap.core.db.Connector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import com.jolbox.bonecp.BoneCPDataSource;
+
+@Component
 public class OracleConnector extends Connector {
 	
-	
-	
-	
 
-
-
-	public OracleConnector(String dbUrl, String username, String password,
-			Integer poolminconnections, Integer poolmaxconnections) {
-		super(dbUrl, username, password, poolminconnections, poolmaxconnections);
-	}
-
-
+	public static final String ORACLE_DBNAME = "oracle";
 
 
 
 	private static Logger log = LoggerFactory.getLogger(OracleConnector.class);
 	
-	
-	
-
-
 	@Override
-	public String getJDBCDriverClassString() {
+	public String getDBName() {
 		
-		return "org.hsqldb.jdbcDriver";
+		return ORACLE_DBNAME;
 	}
+	
 
-	
-	
-	
+
 }
