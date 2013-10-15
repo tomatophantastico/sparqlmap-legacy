@@ -22,6 +22,7 @@ import org.aksw.sparqlmap.core.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.core.mapper.Mapper;
 import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.apache.commons.math3.stat.StatUtils;
+import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
 import org.slf4j.Logger;
@@ -253,7 +254,7 @@ public class SparqlMap {
 	 * @throws SQLException 
 	 */
 
-	public void dump(OutputStream out) throws SQLException{
+	public void dump(OutputStream out,RDFFormat format) throws SQLException{
 		PrintStream writer = new PrintStream(out);
 		
 		List<String> queries = mapper.dump();
@@ -280,13 +281,20 @@ public class SparqlMap {
 					}
 				}
 				if(++i%1000==0){
-					RDFDataMgr.write(out, graph, RDFFormat.NQUADS);
+					if(usesGraph){
+						RDFDataMgr.write(out, graph, RDFFormat.NQUADS);
+						graph.deleteAny(null, null, null, null);
+					}else{
+						RDFDataMgr.write(out, graph.getDefaultGraph(),Lang.NTRIPLES);
+						graph.deleteAny(null, null, null, null);
+
+					}
 				}
 			}
 			if(usesGraph){
 				RDFDataMgr.write(out, graph, RDFFormat.NQUADS);
 			}else{
-				RDFDataMgr.write(out, graph, RDFFormat.NTRIPLES);
+				RDFDataMgr.write(out, graph.getDefaultGraph(),Lang.NTRIPLES);
 			}
 			
 			writer.flush();

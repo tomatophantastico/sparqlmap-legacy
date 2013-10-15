@@ -16,9 +16,9 @@ public class TripleMap {
 	
 	private String uri;
 	public FromItem from;
-	TermMap subject;
-	Set<PO> pos = new LinkedHashSet<PO>();
-	TermMap graph;
+	private TermMap subject;
+	private Set<PO> pos = new LinkedHashSet<PO>();
+	private TermMap graph;
 	
 	
 	
@@ -78,34 +78,28 @@ public class TripleMap {
 		
 	}
 	
-	
-	public void toTtl(StringBuffer ttl){
-		ttl.append("<" +this.getUri()+ ">");
-		if(from instanceof Table){
-			ttl.append("rr:logicalTable [ rr:tableName \""+((Table)from).getName()+"\" ];\n");
-		}if(from instanceof SubSelect){
-			ttl.append("rr:sqlQuery \"\"\"" +((SubSelect)from).getSelectBody().toString() +"\"\"\"\n");
-		}else{
-			throw new ImplementationException("Encountered unmappable FromItem ");
-		}
-		ttl.append("rr:subjectMap [ \n");
-		subject.toTtl(ttl);
-		ttl.append("\n];\n");
-		
-		for (PO po : this.pos) {
-			ttl.append("rr:predicateObjectMap [\n");
-			po.predicate.toTtl(ttl);
-			ttl.append("\n");
-			po.object.toTtl(ttl);
-			ttl.append("\n];\n");
-			
-		}
-		
-		
+	public FromItem getFrom() {
+		return from;
 	}
 	
+	public TermMap getGraph() {
+		return graph;
+	}
+	
+	public void setGraph(TermMap graph) {
+		this.graph = graph;
+	}
+	
+	public void setFrom(FromItem from) {
+		this.from = from;
+	}
+	
+		
 	public TermMap getSubject() {
 		return subject;
+	}
+	public void setSubject(TermMap subject) {
+		this.subject = subject;
 	}
 	
 	public TripleMap getShallowCopy(){

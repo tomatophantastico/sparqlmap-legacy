@@ -39,7 +39,7 @@ public class MySQLDataTypeHelper extends DataTypeHelper {
 
 	@Override
 	public String getBinaryDataType() {
-		return "VARBINARY";
+		return "BINARY";
 	}
 
 	@Override

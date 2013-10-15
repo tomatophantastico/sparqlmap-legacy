@@ -1,0 +1,4 @@
+.*
+sparqlmap-*/target/*
+sparqlmap-core/log/
+*.log

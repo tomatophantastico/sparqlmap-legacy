@@ -9,7 +9,7 @@
    a rr:TriplesMap;
         
    rr:logicalTable [ rr:sqlQuery """
-        SELECT "Name", COUNT("Sport") as SPORTCOUNT
+        SELECT "Name", COUNT("Sport") as "SPORTCOUNT"
         FROM "Student"
         GROUP BY "Name"
         """ ];

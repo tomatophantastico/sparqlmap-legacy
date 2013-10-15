@@ -1,0 +1,57 @@
+package org.aksw.sparqlmap.bsbmtestcases;
+
+import java.io.FileInputStream;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import org.aksw.sparqlmap.core.SparqlMap;
+import org.aksw.sparqlmap.core.spring.ContextSetup;
+import org.aksw.sparqlmap.r2rmltestcases.PostgreSQLR2RMLTestCase;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
+
+public class BSBMPostgreSQLTests extends BSBMBaseTest{
+	
+	private SparqlMap r2r;
+	private ApplicationContext con;
+	
+	static Logger log = LoggerFactory.getLogger(PostgreSQLR2RMLTestCase.class);
+
+	@Before
+	public void setupSparqlMap() {
+		
+		String pathToConf = "./src/main/resources/bsbm-test";
+		
+		con = ContextSetup.contextFromFolder(pathToConf);
+		r2r = (SparqlMap) con.getBean("sparqlMap");
+
+	}
+	
+	
+	
+	@Test
+	public void testFilterOpt() throws SQLException{
+		
+		String query = "SELECT DISTINCT ?o {<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer1/Product22>  <http://www.w3.org/2000/01/rdf-schema#label> ?o} limit 5";
+		String ps = execAsText(query);
+		log.info(ps);
+		
+	}
+
+	
+	
+
+
+
+
+	@Override
+	public SparqlMap getSparqlMap() {
+		return r2r;
+	}
+
+}

@@ -1,6 +1,6 @@
 package org.aksw.sparqlmap.r2rmltestcases;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,30 +11,26 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
-import org.aksw.sparqlmap.SparqlMap;
-import org.aksw.sparqlmap.automapper.DB2R2RML;
-import org.aksw.sparqlmap.db.Connector;
-import org.junit.Assert;
+import org.aksw.sparqlmap.core.SparqlMap;
+import org.aksw.sparqlmap.core.automapper.Automapper;
+import org.aksw.sparqlmap.core.automapper.AutomapperWrapper;
+import org.aksw.sparqlmap.core.db.Connector;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFFormat;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.openjena.atlas.logging.Log;
-import org.openjena.riot.RiotLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
-import org.springframework.test.jdbc.JdbcTestUtils;
 
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.Node;
@@ -61,7 +57,7 @@ public abstract class R2RMLTest {
 	
 	
 	
-		private static Logger log = LoggerFactory.getLogger(R2RMLTest.class);
+	private static Logger log = LoggerFactory.getLogger(R2RMLTest.class);
 
 
 
@@ -114,7 +110,7 @@ public abstract class R2RMLTest {
 		ctxt.refresh();
 		
 		SparqlMap r2r = ctxt.getBean(SparqlMap.class);
-		r2r.dump(new FileOutputStream(new File(outputLocation)));
+		r2r.dump(new FileOutputStream(new File(outputLocation)),RDFFormat.NTRIPLES);
 		ctxt.close();
 	}
 	
@@ -219,7 +215,9 @@ public abstract class R2RMLTest {
 	public void createDM(String wheretowrite) throws ClassNotFoundException, SQLException, FileNotFoundException{
 		Connection conn = getConnector().getConnection();
 		
-		DB2R2RML db2r2rml = new DB2R2RML(conn, "http://example.com/base/", "http://example.com/base/", "http://example.com/base/",";");
+		
+		
+		Automapper db2r2rml = new Automapper(conn, "http://example.com/base/", "http://example.com/base/", "http://example.com/base/",";");
 		
 		Model mapping = db2r2rml.getMydbData();
 		conn.close();
@@ -367,8 +365,8 @@ public abstract class R2RMLTest {
 		String fileSuffixout = outputLocation.substring(outputLocation.lastIndexOf(".")+1).toUpperCase();
 		
 		if(fileSuffixout.equals("NQ")){
-			DatasetGraph dsgout = RiotLoader.load(outputLocation);
-			DatasetGraph dsdref = RiotLoader.load(referenceOutput);
+			DatasetGraph dsgout = RDFDataMgr.loadDatasetGraph(outputLocation);
+			DatasetGraph dsdref = RDFDataMgr.loadDatasetGraph(referenceOutput);
 			
 			if (dsgout.isEmpty() != dsdref .isEmpty()){
 				  return false;

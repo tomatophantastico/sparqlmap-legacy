@@ -549,11 +549,11 @@ public class PlainSelectWrapper implements Wrapper {
 									colstring2var.inverse().get(var))
 									.getExpressions());
 					exprsToBeExtended.addAll(expressions);
-					sstc = new TermMap(dth, exprsToBeExtended);
+					sstc = TermMap.createTermMap(dth, exprsToBeExtended);
 
 				} else {
 					// not in there, we can create a new
-					sstc = new TermMap(dth, expressions);
+					sstc = TermMap.createTermMap(dth, expressions);
 				}
 
 				colstring2TermMap.put(sstc.toString(), sstc);

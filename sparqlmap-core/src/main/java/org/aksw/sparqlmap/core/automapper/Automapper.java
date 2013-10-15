@@ -33,38 +33,10 @@ public class Automapper
 	//private Properties dbProps;
 	private Connection dbConnction;
 	private DatabaseMetaData md;
+	private Schema dbSchema;
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Automapper.class);
 
-	/**
-	 * Contractor that opens the database and initialize some basic variables 
-	 * @param dbUrl
-	 * @param dbUserName
-	 * @param dbPassWord
-	 * @param mappedDbUri
-	 * @param userDataUri
-	 * @param userVocUri
-	 * @param userCompPkSep
-	 * @author Sherif
-	 */
-	public Automapper(String dbUrl, String dbUserName, String dbPassWord, String mappedDbUri, String userDataUri, String userVocUri, String userCompPkSep){
-		String myDbUrl = dbUrl;
-		String myDbUserName=dbUserName;
-		String myDbPassWord=dbPassWord;
-		dbUri  = mappedDbUri != null ? mappedDbUri : "http://example.com/mapping/" ;
-		dataUri= userDataUri != null ? userDataUri : "http://example.com/data/";
-		vocUri= userVocUri != null ? userVocUri : "http://example.com/vocabulary/";
-		compPkSep= userCompPkSep != null ? userCompPkSep : ";";
-		Properties dbProps = new Properties();
-		dbProps.setProperty("user",myDbUserName);
-		dbProps.setProperty("password", myDbPassWord);
-		dbConnction = null;
-		try {
-			dbConnction = DriverManager.getConnection(myDbUrl, dbProps);
-			md = dbConnction.getMetaData();
-		} catch (SQLException e) {log.error("Error:",e);}
 
-		
-	}
 
 	public Automapper(Connection conn,  String mappedDbUri, String userDataUri, String userVocUri, String userCompPkSep) throws SQLException {
 		this.dbConnction = conn;
@@ -73,22 +45,12 @@ public class Automapper
 		this.dataUri= userDataUri != null ? userDataUri : "http://example.com/data/";
 		this.vocUri= userVocUri != null ? userVocUri : "http://example.com/vocabulary/";
 		this.compPkSep  = userCompPkSep !=null? userCompPkSep:";";
-		
-
-	}
-
-	public static void main( String[] args )
-	{   
-		Automapper app = new Automapper(args[0], args[1], args[2],args[3], args[4], args[5], args[6]);
-
-		try {
-			app.getMydbData().write(System.out,"TURTLE");
-		} catch (SQLException e ) {
-			log.error("Error:",e);
-		}
+		this.dbSchema =Schema.create(dbConnction);
 
 
 	}
+
+
 
 	public Model getMydbData() throws SQLException
 	{
@@ -367,7 +329,6 @@ public class Automapper
 	 */
 	void mapForeignKeys(String tableName) throws UnsupportedEncodingException, SQLException{
 		String tableNameEncoded = urlEncode(tableName);
-		Schema dbSchema=Schema.create(dbConnction);
 
 		Multimap<String, ForeignKey> foreinKeysMultimap = dbSchema.getForeignKeys();	
 		Collection<ForeignKey> foreinKeysCollection= foreinKeysMultimap.get(tableName);

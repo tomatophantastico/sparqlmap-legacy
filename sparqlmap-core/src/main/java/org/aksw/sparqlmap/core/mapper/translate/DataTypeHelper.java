@@ -8,6 +8,7 @@ import java.util.Scanner;
 
 import net.sf.jsqlparser.expression.CastExpression;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.schema.Column;
@@ -210,8 +211,7 @@ public abstract  class DataTypeHelper {
 					expr = binaryCastPrep(expr);
 
 				}
-			}
-			if (needsSpecialCastForChar()) {
+			}else if (needsSpecialCastForChar()) {
 				Column col = (Column) expr;
 				Integer datatypeint = dbaccess.getDataType(col.getTable()
 						.getAlias(), col.getColumnName());
@@ -326,6 +326,10 @@ public abstract  class DataTypeHelper {
 		return null;
 		
 		
+	}
+	
+	public Expression asNumeric(Integer intVal){
+		return cast(new LongValue(intVal.toString()), getNumericCastType());
 	}
 
 

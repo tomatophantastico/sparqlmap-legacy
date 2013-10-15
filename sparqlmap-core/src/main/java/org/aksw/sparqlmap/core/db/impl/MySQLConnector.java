@@ -13,7 +13,7 @@ import com.jolbox.bonecp.BoneCPDataSource;
 
 public class MySQLConnector extends Connector {
 	
-	public static final String MYSQL_DBNAME = "MYSQL";
+	public static final String MYSQL_DBNAME = "MySQL";
 	private static Logger log = LoggerFactory.getLogger(MySQLConnector.class);
 
 

@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.aksw.sparqlmap</groupId>
   <artifactId>sparqlmap-shared</artifactId>
-  <version>${project.version}</version>
   <name>SparqlMap Shared Resources</name>
+  <packaging>jar</packaging>
 	<parent>
 	    <groupId>org.aksw.sparqlmap</groupId>
 	    <artifactId>sparqlmap-master</artifactId>
-	    <version>${project.version}</version>
+	    <version>0.6.3-snapshot</version>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 </project>

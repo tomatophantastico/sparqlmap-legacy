@@ -8,11 +8,11 @@
     a rr:TriplesMap;
 
     rr:logicalTable [ rr:sqlQuery """
-       SELECT "Student"."ID" as ID,
-              "Student"."FirstName" as FirstName,
-              "Student"."LastName" as LastName,
-              "Sport"."Description" as Description,
-              "Sport"."ID" as Sport_ID
+       SELECT "Student"."ID" as "ID",
+              "Student"."FirstName" as "FirstName",
+              "Student"."LastName" as "LastName",
+              "Sport"."Description" as "Description",
+              "Sport"."ID" as "Sport_ID"
        FROM "Student","Sport","Student_Sport"
        WHERE "Student"."ID" = "Student_Sport"."ID_Student"
        AND "Sport"."ID" = "Student_Sport"."ID_Sport";

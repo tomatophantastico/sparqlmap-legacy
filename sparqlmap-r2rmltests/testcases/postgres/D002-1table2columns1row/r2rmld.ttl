@@ -9,7 +9,7 @@
     
     rr:logicalTable [ 
                      rr:sqlQuery """
-                       Select ('Student' || "ID" ) AS StudentId
+                       Select ('Student' || "ID" ) AS "StudentId"
                             , "ID"
                             , "Name"
                          from "Student"

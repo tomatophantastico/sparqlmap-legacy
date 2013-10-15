@@ -1,4 +1,4 @@
-_:BDepartment10 <http://example.com/dept#deptno> "10"^^<http://www.w3.org/2001/XMLSchema#positiveInteger> .
+_:BDepartment10 <http://example.com/dept#deptno> "10"^^<http://www.w3.org/2001/XMLSchema#integer> .
 _:BDepartment10 <http://example.com/dept#name> "APPSERVER" .
 _:BDepartment10 <http://example.com/dept#location> "NEW YORK" .
 _:BDepartment10 <http://example.com/dept#COMPANY> "EXAMPLE Corporation" .

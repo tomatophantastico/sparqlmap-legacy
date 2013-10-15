@@ -279,7 +279,7 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 
 
 	private boolean isCompatibleUri(Node n) {
-		List<Expression> tmExprs = ColumnHelper.getResourceExpressions(termMap.getExpressions());
+		List<Expression> tmExprs = termMap.getResourceColSeg();
 		
 		if(tmExprs.isEmpty()){
 			return false;

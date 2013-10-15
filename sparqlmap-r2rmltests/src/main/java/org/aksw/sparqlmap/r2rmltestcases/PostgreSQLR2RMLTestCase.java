@@ -4,13 +4,15 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Properties;
 
-import org.aksw.sparqlmap.db.Connector;
-import org.aksw.sparqlmap.db.impl.MySQLConnector;
-import org.aksw.sparqlmap.db.impl.PostgeSQLConnector;
+import org.aksw.sparqlmap.core.db.Connector;
+import org.aksw.sparqlmap.core.db.DBAccessConfigurator;
+import org.aksw.sparqlmap.core.db.impl.PostgeSQLConnector;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.runners.Parameterized.Parameters;
+
+import com.jolbox.bonecp.BoneCPDataSource;
 
 public class PostgreSQLR2RMLTestCase extends R2RMLTest {
 	
@@ -45,7 +47,14 @@ public class PostgreSQLR2RMLTestCase extends R2RMLTest {
 	
 	@Before
 	public void before(){
-		connector = new PostgeSQLConnector(getDBProperties().getProperty("jdbc.url"),getDBProperties().getProperty("jdbc.username"),getDBProperties().getProperty("jdbc.password"),1,2);
+		BoneCPDataSource ds = new BoneCPDataSource(
+				DBAccessConfigurator.createConfig(
+						getDBProperties().getProperty("jdbc.url"), getDBProperties().getProperty("jdbc.username"), getDBProperties().getProperty("jdbc.password"), 1, 2));
+		
+		PostgeSQLConnector conn = new PostgeSQLConnector();
+		conn.setDs(ds);
+		
+		connector = conn;
 	}
 	
 
@@ -55,7 +64,7 @@ public class PostgreSQLR2RMLTestCase extends R2RMLTest {
 	public Properties getDBProperties() {
 		Properties properties = new Properties();
 		try {
-			properties.load(ClassLoader.getSystemResourceAsStream("postgres.properties"));
+			properties.load(ClassLoader.getSystemResourceAsStream("r2rml-test/db-postgres.properties"));
 		} catch (IOException e) {
 			e.printStackTrace();
 			Assert.fail("Unable to load properties file");

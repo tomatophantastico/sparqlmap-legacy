@@ -49,15 +49,15 @@
 <TriplesMap2>
     a rr:TriplesMap;
     rr:logicalTable [ rr:sqlQuery """
-       SELECT ('http://example.com/emp/' || "empno") AS empURI
+       SELECT ('http://example.com/emp/' || "empno") AS "empURI"
             , "empno"
             , "ename"
-            , ('http://example.com/emp/job/'|| "job") AS jobTypeURI
+            , ('http://example.com/emp/job/'|| "job") AS "jobTypeURI"
             , "job"
             , "deptno"
-            , ('http://example.com/emp/etype/'|| "etype") AS empTypeURI
+            , ('http://example.com/emp/etype/'|| "etype") AS "empTypeURI"
             , "etype"
-            , ('http://example.com/graph/'|| "job" || '/' || "etype") AS graphURI
+            , ('http://example.com/graph/'|| "job" || '/' || "etype") AS "graphURI"
        FROM "EMP"
        """ ];
 

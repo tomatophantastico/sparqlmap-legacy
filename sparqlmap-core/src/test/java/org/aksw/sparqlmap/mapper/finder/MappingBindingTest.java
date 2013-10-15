@@ -3,10 +3,15 @@ package org.aksw.sparqlmap.mapper.finder;
 import static org.junit.Assert.assertTrue;
 
 import org.aksw.sparqlmap.BSBMBaseTest;
-import org.aksw.sparqlmap.beautifier.SparqlBeautifier;
-import org.aksw.sparqlmap.config.syntax.r2rml.R2RMLModel;
-import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap;
-import org.aksw.sparqlmap.config.syntax.r2rml.TripleMap.PO;
+import org.aksw.sparqlmap.core.beautifier.SparqlBeautifier;
+import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLModel;
+import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap;
+import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap.PO;
+import org.aksw.sparqlmap.core.mapper.finder.Binder;
+import org.aksw.sparqlmap.core.mapper.finder.FilterFinder;
+import org.aksw.sparqlmap.core.mapper.finder.MappingBinding;
+import org.aksw.sparqlmap.core.mapper.finder.QueryInformation;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -22,7 +27,7 @@ public class MappingBindingTest extends BSBMBaseTest {
 	private SparqlBeautifier beautifier = new SparqlBeautifier();
 	R2RMLModel model;
 	
-	Logger log = LoggerFactory.getLogger(MappingBinding.class);
+	Logger log = LoggerFactory.getLogger(MappingBindingTest.class);
 	
 	
 	@Before

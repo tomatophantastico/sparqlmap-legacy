@@ -30,58 +30,95 @@ import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
 import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 
+import com.google.common.collect.Lists;
+import com.hp.hpl.jena.rdf.model.Resource;
+
 public class TermMap{
 	
 	DataTypeHelper dth;
-	
-	// column alias from the 
-	private Map<String,FromItem>  alias2logicalTable;
+
 	
 	//  for each fromItem 
 	protected Set<EqualsTo> joinConditions = new HashSet<EqualsTo>();
 	
 	protected TripleMap trm;
 		
-
 	private CompatibilityChecker cchecker;
 
-	/**
-	 * the expressions that create a term.
-	 */
-	private List<Expression> expressions;
+	Expression termType;
+	Expression literalType;
+	Expression literalLang;
+	Expression literalValString;
+	Expression literalValNumeric;
+	Expression literalValDate;
+	Expression literalValBool;
+	Expression literalValBinary;
 	
+	List<Expression> resourceColSeg = new ArrayList<Expression>(); 
 	
-	private LinkedHashMap<String,FromItem> alias2fromItem = new LinkedHashMap<String, FromItem>();
+	protected LinkedHashMap<String,FromItem> alias2fromItem = new LinkedHashMap<String, FromItem>();
 
 	
 
-	public TermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions, List<FromItem> fromItems, Set<EqualsTo> joinConditions, TripleMap trm) {
-			this.dth= dataTypeHelper;
-			this.expressions = expressions;
-
-			this.trm = trm;		
-			for(FromItem fi: fromItems){
-				alias2fromItem.put(fi.getAlias(), fi);
-			}
-			if(joinConditions!=null){
-				this.joinConditions = joinConditions;
-			}
-			//expressions = new ArrayList<Expression>();
+//	public static TermMap createTermMap(DataTypeHelper dataTypeHelper,
+//			List<Expression> expressions, List<FromItem> fromItems,
+//			Set<EqualsTo> joinConditions, TripleMap trm) {
+//		TermMap tm = new TermMap(dataTypeHelper);
+//		tm.setExpressions(expressions);
+//
+//		tm.trm = trm;
+//		for (FromItem fi : fromItems) {
+//			tm.alias2fromItem.put(fi.getAlias(), fi);
+//		}
+//		if (joinConditions != null) {
+//			tm.joinConditions = joinConditions;
+//		}
+//		// expressions = new ArrayList<Expression>();
+//		return tm;
+//	}
+	
+	private void setExpressions(List<Expression> expressions) {
+		List<Expression> exprs = new ArrayList<Expression>(expressions); //clone it, so we can work with it
 		
-		}
-	
-	
-	public TermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions) {
-		this.dth= dataTypeHelper;
-		this.expressions = expressions;
+		termType = exprs.remove(0);
+		literalType = exprs.remove(0);
+		literalLang= exprs.remove(0);
+		literalValString= exprs.remove(0);
+		literalValNumeric  = exprs.remove(0);
+		literalValDate = exprs.remove(0);
+		literalValBool = exprs.remove(0);
+		literalValBinary = exprs.remove(0);
+		resourceColSeg.addAll(exprs);
+				
+	}
+
+
+	public static  TermMap createTermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions) {
+		TermMap tm = new TermMap(dataTypeHelper);
+		tm.setExpressions(expressions);
+		
+		return tm;
 			
+	}
+	
+	public TermMap(DataTypeHelper dth){
+		this.dth = dth;
+		termType = dth.castNull(dth.getNumericCastType());
+		literalType = dth.castNull(dth.getStringCastType());
+		literalLang= dth.castNull(dth.getStringCastType());
+		literalValString= dth.castNull(dth.getStringCastType());
+		literalValNumeric  = dth.castNull(dth.getNumericCastType());
+		literalValDate = dth.castNull(dth.getDateCastType());
+		literalValBool = dth.castNull(dth.getBooleanCastType());
+		literalValBinary = dth.castNull(dth.getBinaryDataType());
+		
+		resourceColSeg = new ArrayList<Expression>(); 
 	}
 	
 
 
 	public List<SelectExpressionItem> getSelectExpressionItems( String colalias){
 		List<Expression> exprs = new ArrayList<Expression>(this.getExpressions()); //clone it, so we can work with it
-		DataTypeHelper dataTypeHelper = getDataTypeHelper();
 		List<SelectExpressionItem> seis = new ArrayList<SelectExpressionItem>();
 		//read the header
 		
@@ -154,8 +191,6 @@ public class TermMap{
 		return seis;
 	}
 	
-	
-	
 	public List<FromItem> getFromItems(){
 		return new ArrayList<FromItem>(this.alias2fromItem.values());
 	}
@@ -170,22 +205,13 @@ public class TermMap{
 	}
 	
 	
-
-	
-	public List<Expression> getExpressions() {
-		return expressions;
-	}
-	
-
-	
-	
 	protected DataTypeHelper getDataTypeHelper(){
 		return dth;
 	}
 	
 	public String toString(){
 		StringBuffer out = new StringBuffer();
-		for(Expression exp: expressions ){
+		for(Expression exp: getExpressions() ){
 			out.append(exp.toString());
 			out.append("|");
 		}
@@ -193,30 +219,9 @@ public class TermMap{
 		return out.toString();
 	}
 	
-	
-	public Map<String, FromItem> getAlias2logicalTable() {
-		return alias2logicalTable;
-	}
-	
-	protected void setAlias2logicalTable(Map<String, FromItem> alias2logicalTable) {
-		this.alias2logicalTable = alias2logicalTable;
-	}
-	
-	
-	/**
-	 * this method creates a new List and rewrites the aliases of column tables
-	 * @return
-	 */
-	protected List<Expression> cloneColumnExpressions(List<Expression> expressions, String suffix){
-		List<Expression> copied = new ArrayList<Expression>();
-		
-		for (Expression expression : expressions) {
-			copied.add(cloneExpression( expression,suffix));
-		}
-		return copied;
-	}
 
-
+	
+	
 	protected Expression cloneExpression(Expression origExpr,String suffix){
 		if(origExpr instanceof net.sf.jsqlparser.schema.Column){
 			Column origColumn = (Column) origExpr;
@@ -267,48 +272,53 @@ public class TermMap{
 	
 	public TermMap clone(String suffix) {
 		
-		List<Expression> clonedExpressions = cloneColumnExpressions(this.expressions, suffix);
+		TermMap clone = new TermMap(this.dth);
+		clone.cchecker = cchecker;
+		clone.termType = cloneExpression(termType, suffix);
+		clone.literalLang = cloneExpression(literalLang, suffix);
+		clone.literalType = cloneExpression(literalType, suffix);
+		clone.literalValBinary  = cloneExpression(literalValBinary, suffix);
+		clone.literalValBool = cloneExpression(literalValBool, suffix);
+		clone.literalValDate = cloneExpression(literalValDate, suffix);
+		clone.literalValNumeric = cloneExpression(literalValNumeric, suffix);
+		clone.literalValString = cloneExpression(literalValString, suffix);
 		
-		//rename the from items Accordingly
+		for(Expression resourceSegment :resourceColSeg){
+			clone.resourceColSeg.add(cloneExpression(resourceSegment, suffix));
+		}
 		
-		Collection<FromItem> origFromItems = this.alias2fromItem.values();
+		for(FromItem fi : alias2fromItem.values()){
+			FromItem ficlone = cloneFromItem(suffix,fi);
+			clone.alias2fromItem.put(ficlone.getAlias(), ficlone);
+		}
 		
-		final List<FromItem> clonedFromItems = cloneFromItems(suffix,
-				origFromItems);
-		
-		
-		Collection<EqualsTo> origjoinConditions = this.joinConditions;
-		
-		Set<EqualsTo> clonedJoinConditions = cloneJoinsCondition(suffix,
-				origjoinConditions);
-		
-		
-		TermMap clone = new TermMap(this.dth, clonedExpressions,clonedFromItems,clonedJoinConditions,trm);
-		
+		for(EqualsTo joinCondition : joinConditions){
+			clone.joinConditions.add(cloneJoinCondition(suffix, joinCondition));
+		}
+			
 		return clone;
 	}
 
-	private Set<EqualsTo> cloneJoinsCondition(final String suffix,
-			Collection<EqualsTo> origjoinConditions) {
-		Set<EqualsTo> clonedJoinConditions = new HashSet<EqualsTo>();
-		for(Expression origJoinCon : origjoinConditions){
-			
-			EqualsTo cloneEq = new EqualsTo();
-			Expression leftClone = cloneExpression((((EqualsTo)origJoinCon).getLeftExpression()), suffix);
-			 
-			cloneEq.setLeftExpression(leftClone);
-			Expression rightClone = cloneExpression((((EqualsTo)origJoinCon).getRightExpression()), suffix);
-			cloneEq.setRightExpression(rightClone);
-			clonedJoinConditions.add(cloneEq);
-		}
-		return clonedJoinConditions;
+	private EqualsTo cloneJoinCondition(final String suffix,
+			EqualsTo origjoinCondition) {
+
+		EqualsTo cloneEq = new EqualsTo();
+		Expression leftClone = cloneExpression(
+				(((EqualsTo) origjoinCondition).getLeftExpression()), suffix);
+
+		cloneEq.setLeftExpression(leftClone);
+		Expression rightClone = cloneExpression(
+				(((EqualsTo) origjoinCondition).getRightExpression()), suffix);
+		cloneEq.setRightExpression(rightClone);
+
+		return cloneEq;
 	}
 
-	private List<FromItem> cloneFromItems(final String suffix,
-			Collection<FromItem> origFromItems) {
-		final List<FromItem> clonedFromItems = new ArrayList<FromItem>();
+	private FromItem cloneFromItem(final String suffix,
+			final FromItem fi) {
 		
-		for(FromItem fi : origFromItems){
+		final List<FromItem> clonedFromItems = new ArrayList<FromItem>();
+
 			fi.accept(new FromItemVisitor() {
 				
 				@Override
@@ -338,8 +348,12 @@ public class TermMap{
 				}
 			});
 			
-		}
-		return clonedFromItems;
+			if(clonedFromItems.size()!=1){
+				throw new ImplementationException("Error cloning a term map.");
+			}
+			
+			return clonedFromItems.get(0);
+
 	}
 	
 	public void addFromItem(FromItem from){
@@ -348,13 +362,7 @@ public class TermMap{
 	
 	
 	
-	public void toTtl(StringBuffer sb){
-		sb.append("<this> <is> <noTTl>");
-	}
-
-
 	public TripleMap getTripleMap() {
-		// TODO Auto-generated method stub
 		return trm;
 	}
 	
@@ -368,36 +376,15 @@ public class TermMap{
 		this.cchecker = cchecker;
 	}
 	
-	
-	
-	
-	
-	public static TermMap getNullTermMap(DataTypeHelper dth){
+	public static TermMap createNullTermMap(DataTypeHelper dth){
+		TermMap nullTm = new TermMap(dth);
 		
-		
-		
-		List<Expression> nullExpressions = new ArrayList<Expression>();
-		
-		nullExpressions.add(new NullValue());
-		nullExpressions.add(dth.cast(new LongValue("1"), dth.getNumericCastType()));
-		nullExpressions.add(new NullValue());
-		nullExpressions.add(new NullValue());
-		nullExpressions.add(new NullValue());
-		nullExpressions.add(new NullValue());
-		nullExpressions.add(new NullValue());
-		
-		   
-		   
-		   
-		
-		TermMap nullTm = new TermMap(null, nullExpressions);
 		return nullTm;
 		
 	}
 
-
 	public boolean isConstant() {
-		for(Expression ex: expressions){
+		for(Expression ex: getExpressions()){
 			if(DataTypeHelper.uncast(ex) instanceof Column){
 				return false;
 			}
@@ -406,7 +393,73 @@ public class TermMap{
 		
 		return true;
 	}
-	
-	
+
+	public List<Expression> getExpressions(){
 		
+		List<Expression> exprs = Lists.newArrayList(
+				termType,
+				literalType,
+				literalLang,
+				literalValString,
+				literalValNumeric,
+				literalValDate,
+				literalValBool,
+				literalValBinary);
+		exprs.addAll(resourceColSeg);
+		
+		return exprs;
+	}
+	
+	
+	public void setTermTyp(Resource tt){
+		if(tt.equals(R2RML.IRI)){
+			termType =dth.asNumeric(ColumnHelper.COL_VAL_TYPE_RESOURCE);
+		}else if (tt.equals(R2RML.BlankNode)) {
+			termType = dth.asNumeric(ColumnHelper.COL_VAL_TYPE_BLANK);
+		} else if (tt.equals(R2RML.Literal)) {
+			termType = dth.asNumeric(ColumnHelper.COL_VAL_TYPE_LITERAL);
+		}
+	}
+	
+	
+	public Resource getTermType(){
+		String tt = ((LongValue)DataTypeHelper.uncast(termType)).getStringValue();
+		
+		if(tt.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE.toString())){
+			return R2RML.IRI;
+		}else if (tt.equals(ColumnHelper.COL_VAL_TYPE_BLANK.toString())) {
+			return R2RML.BlankNode;
+		} else{
+			return R2RML.Literal;
+		}
+	}
+	
+	public void setLiteralDataType(String ldt){
+		if(ldt!=null&&!ldt.isEmpty()){
+			this.literalType = dth.cast(new StringValue("'"+ldt+"'"), dth.getStringCastType()); 
+		}
+		
+	}
+	
+	
+	public List<Expression> getResourceColSeg() {
+		return resourceColSeg;
+	}
+	
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+	
+	
 }

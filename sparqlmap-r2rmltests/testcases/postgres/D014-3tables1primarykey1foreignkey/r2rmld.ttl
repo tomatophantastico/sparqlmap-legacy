@@ -14,7 +14,7 @@
             WHEN 'CLERK' THEN 'general-office'
             WHEN 'NIGHTGUARD' THEN 'security'
             WHEN 'ENGINEER' THEN 'engineering'
-        END) AS ROLE FROM "EMP"
+        END) AS "ROLE" FROM "EMP"
 
         """ ];
     rr:subjectMap [

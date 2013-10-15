@@ -172,18 +172,19 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					Node node= null;
 					// create the binding here
 					// first check for type
-					Integer type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
-					if(type.equals(0)){ // funny as getInt for null-values returns 0
-						//no value for this variable, do nothing
-					} else 	if (type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE) || type.equals(ColumnHelper.COL_VAL_TYPE_BLANK)) {
-						node = createResource(var, type);			
-					} else if (type == ColumnHelper.COL_VAL_TYPE_LITERAL) {
-						node = createLiteral(var);
-					} else{
-						throw new ImplementationException("Unidentifiable rdf type encountered.");
-					}
-					if(node!=null){
-						binding.add(Var.alloc(var), node);
+					if(rs.getObject(var + ColumnHelper.COL_NAME_RDFTYPE)!=null){
+						
+						Integer type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
+						if(type.equals(0)){ // funny as getInt for null-values returns 0. We should have checked before.
+							throw new ImplementationException("Unidentifiable rdf type encountered.");
+						} else 	if (type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE) || type.equals(ColumnHelper.COL_VAL_TYPE_BLANK)) {
+							node = createResource(var, type);			
+						} else if (type == ColumnHelper.COL_VAL_TYPE_LITERAL) {
+							node = createLiteral(var);
+						} 
+						if(node!=null){
+							binding.add(Var.alloc(var), node);
+						}
 					}
 				//}
 			}
@@ -228,12 +229,9 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		
 		String lang =  rs.getString(var + ColumnHelper.COL_NAME_LITERAL_LANG);
 		
-		if(lang.equals(RDFS.Literal.getURI())){
+		if(lang!=null && lang.equals(RDFS.Literal.getURI())){
 			lang = null;
 		}
-		
-		
-	
 
 		String literalValue;
 		
@@ -276,23 +274,10 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 				//throw new ImplementationException("Should not get here, check datatypes");
 				literalValue=null;
 			}
-			
-			
 		}
 		
-		
-			
-		
-		
-		
 		if(literalValue !=null){
-			
-
-		node = Node
-				.createLiteral(
-						literalValue,
-						lang, dt
-						);
+			node = Node.createLiteral(literalValue,	lang, dt);
 		}else{
 			node = null; 
 		}
@@ -317,7 +302,6 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 				String segment =rs.getString(colname);
 				if(segment !=null){
 					try {
-
 						uri.append(URLEncoder.encode(segment, "US-ASCII").replaceAll("\\+", "%20"));
 					} catch (UnsupportedEncodingException e) {
 						// TODO Auto-generated catch block
@@ -325,14 +309,12 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					}
 				}
 			}
-			
 		}
 
 		if(uri.length()==0){
 			node = null; 
 		}else{
 			if(type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE)){
-				
 				if(baseUri!=null){
 					try{
 						node = Node.createURI(uri.toString());
@@ -344,13 +326,9 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 							node = null;
 						}
 					}
-					
-					
 				}else{
 					node = Node.createURI(uri.toString());
 				}
-				
-				
 			}else{
 				node = Node.createAnon(new AnonId(uri.toString()));
 			}
