@@ -254,7 +254,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 			if (!dupe) {
 
-				Expression sqlEx = exprconv.getSQLExpression(expr,
+				Expression sqlEx = exprconv.asFilter(expr,
 						colstring2var, colstring2TermMap);
 				if (sqlEx != null) {
 					addSQLFilter(sqlEx);
@@ -392,7 +392,7 @@ public class PlainSelectWrapper implements Wrapper {
 			filters.put(sqlEx.toString(), sqlEx);
 			plainSelect
 					.setWhere(FilterUtil
-							.conjunctFilters(new HashSet<Expression>(filters
+							.conjunct(new HashSet<Expression>(filters
 									.values())));
 
 		}
@@ -855,7 +855,7 @@ public class PlainSelectWrapper implements Wrapper {
 						}
 
 						join.setOnExpression(FilterUtil
-								.conjunctFilters(new ArrayList<Expression>(
+								.conjunct(new ArrayList<Expression>(
 										simplified)));
 					} else {
 						join.setSimple(true);
@@ -875,7 +875,7 @@ public class PlainSelectWrapper implements Wrapper {
 			Join ojoin = new Join();
 			ojoin.setLeft(true);
 			ojoin.setOnExpression(FilterUtil
-					.conjunctFilters(new ArrayList<Expression>(joincond)));
+					.conjunct(new ArrayList<Expression>(joincond)));
 			ojoin.setRightItem(ofi);
 			plainSelect.getJoins().add(ojoin);
 		}
@@ -893,7 +893,7 @@ public class PlainSelectWrapper implements Wrapper {
 				toRetain.add(expression);
 			}
 		}
-		plainSelect.setWhere(FilterUtil.conjunctFilters(toRetain));
+		plainSelect.setWhere(FilterUtil.conjunct(toRetain));
 		
 	}
 	
