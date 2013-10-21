@@ -82,7 +82,7 @@ public class R2RMLModelConfigurator {
 		
 		
 		
-		R2RMLModel model = new R2RMLModel(columnhelper,dbaccess,dth,mapping,schema);
+		R2RMLModel model = new R2RMLModel(dbaccess,dth,mapping,schema);
 		
 		return model;
 	}

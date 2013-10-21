@@ -3,6 +3,7 @@ package org.aksw.sparqlmap.core.mapper.translate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -10,6 +11,7 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
@@ -211,19 +213,38 @@ public abstract class FilterUtil {
 	}
 	
 	
-	public static Expression conjunctFilters(Collection<Expression> exps) {
-		if (exps.isEmpty()) {
+	public static Expression conjunct(Collection<Expression> exprs) {
+		exprs = new ArrayList<Expression>(exprs);
+		if (exprs.isEmpty()) {
 			return null;
-		} else if (exps.size() == 1) {
-			return exps.iterator().next();
+		} else if (exprs.size() == 1) {
+			return exprs.iterator().next();
 		} else {
-			Expression exp = exps.iterator().next();
-			exps.remove(exp);
-			AndExpression and = new AndExpression(exp, conjunctFilters(exps));
+			Expression exp = exprs.iterator().next();
+			exprs.remove(exp);
+			AndExpression and = new AndExpression(exp, conjunct(exprs));
 			return and;
 		}
-
 	}
+	
+	public static Expression disjunct(Collection<Expression> exprs) {
+		exprs = new ArrayList<Expression>(exprs);
+		if (exprs.isEmpty()) {
+			return null;
+		} else if (exprs.size() == 1) {
+			return exprs.iterator().next();
+		} else {
+			Expression exp = exprs.iterator().next();
+			exprs.remove(exp);
+			OrExpression and = new OrExpression(exp, conjunct(exprs));
+			return and;
+		}
+	}
+	
+	
+	
+	
+	
 	/**
 	 * use this method to get the other from item in a join condition
 	 * @param equalsTo

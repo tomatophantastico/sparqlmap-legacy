@@ -3,10 +3,12 @@ package org.aksw.sparqlmap.core.config.syntax.r2rml;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import net.sf.jsqlparser.expression.CastExpression;
 import net.sf.jsqlparser.expression.Expression;
@@ -29,11 +31,14 @@ import org.aksw.sparqlmap.core.mapper.compatibility.CompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
 import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.hp.hpl.jena.rdf.model.Resource;
 
 public class TermMap{
+	
+	org.slf4j.Logger log = LoggerFactory.getLogger(TermMap.class); 
 	
 	DataTypeHelper dth;
 
@@ -45,16 +50,16 @@ public class TermMap{
 		
 	private CompatibilityChecker cchecker;
 
-	Expression termType;
-	Expression literalType;
-	Expression literalLang;
-	Expression literalValString;
-	Expression literalValNumeric;
-	Expression literalValDate;
-	Expression literalValBool;
-	Expression literalValBinary;
+	public Expression termType;
+	public Expression literalType;
+	public Expression literalLang;
+	public Expression literalValString;
+	public Expression literalValNumeric;
+	public Expression literalValDate;
+	public Expression literalValBool;
+	public Expression literalValBinary;
 	
-	List<Expression> resourceColSeg = new ArrayList<Expression>(); 
+	public List<Expression> resourceColSeg = new ArrayList<Expression>(); 
 	
 	protected LinkedHashMap<String,FromItem> alias2fromItem = new LinkedHashMap<String, FromItem>();
 
@@ -446,6 +451,40 @@ public class TermMap{
 		return resourceColSeg;
 	}
 	
+	
+	
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof TermMap) {
+			TermMap otherTm = (TermMap) obj;
+			List<Expression> thisExprs = getExpressions();
+			List<Expression> otherExprs = otherTm.getExpressions();
+			if(thisExprs.size()==otherExprs.size()){
+				Iterator<Expression> thisIter = thisExprs.iterator();
+				Iterator<Expression> otherIter = otherExprs.iterator();
+				while(thisIter.hasNext()){
+					Expression thisExpr = thisIter.next();
+					Expression otherExpr = otherIter.next();
+					if(!thisExpr.equals(otherExpr)){
+						if(log.isDebugEnabled()){
+							if(thisExpr.toString().equals(otherExpr.toString())){
+								log.debug("Expression not considered equal, althoug their string representation are equal.");
+							}
+						}
+						return false;
+					}
+					
+				}
+				
+				return true;
+			}
+			
+			
+		}
+		
+		return false;
+	}
 	
 
 	
