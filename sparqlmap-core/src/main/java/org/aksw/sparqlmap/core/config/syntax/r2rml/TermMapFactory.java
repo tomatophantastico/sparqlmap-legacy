@@ -32,6 +32,7 @@ public class TermMapFactory {
 		TermMap tm = new TermMap(dth);
 	
 		if(node.isLiteral()){
+			tm.setTermTyp(R2RML.Literal);
 			RDFDatatype dt = node.getLiteralDatatype();
 			LiteralLabel constLit = node.getLiteral();
 			if(dt==null){
@@ -69,6 +70,12 @@ public class TermMapFactory {
 		}else{
 			//not a Literal, so it has to be a resource
 			tm.getResourceColSeg().add(resourceToExpression(node.getURI()));
+			
+			if(node.isBlank()){
+				tm.setTermTyp(R2RML.BlankNode);
+			}else{
+				tm.setTermTyp(R2RML.IRI);
+			}
 		}
 		
 		return tm;

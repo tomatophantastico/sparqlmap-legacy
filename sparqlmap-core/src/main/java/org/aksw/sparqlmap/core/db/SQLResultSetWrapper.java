@@ -172,12 +172,10 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					Node node= null;
 					// create the binding here
 					// first check for type
-					if(rs.getObject(var + ColumnHelper.COL_NAME_RDFTYPE)!=null){
+					if(rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE)!=0){
 						
 						Integer type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
-						if(type.equals(0)){ // funny as getInt for null-values returns 0. We should have checked before.
-							throw new ImplementationException("Unidentifiable rdf type encountered.");
-						} else 	if (type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE) || type.equals(ColumnHelper.COL_VAL_TYPE_BLANK)) {
+						if (type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE) || type.equals(ColumnHelper.COL_VAL_TYPE_BLANK)) {
 							node = createResource(var, type);			
 						} else if (type == ColumnHelper.COL_VAL_TYPE_LITERAL) {
 							node = createLiteral(var);

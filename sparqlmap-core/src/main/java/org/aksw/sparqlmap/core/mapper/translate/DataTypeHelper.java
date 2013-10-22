@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.CastExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.StringExpression;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.Limit;
@@ -331,6 +333,9 @@ public abstract  class DataTypeHelper {
 	public Expression asNumeric(Integer intVal){
 		return cast(new LongValue(intVal.toString()), getNumericCastType());
 	}
+	
+	
+	
 
 
 }

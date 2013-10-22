@@ -196,12 +196,8 @@ public class R2RMLModel {
 				TermMapQueryResult ptmqr = new TermMapQueryResult(pnode.asResource(),
 						reasoningModel, tripleMap.from);
 				
-				TermMap ptm = mapQueryResultOnTermMap(ptmqr, tripleMap.from,tripleMap);
+				TermMap ptm = mapQueryResultOnTermMap(ptmqr, tripleMap.from,tripleMap,R2RML.IRI);
 				
-				//just to make sure
-				ptm.setTermTyp(R2RML.IRI);
-				
-
 				tripleMap.addPO(ptm, newoTermMap);
 
 			}
@@ -389,12 +385,12 @@ public class R2RMLModel {
 				graph = Arrays.asList( resourceToExpression(R2RML.defaultGraph));
 			}
 			
-			TermMap stm =mapQueryResultOnTermMap(sres, fromItem,triplemap);
+			TermMap stm = null;
 
 			if (sres.termType != null) {
-				stm.setTermTyp(sres.termType);
+				stm = mapQueryResultOnTermMap(sres, fromItem,triplemap, sres.termType);
 			} else {
-				stm.setTermTyp(R2RML.IRI);
+				stm = mapQueryResultOnTermMap(sres, fromItem,triplemap, R2RML.IRI);
 			}
 			// some validation
 			if (sres.termType != null && sres.termType.equals(R2RML.Literal)) {
@@ -435,46 +431,39 @@ public class R2RMLModel {
 
 				TermMapQueryResult p = new TermMapQueryResult(posol, "p",
 						fromItem);
-				TermMap ptm = mapQueryResultOnTermMap(p, fromItem,triplemap);
-				// some general validation
+				
+				
 				if (p.termType != null
 						&& !p.termType.getURI().equals(R2RML.IRI)) {
 					throw new R2RMLValidationException(
 							"Only use iris in predicate position");
 				}
-				ptm.setTermTyp(R2RML.IRI);
-				
-				
-				
-				
+		
+				TermMap ptm = mapQueryResultOnTermMap(p, fromItem,triplemap,R2RML.IRI);
+			
+
 
 				TermMapQueryResult qr_o = new TermMapQueryResult(posol, "o",
 						fromItem);
 				//the term type definition according to the R2RML spec  http://www.w3.org/TR/r2rml/#termtype
 				
-				TermMap otm = mapQueryResultOnTermMap(qr_o, fromItem,triplemap);
+				TermMap otm = null;
 			
 				//Identify the term type here
 				if(qr_o.termType != null){
-					otm.setTermTyp(qr_o.termType);	
+					otm = mapQueryResultOnTermMap(qr_o, fromItem,triplemap,qr_o.termType);
 				}else if(qr_o.constant!=null){
-					//use the termtype of the constant
-					if(qr_o.constant.isAnon()){
-						otm.setTermTyp(R2RML.BlankNode);
-					}else if(qr_o.constant.isURIResource()){
-						otm.setTermTyp(R2RML.IRI);
-					}else{
-						otm.setTermTyp(R2RML.Literal);
-					}
+					otm = mapQueryResultOnTermMap(qr_o, fromItem, triplemap, null);
 				}else if(qr_o.column != null //when column, etc. then it is a literal
 							|| qr_o.lang != null
 							|| qr_o.datatypeuri != null
 							|| (qr_o.termType != null && qr_o.termType.equals(
 									R2RML.Literal))){
-						otm.setTermTyp(R2RML.Literal);
+					otm = mapQueryResultOnTermMap(qr_o, fromItem, triplemap,R2RML.Literal);
 					}else{
 						//it stays IRI
-						otm.setTermTyp(R2RML.IRI);
+						
+						otm = mapQueryResultOnTermMap(qr_o, fromItem, triplemap,R2RML.IRI);
 					}
 				
 				
@@ -613,9 +602,13 @@ public class R2RMLModel {
 		
 	}
 	
-	public TermMap mapQueryResultOnTermMap(TermMapQueryResult qr, FromItem fi, TripleMap tripleMap){
+	public TermMap mapQueryResultOnTermMap(TermMapQueryResult qr, FromItem fi, TripleMap tripleMap, Resource termType){
 		
-		TermMap tm = null;
+		TermMap tm =  TermMap.createNullTermMap(dth);
+		
+		if(termType!=null){
+			tm.setTermTyp(termType);
+		}
 		
 		
 		
@@ -626,7 +619,7 @@ public class R2RMLModel {
 			
 			
 		}else if(qr.template!=null){
-			if(tm.getTermType().equals(R2RML.Literal)){
+			if(termType.equals(R2RML.Literal)){
 				
 				List<Expression> resourceExpression = templateToResourceExpression(qr.template, fi, dth);
 				
@@ -641,7 +634,7 @@ public class R2RMLModel {
 			
 			Column col = ColumnHelper.createCol(fi.getAlias(), qr.column);
 			
-			if(tm.getTermType().equals(R2RML.Literal)){
+			if(termType.equals(R2RML.Literal)){
 				
 				int sqlType = dbconf.getDataType(fi, qr.column);
 						

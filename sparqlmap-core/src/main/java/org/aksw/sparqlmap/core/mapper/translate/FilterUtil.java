@@ -9,6 +9,7 @@ import java.util.List;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
@@ -150,7 +151,7 @@ public abstract class FilterUtil {
 	public static Expression concat(Expression... expr) {
 		
 		if(expr.length==1){
-			return expr[0];
+			return new NullValue();
 		}
 		
 		Function concat = new Function();
