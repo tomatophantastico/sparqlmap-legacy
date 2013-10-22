@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Stack;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.CaseExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
@@ -17,6 +18,7 @@ import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.TimestampValue;
+import net.sf.jsqlparser.expression.WhenClause;
 import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
 import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -24,6 +26,7 @@ import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
 import net.sf.jsqlparser.expression.operators.relational.MinorThan;
@@ -49,6 +52,7 @@ import com.hp.hpl.jena.sparql.expr.E_Bound;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_Function;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
+import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
 import com.hp.hpl.jena.sparql.expr.E_IsURI;
 import com.hp.hpl.jena.sparql.expr.E_Lang;
 import com.hp.hpl.jena.sparql.expr.E_LangMatches;
@@ -110,8 +114,7 @@ public class ExpressionConverter {
 	 */
 
 	public List<OrderByElement> convert(OpOrder opo,
-			BiMap<String, String> colstring2var,
-			Map<String, TermMap> colstring2col) {
+			BiMap<String, TermMap> var2termMap) {
 
 		List<OrderByElement> obys = new ArrayList<OrderByElement>();
 		for (SortCondition soCond : opo.getConditions()) {
@@ -121,7 +124,7 @@ public class ExpressionConverter {
 			if (expr instanceof ExprVar) {
 				
 				String var = expr.getVarName();
-				TermMap tc  = colstring2col.get(colstring2var.inverse().get(var));
+				TermMap tc  = var2termMap.get(var);
 
 				for(Expression exp :tc.getExpressions()){
 					OrderByExpressionElement ob = new OrderByExpressionElement(exp);
@@ -134,11 +137,13 @@ public class ExpressionConverter {
 				List<Expr> subexprs = ((ExprFunction) expr).getArgs();
 				
 				for (Expr subexpr : subexprs) {
-					throw new ImplementationException("Implement Here");
-//					Expression subobyExpr =  getSQLExpression(subexpr,
-//							colstring2var, colstring2col);
-//					OrderByExpressionElement ob = new OrderByExpressionElement(subobyExpr);
-//					obys.add(ob);
+					List<Expression> subobyExprs =  asTermMap(subexpr,
+							var2termMap).getExpressions();
+					for(Expression subobyExpr: subobyExprs){
+						OrderByExpressionElement ob = new OrderByExpressionElement(subobyExpr);
+						obys.add(ob);
+					}
+					
 					
 				}
 
@@ -170,9 +175,9 @@ public class ExpressionConverter {
 //	}
 	
 	
-	public Expression asFilter(Expr expr, BiMap<String, String> colstring2var, Map<String, TermMap> colstring2TermMap){
+	public Expression asFilter(Expr expr, BiMap<String, TermMap> var2termMap){
 		
-		TermMap tm = asTermMap(expr, colstring2var, colstring2TermMap);
+		TermMap tm = asTermMap(expr, var2termMap);
 		return DataTypeHelper.uncast(tm.literalValBool);
 		
 		
@@ -180,11 +185,10 @@ public class ExpressionConverter {
 	}
 	
 	
-	public TermMap asTermMap(Expr expr, BiMap<String, String> colstring2var, Map<String, TermMap> colstring2TermMap){
-		ExprToTermapVisitor ettm = new ExprToTermapVisitor(colstring2var, colstring2TermMap);
+	public TermMap asTermMap(Expr expr,BiMap<String, TermMap> var2termMap){
+		ExprToTermapVisitor ettm = new ExprToTermapVisitor(var2termMap);
 		
-		ExprWalker walker = new ExprWalker(ettm);
-		walker.walk(expr);
+		ExprWalker.walk(ettm, expr);
 		
 			
 		
@@ -194,16 +198,14 @@ public class ExpressionConverter {
 	
 	
 	public class ExprToTermapVisitor extends ExprVisitorBase{
-		Stack<TermMap> tms;
-		BiMap<String, String> colstring2var;
-		Map<String, TermMap> colstring2TermMap;
+		Stack<TermMap> tms=  new Stack<TermMap>();
+		BiMap<String, TermMap> var2termMap;
+	
 		
 		
-		public ExprToTermapVisitor(BiMap<String, String> colstring2var,
-				Map<String, TermMap> colstring2TermMap) {
+		public ExprToTermapVisitor(BiMap<String, TermMap> var2termMap) {
 			super();
-			this.colstring2var = colstring2var;
-			this.colstring2TermMap = colstring2TermMap;
+			this.var2termMap = var2termMap;
 		}
 
 
@@ -227,84 +229,125 @@ public class ExpressionConverter {
 			
 			if(func instanceof E_Equals){
 				
-				List<Expression> eqs = new ArrayList<Expression>();
+				putXpathTestOnStack(left, right, EqualsTo.class );
 				
-				// term type
-				EqualsTo eqSql_tt = new EqualsTo();
-				eqSql_tt.setLeftExpression(left.termType);
-				eqSql_tt.setRightExpression(right.termType);
-				eqs.add(eqSql_tt);
-				// and all the other fields that might be null
-				Expression literalTypeEquality = bothNullOr(left.literalType, right.literalType, new EqualsTo());
-				eqs.add(literalTypeEquality);
-				
-				Expression literalBinaryEquality = bothNullOr(left.literalValBinary, right.literalValBinary, new EqualsTo());
-				eqs.add(literalBinaryEquality);
-				
-				Expression literalBoolEquality = bothNullOr(left.literalValBool,right.literalValBool, new EqualsTo());
-				eqs.add(literalBoolEquality);
-				
-				Expression literalDateEquality = bothNullOr(left.literalValDate, right.literalValDate, new EqualsTo());
-				eqs.add(literalDateEquality);
-				
-				Expression literalNumericEquality = bothNullOr(left.literalValNumeric, right.literalValNumeric, new EqualsTo());
-				eqs.add(literalNumericEquality);
-				
-				Expression literalStringEquality = bothNullOr(left.literalValString,right.literalValString, new EqualsTo());
-				eqs.add(literalStringEquality);
-				
-				
-				//and check for the resources
-				EqualsTo resourceEq=  new EqualsTo();
-				
-				resourceEq.setLeftExpression(FilterUtil.concat(left.resourceColSeg.toArray(new Expression[0])));
-				resourceEq.setRightExpression(FilterUtil.concat(right.resourceColSeg.toArray(new Expression[0])));
-				
-				Expression resourceEquality = bothNullOr(FilterUtil.coalesce(left.resourceColSeg.toArray(new Expression[0])), FilterUtil.coalesce(right.resourceColSeg.toArray(new Expression[0])),resourceEq);
-				eqs.add(resourceEquality);
-				
-			}else{
-				
+			}else if(func instanceof E_NotEquals){
+				putXpathTestOnStack(left, right, NotEqualsTo.class);
+			}else if(func instanceof E_LessThan){
+				putXpathTestOnStack(left, right, MinorThan.class );
+			}else if (func instanceof E_LessThanOrEqual){
+				putXpathTestOnStack(left, right, MinorThanEquals.class);
+			}else if(func instanceof E_GreaterThan){
+				putXpathTestOnStack(left, right, GreaterThan.class);
+			}else if(func instanceof E_GreaterThanOrEqual){
+				putXpathTestOnStack(left, right, GreaterThanEquals.class);
 			}
 			
-		};
+			
+			else{
+				throw new ImplementationException("Expression not implemented:" + func.toString());
+			}
+			
+		}
+
+
+		public void putXpathTestOnStack(TermMap left, TermMap right, Class<? extends BinaryExpression> test) {
+	
+				try {
+					List<Expression> eqs = new ArrayList<Expression>();
+								
+					
+					// and all the other fields that might be null
+//					Expression literalTypeEquality = bothNullOrBinary(left.literalType, right.literalType, test.newInstance());
+//					eqs.add(literalTypeEquality);
+					
+					Expression literalBinaryEquality = bothNullOrBinary(left.literalValBinary, right.literalValBinary, test.newInstance());
+					eqs.add(literalBinaryEquality);
+					
+					Expression literalBoolEquality = bothNullOrBinary(left.literalValBool,right.literalValBool,test.newInstance());
+					eqs.add(literalBoolEquality);
+					
+					Expression literalDateEquality = bothNullOrBinary(left.literalValDate, right.literalValDate, test.newInstance());
+					eqs.add(literalDateEquality);
+					
+					Expression literalNumericEquality = bothNullOrBinary(left.literalValNumeric, right.literalValNumeric, test.newInstance());
+					eqs.add(literalNumericEquality);
+					
+					Expression literalStringEquality = bothNullOrBinary(left.literalValString,right.literalValString, test.newInstance());
+					eqs.add(literalStringEquality);
+					
+					
+					//and check for the resources
+					
+					if(left.resourceColSeg.size()==0&&right.resourceColSeg.size()==0){
+						//no need to do anything
+					}else{
+						BinaryExpression resourceEq=  test.newInstance();
+						
+						resourceEq.setLeftExpression(FilterUtil.concat(left.resourceColSeg.toArray(new Expression[0])));
+						resourceEq.setRightExpression(FilterUtil.concat(right.resourceColSeg.toArray(new Expression[0])));
+						
+						Expression resourceEquality = bothNullOrBinary(FilterUtil.concat(left.resourceColSeg.toArray(new Expression[0])), FilterUtil.concat(right.resourceColSeg.toArray(new Expression[0])),resourceEq);
+						eqs.add(resourceEquality);
+					}
+					TermMap eqTermMap = tmf.createBoolTermMap(new Parenthesis(FilterUtil.conjunct(eqs)));
+					tms.push(eqTermMap);
+					
+				} catch (InstantiationException | IllegalAccessException e) {
+					log.error("Error creating xpathtest",e);
+				}
+			
+		}
 		
-		Expression bothNullOr(Expression expr1, Expression expr2, BinaryExpression function){
+		Expression bothNullOrBinary(Expression expr1, Expression expr2, BinaryExpression function){
 			
 			
 			function.setLeftExpression(expr1);
 			function.setRightExpression(expr2);
+			Parenthesis pt = new Parenthesis( bothNullOr(expr1, expr2, function));
 			
-			return bothNullOr(expr1, expr2, function);
+			return pt;
 			
 		}
 		
 		
 		Expression bothNullOr(Expression expr1, Expression expr2, Expression function){
+			
 			IsNullExpression literalTypeLeftIsNull = new IsNullExpression();
-			literalTypeLeftIsNull.setNot(true);
 			literalTypeLeftIsNull.setLeftExpression(expr1);
 			IsNullExpression literalTypeRightIsNull = new IsNullExpression();
-			literalTypeRightIsNull.setNot(true);
 			literalTypeRightIsNull.setLeftExpression(expr2);
 			
-			
 			Expression isNullCheck =  FilterUtil.conjunct(Arrays.asList((Expression)literalTypeLeftIsNull,(Expression)literalTypeRightIsNull));
-			return FilterUtil.disjunct(Arrays.asList( (Expression)function,(Expression) isNullCheck));
+
+			
+			
+			WhenClause bothNull = new WhenClause();
+			bothNull.setWhenExpression(isNullCheck);
+			bothNull.setThenExpression(dth.cast(new StringValue("'true'"),dth.getBooleanCastType()));
+			
+			
+			CaseExpression caseExpr = new CaseExpression();
+			caseExpr.setWhenClauses(Arrays.asList(((Expression)bothNull)));
+			
+			caseExpr.setElseExpression(function);
+			
+			
+			return caseExpr;
 		}
 		
 		
 		@Override
-		public void visit(NodeValue nv) {
-			
-			if(nv.isConstant()){
-				tms.push(tmf.createTermMap(nv.asNode()));
-			}else{
-				
-			}
-			
+		public void visit(NodeValue nv) {		
+			tms.push(tmf.createTermMap(nv.asNode()));
 		}
 		
+		
+		@Override
+		public void visit(ExprVar nv) {
+			tms.push( var2termMap.get( nv.asVar().getName()));
+
+		}
 		
 		
 		

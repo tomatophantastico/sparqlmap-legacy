@@ -41,10 +41,10 @@ public class ColumnHelper {
 			+ "_04LS";
 	public static String COL_NAME_LITERAL_NUMERIC = R2R_COL_SUFFIX
 			+ "_05LN";
-	public static String COL_NAME_LITERAL_DATE = R2R_COL_SUFFIX + "_6LD";
+	public static String COL_NAME_LITERAL_DATE = R2R_COL_SUFFIX + "_06LD";
 	public static String COL_NAME_LITERAL_BOOL = R2R_COL_SUFFIX
 			+ "_07LB";
-	public static String COL_NAME_LITERAL_BINARY = R2R_COL_SUFFIX + "08_L0";
+	public static String COL_NAME_LITERAL_BINARY = R2R_COL_SUFFIX + "_08_LZ";
 	public static String COL_NAME_RESOURCE_COL_SEGMENT = R2R_COL_SUFFIX
 			+ "_09R";
 	public static String COL_NAME_ORDER_BY = R2R_COL_SUFFIX + "_XXOB";

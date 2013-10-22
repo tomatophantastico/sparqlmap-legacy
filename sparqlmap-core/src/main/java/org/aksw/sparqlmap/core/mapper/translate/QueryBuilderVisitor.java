@@ -96,15 +96,15 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		PlainSelectWrapper ps2 = (PlainSelectWrapper) selectBody2Wrapper
 				.get(selects.pop());
 		
-		if(ps1.getColstring2Var().isEmpty()&& ps2.getColstring2Var().isEmpty()){
+		if(ps1.getVar2TermMap().isEmpty()&& ps2.getVar2TermMap().isEmpty()){
 			log.error("For union, both queries are empty. This rather problematic");
 			selects.push(ps1.getSelectBody());
 			
-		}else if (ps1.getColstring2Var().isEmpty()){
+		}else if (ps1.getVar2TermMap().isEmpty()){
 			log.info("found empty select for union, skipping it");
 			selects.push(ps2.getSelectBody());
 			
-		}else if(ps2.getColstring2Var().isEmpty()){
+		}else if(ps2.getVar2TermMap().isEmpty()){
 			log.info("found empty select for union, skipping it");
 			selects.push(ps1.getSelectBody());
 		}else{
@@ -219,7 +219,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 					.get(leftsb);
 	
 		
-		if(left.getColstring2Var().isEmpty()){
+		if(left.getVar2TermMap().isEmpty()){
 			log.warn("left is empty");
 		}else if(main ==null){
 			main = left;
@@ -435,8 +435,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		SelectBody sb = selects.pop();
 		PlainSelect toModify = null;
 
-		BiMap<String, String> colstring2var;
-		Map<String, TermMap> colstring2col;
+		BiMap<String, TermMap> var2termMap;
 		
 		if(sb instanceof SetOperationList){
 			
@@ -479,14 +478,13 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			
 			
 
-			colstring2var = ((PlainSelectWrapper) selectBody2Wrapper.get(sb)).getColstring2Var();
-			colstring2col = ((PlainSelectWrapper) selectBody2Wrapper.get(sb)).getColstring2Col();
+			var2termMap = ((PlainSelectWrapper) selectBody2Wrapper.get(sb)).getVar2TermMap();
 
 
 		if (qi.getOrder() != null && toModify.getOrderByElements() == null) {
 			// if the list is not set, we create a new set
 			List<OrderByElement> obys = exprconv.convert(
-					qi.getOrder(), colstring2var,colstring2col);
+					qi.getOrder(), var2termMap);
 			int i = 0;
 			for (OrderByElement orderByElement : obys) {
 				

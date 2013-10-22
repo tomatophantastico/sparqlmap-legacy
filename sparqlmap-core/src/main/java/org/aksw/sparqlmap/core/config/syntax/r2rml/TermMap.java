@@ -98,9 +98,9 @@ public class TermMap{
 	}
 
 
-	public static  TermMap createTermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions) {
+	public static  TermMap createTermMap(DataTypeHelper dataTypeHelper, Collection<Expression> expressions) {
 		TermMap tm = new TermMap(dataTypeHelper);
-		tm.setExpressions(expressions);
+		tm.setExpressions(new ArrayList<Expression>(expressions));
 		
 		return tm;
 			

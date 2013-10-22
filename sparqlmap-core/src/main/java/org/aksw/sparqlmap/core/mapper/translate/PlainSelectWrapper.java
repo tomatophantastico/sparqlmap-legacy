@@ -74,6 +74,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueNode;
@@ -104,13 +105,11 @@ public class PlainSelectWrapper implements Wrapper {
 
 	private Map<String, FromItem> _optFromItems = new LinkedHashMap<String, FromItem>();
 
-	private Map<String, TermMap> colstring2TermMap = new HashMap<String, TermMap>();
+	//private Map<String, TermMap> colstring2TermMap = new HashMap<String, TermMap>();
 
-	// private Multimap<String, Mapping> ldpMappings = HashMultimap.create();
-
-	private BiMap<String, String> colstring2var = HashBiMap.create();
-
-	private TermMap crc;
+	private BiMap<String,TermMap> var2termMap = HashBiMap.create();
+	
+	//private BiMap<String, String> colstring2var = HashBiMap.create();
 
 	private DataTypeHelper dth;
 
@@ -149,8 +148,8 @@ public class PlainSelectWrapper implements Wrapper {
 		// we check if the column is already in use.
 		// if the column then is used to be bound to another variable
 		// then we have to duplicate it an join it to again to the query
-		if (colstring2var.containsKey(term.toString())) {
-			String var = colstring2var.get(term.toString());
+		if (var2termMap.inverse().containsKey(term)) {
+			String var = var2termMap.inverse().get(term);
 			if (!var.equals(tcAlias)) {
 				term = cloneColOnDuplicateUsage(term, tcAlias);
 			} else {
@@ -164,12 +163,12 @@ public class PlainSelectWrapper implements Wrapper {
 		// if so, the variable does not need to be added to be selected, but
 		// just be
 		// an equals statement is required.
-		if (colstring2var.inverse().containsKey(tcAlias)) {
+		if (var2termMap.containsKey(tcAlias)) {
 			// the column is already in there, so just add an equals expression
 			// as this only happends, when a join is created, we add this to the
 			// join conditions
-			String inThereColString = colstring2var.inverse().get(tcAlias);
-			if (!colstring2TermMap.get(inThereColString).equals(term)) {
+			TermMap inThereTermMap = var2termMap.get(tcAlias);
+			if (!inThereTermMap.equals(term)) {
 
 				boolean alreadyInJoinCond = false;
 
@@ -186,8 +185,7 @@ public class PlainSelectWrapper implements Wrapper {
 				// }
 
 				if (!alreadyInJoinCond) {
-					TermMap oldTc = colstring2TermMap.get(colstring2var
-							.inverse().get(tcAlias));
+					TermMap oldTc = var2termMap.get(tcAlias);
 					List<EqualsTo> eqs = FilterUtil.createEqualsTos(
 							oldTc.getExpressions(), term.getExpressions());
 
@@ -206,8 +204,8 @@ public class PlainSelectWrapper implements Wrapper {
 			}
 
 		} else {
-			colstring2var.put(term.toString(), tcAlias);
-			colstring2TermMap.put(term.toString(), term);
+			var2termMap.put(tcAlias, term);
+
 			// adds the type information
 			// add the resource and literal columns
 			plainSelect.getSelectItems().addAll(
@@ -255,7 +253,7 @@ public class PlainSelectWrapper implements Wrapper {
 			if (!dupe) {
 
 				Expression sqlEx = exprconv.asFilter(expr,
-						colstring2var, colstring2TermMap);
+						var2termMap);
 				if (sqlEx != null) {
 					addSQLFilter(sqlEx);
 				} else {
@@ -422,12 +420,10 @@ public class PlainSelectWrapper implements Wrapper {
 			// generated from more than one column.
 			for (String var : ps.getVarsMentioned()) {
 
-				TermMap rightVarTc = ps.getColstring2Col().get(
-						ps.getColstring2Var().inverse().get(var));
+				TermMap rightVarTc = ps.getVar2TermMap().get(var);
 				// variables already there and equal can be ignored
 				// if not equal, we cannot use this optimization
-				TermMap thisVarTc = colstring2TermMap.get(this.colstring2var
-						.inverse().get(var));
+				TermMap thisVarTc = var2termMap.get( var);
 				if (thisVarTc != null) {
 					// compare it
 
@@ -460,6 +456,19 @@ public class PlainSelectWrapper implements Wrapper {
 			SubSelect subsell = new SubSelect();
 			subsell.setSelectBody(right.getSelectBody());
 			subsell.setAlias("subsel_" + subsel_count++);
+			
+			BiMap<String,TermMap> rightVar2TermMap  = null;
+			
+			if(right instanceof UnionWrapper){
+				UnionWrapper rightWrapper = (UnionWrapper) right;
+				rightVar2TermMap = rightWrapper.getVar2TermMap(subsell.getAlias());
+			}else{
+				PlainSelectWrapper rightWrapper = (PlainSelectWrapper) right;
+				rightVar2TermMap = rightWrapper.getVar2TermMap();
+			}
+			
+			
+			
 
 			List<SelectExpressionItem> newSeis = new ArrayList<SelectExpressionItem>();
 
@@ -543,10 +552,9 @@ public class PlainSelectWrapper implements Wrapper {
 				TermMap sstc = null;
 				// the var is already defined, we therefore need to modify the
 				// exisiting Term Map.
-				if (colstring2var.inverse().get(var) != null) {
+				if (var2termMap.get(var) != null) {
 					List<Expression> exprsToBeExtended = new ArrayList<Expression>(
-							colstring2TermMap.get(
-									colstring2var.inverse().get(var))
+							var2termMap.get(var)
 									.getExpressions());
 					exprsToBeExtended.addAll(expressions);
 					sstc = TermMap.createTermMap(dth, exprsToBeExtended);
@@ -555,10 +563,8 @@ public class PlainSelectWrapper implements Wrapper {
 					// not in there, we can create a new
 					sstc = TermMap.createTermMap(dth, expressions);
 				}
-
-				colstring2TermMap.put(sstc.toString(), sstc);
-
-				colstring2var.forcePut(sstc.toString(), var);
+				
+				var2termMap.put(var, sstc);
 			}
 
 			subselects.put(subsell, right);
@@ -634,41 +640,6 @@ public class PlainSelectWrapper implements Wrapper {
 		
 		
 		
-		
-		
-//		for (int fromItemCount = 0; fromItemCount < term.getFromItems().size(); fromItemCount++) {
-//			FromItem fri = term.getFromItems().get(fromItemCount);
-//			FromItem clfri = cloneTerm.getFromItems().get(fromItemCount);
-//
-//			for (EqualsTo eq : getFromItem2joincondition().get(fri.getAlias())) {
-//				
-//				
-//				Expression rightUncast = DataTypeHelper.uncast(eq
-//						.getRightExpression());
-//
-//				if (rightUncast instanceof Column) {
-//					EqualsTo clonedEq = new EqualsTo();
-//					clonedEq.setLeftExpression(cloneEqualsExpression(
-//							eq.getLeftExpression(), fri, clfri));
-//
-//					clonedEq.setRightExpression(cloneEqualsExpression(
-//							eq.getRightExpression(), fri, clfri));
-//
-//					newEqs.add(clonedEq);
-//				}
-//			}
-//		}
-//		
-		
-//		for (EqualsTo clonedEq : newEqs) {
-//			addJoinCondition(clonedEq);
-//			_fromItem2joincondition.put(((Column) DataTypeHelper.uncast(clonedEq
-//					.getLeftExpression())).getTable().getAlias(), clonedEq);
-//			_fromItem2joincondition.put(((Column) DataTypeHelper.uncast(clonedEq
-//					.getRightExpression())).getTable().getAlias(), clonedEq);
-//		}
-
-	
 	}
 
 	private Expression cloneEqualsExpression(Expression castedCol,
@@ -736,7 +707,7 @@ public class PlainSelectWrapper implements Wrapper {
 	 * @return true if sth. was added, otherwise false
 	 */
 	public boolean fillWithNullColumn(String varNull) {
-		for (String var : colstring2var.values()) {
+		for (String var : var2termMap.keySet()) {
 			if (var.equals(varNull)) {
 				// column already present, do nothing
 				return false;
@@ -752,14 +723,10 @@ public class PlainSelectWrapper implements Wrapper {
 
 	}
 
-	public Map<String, TermMap> getColstring2Col() {
-		return colstring2TermMap;
+	public BiMap<String, TermMap> getVar2TermMap() {
+		return var2termMap;
 	}
-
-	public BiMap<String, String> getColstring2Var() {
-		return colstring2var;
-	}
-
+	
 	public Multimap<String, EqualsTo> getFromItem2joincondition() {
 		return _fromItem2joincondition;
 	}
@@ -787,7 +754,7 @@ public class PlainSelectWrapper implements Wrapper {
 	@Override
 	public Set<String> getVarsMentioned() {
 
-		return new HashSet<String>(this.getColstring2Var().values());
+		return new HashSet<String>(this.getVar2TermMap().keySet());
 	}
 
 	/**
