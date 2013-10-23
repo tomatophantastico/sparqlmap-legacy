@@ -1,7 +1,0 @@
-.classpath
-.project
-.settings
-target
-log
-syntax: regexp
-^src/main/conf/db\.properties$

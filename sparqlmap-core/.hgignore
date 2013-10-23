@@ -1,7 +1,0 @@
-syntax: glob
-target
-.*
-*.log
-*.gz
-*.ttl
-*.*~
