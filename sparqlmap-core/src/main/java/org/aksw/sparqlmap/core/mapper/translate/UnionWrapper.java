@@ -19,6 +19,7 @@ import net.sf.jsqlparser.statement.select.SetOperation;
 import net.sf.jsqlparser.statement.select.SetOperationList;
 import net.sf.jsqlparser.statement.select.UnionOp;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 
@@ -167,8 +168,6 @@ public class UnionWrapper implements Wrapper {
 		for(String var : var2siExpression.keySet()){
 			this.var2termMap.put(var, TermMap.createTermMap(dth, var2siExpression.get(var)));
 		}
-			
-		
 	}
 	
 	

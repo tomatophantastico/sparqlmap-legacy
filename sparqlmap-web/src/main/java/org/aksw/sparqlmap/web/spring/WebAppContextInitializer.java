@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.Properties;
 
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.spring.ContextSetup;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.core.env.PropertiesPropertySource;

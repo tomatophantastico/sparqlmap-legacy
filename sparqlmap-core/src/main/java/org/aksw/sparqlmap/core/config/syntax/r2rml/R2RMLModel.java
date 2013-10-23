@@ -25,13 +25,13 @@ import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.SelectBodyString;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap.PO;
 import org.aksw.sparqlmap.core.db.DBAccess;
 import org.aksw.sparqlmap.core.mapper.compatibility.CompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.compatibility.SimpleCompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;

@@ -27,10 +27,10 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.mapper.compatibility.CompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;

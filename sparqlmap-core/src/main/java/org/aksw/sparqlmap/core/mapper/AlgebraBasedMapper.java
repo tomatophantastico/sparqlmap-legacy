@@ -12,6 +12,7 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.WithItem;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.beautifier.SparqlBeautifier;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLModel;
@@ -75,9 +76,9 @@ public class AlgebraBasedMapper implements Mapper {
 
 
 
-	public String rewrite(Query sparql) {
+	public String rewrite(TranslationContext context) {
 		
-		Query origQuery = sparql;
+		Query origQuery = context.getQuery();
 		if(log.isDebugEnabled()){
 			log.debug(origQuery.toString());
 		}
@@ -85,24 +86,25 @@ public class AlgebraBasedMapper implements Mapper {
 		//first we beautify the Query
 
 
-		Op op = this.beautifier.compileToBeauty(origQuery); // new  AlgebraGenerator().compile(beautified);
+		context.setBeautifiedQuery( this.beautifier.compileToBeauty(origQuery)); // new  AlgebraGenerator().compile(beautified);
+		
+		
 		if(log.isDebugEnabled()){
-			log.debug(op.toString());
+			log.debug(context.getBeautifiedQuery().toString());
 		}
+
+		context.setQueryInformation(FilterFinder.getQueryInformation(context.getBeautifiedQuery()));
 		
+		Binder binder = new Binder(this.mappingConf,context.getQueryInformation());
 		
-		QueryInformation qi = FilterFinder.getQueryInformation(op);
-		
-		Binder binder = new Binder(this.mappingConf,qi);
-		
-		MappingBinding queryBinding = binder.bind(op);
+		context.setQueryBinding(binder.bind(context.getBeautifiedQuery()));
 		if(log.isDebugEnabled()){
-			log.debug(queryBinding.toString());
+			log.debug(context.getQueryBinding().toString());
 		}
 		
 		
 		if(fopt.isOptimizeProjectPush()){
-			qi.setProjectionPushable( checkProjectionPush(origQuery, queryBinding));
+			context.getQueryInformation().setProjectionPushable( checkProjectionPush(origQuery, context.getQueryBinding()));
 			
 		}
 		
@@ -110,21 +112,21 @@ public class AlgebraBasedMapper implements Mapper {
 		if(fopt.isOptimizeSelfUnion()){
 			
 		
-			QueryDeunifier unionOpt = new QueryDeunifier(qi,queryBinding,dth,exprconv,colhelp,fopt);
+			QueryDeunifier unionOpt = new QueryDeunifier(context.getQueryInformation(), context.getQueryBinding(),dth,exprconv,colhelp,fopt);
 			if(!unionOpt.isFailed()){
 			QueryInformation newqi = unionOpt.getQueryInformation();
-			newqi.setProjectionPushable(qi.isProjectionPush());
-			qi = newqi;
-			queryBinding = unionOpt.getQueryBinding();
+			newqi.setProjectionPushable(context.getQueryInformation().isProjectionPush());
+			context.setQueryInformation(newqi);
+			context.setQueryBinding( unionOpt.getQueryBinding());
 			}
 		}
 		
-		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(qi,queryBinding,dth,exprconv,colhelp,fopt);
+		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(context,dth,exprconv,fopt);
 		
 		
 		
 		
-		RightFirstWalker.walk(qi.getQuery(), builderVisitor);
+		RightFirstWalker.walk(context.getQueryInformation().getQuery(), builderVisitor);
 		
 		
 		// prepare deparse select
@@ -238,7 +240,13 @@ public class AlgebraBasedMapper implements Mapper {
 			QueryInformation mff = FilterFinder.getQueryInformation(qop);
 			mff.setProject((OpProject)qop);
 			
-			QueryBuilderVisitor qbv = new QueryBuilderVisitor(mff,qbind,dth,exprconv,colhelp,fopt);
+			TranslationContext context = new TranslationContext();
+			context.setQuery(spo);
+			context.setQueryName("dump query");
+			context.setQueryInformation(mff);
+			context.setQueryBinding(qbind);
+			
+			QueryBuilderVisitor qbv = new QueryBuilderVisitor(context,dth,exprconv,fopt);
 			
 			
 			OpWalker.walk(qop, qbv);

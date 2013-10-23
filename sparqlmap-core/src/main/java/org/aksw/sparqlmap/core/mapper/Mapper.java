@@ -3,6 +3,8 @@ package org.aksw.sparqlmap.core.mapper;
 
 import java.util.List;
 
+import org.aksw.sparqlmap.core.TranslationContext;
+
 import com.hp.hpl.jena.query.Query;
 
 public interface Mapper {
@@ -13,7 +15,7 @@ public interface Mapper {
 	 * @param Sparql
 	 * @return
 	 */
-	public abstract String rewrite(Query sparql);
+	public abstract String rewrite(TranslationContext context);
 	
 
 

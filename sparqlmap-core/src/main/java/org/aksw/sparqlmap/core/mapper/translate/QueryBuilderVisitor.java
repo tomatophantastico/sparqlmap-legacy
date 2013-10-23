@@ -32,6 +32,7 @@ import net.sf.jsqlparser.statement.select.SelectVisitor;
 import net.sf.jsqlparser.statement.select.SetOperationList;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap;
@@ -58,8 +59,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	
 	private DataTypeHelper dataTypeHelper;
-	private ColumnHelper columnhelper;
-	ExpressionConverter exprconv;
+	private ExpressionConverter exprconv;
 	//defines if the filters should be pushed into the unions
 	private boolean pushFilters = true;
 	
@@ -67,23 +67,19 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	private static Logger log = LoggerFactory
 			.getLogger(QueryBuilderVisitor.class);
 	
-	private MappingBinding queryBinding;
-
 	private Map<SelectBody, Wrapper> selectBody2Wrapper = new HashMap<SelectBody, Wrapper>();
 	private Stack<SelectBody> selects = new Stack<SelectBody>();
 	
 	TermMap crc;
 
-	private QueryInformation qi;
 	private FilterOptimizer fopt;
+	private final TranslationContext translationContext;
 
-	public QueryBuilderVisitor(	QueryInformation qi, MappingBinding queryBinding, DataTypeHelper dataTypeHelper, ExpressionConverter expressionConverter, ColumnHelper colhelper,FilterOptimizer fopt) {
+	public QueryBuilderVisitor(TranslationContext translationContext,	DataTypeHelper dataTypeHelper, ExpressionConverter expressionConverter, FilterOptimizer fopt) {
 		this.fopt = fopt;
-		this.queryBinding = queryBinding;
-		this.qi= qi;
 		this.dataTypeHelper = dataTypeHelper;
 		this.exprconv = expressionConverter;
-		this.columnhelper = colhelper;
+		this.translationContext = translationContext;
 	}
 
 	@Override
@@ -311,7 +307,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	@Override
 	public void visit(OpBGP opBGP) {
 
-		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,fopt);
+		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,fopt, translationContext);
 
 		// PlainSelect bgpSelect = new PlainSelect();
 
@@ -334,7 +330,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 
 		
 		
-		Collection<TripleMap> trms = queryBinding.getBindingMap().get(triple);
+		Collection<TripleMap> trms = translationContext.getQueryBinding().getBindingMap().get(triple);
 		
 
 		// do we need to create a union?
@@ -345,7 +341,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			psw.addTripleQuery(trm.getSubject(), triple
 					.getSubject().getName(), po.getPredicate(),triple
 					.getPredicate().getName(),po.getObject(),triple.getObject().getName(), isOptional);
-			if(qi.isProjectionPush()){
+			if(translationContext.getQueryInformation().isProjectionPush()){
 				//psw.setDistinct(true);
 				psw.setLimit(1);
 			}
@@ -370,12 +366,12 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			for (TripleMap trm : trms) {
 				for (PO po : trm.getPos()) {
 
-					PlainSelectWrapper innerPlainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,fopt);
+					PlainSelectWrapper innerPlainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,fopt, translationContext);
 					//build a new sql select query for this pattern
 					innerPlainSelect.addTripleQuery(trm.getSubject(), triple
 							.getSubject().getName(), po.getPredicate(),triple
 							.getPredicate().getName(),po.getObject(),triple.getObject().getName(), isOptional);
-					if(qi.isProjectionPush()){
+					if(translationContext.getQueryInformation().isProjectionPush()){
 						//innerPlainSelect.setDistinct(true);
 						innerPlainSelect.setLimit(1);
 					}
@@ -440,7 +436,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		if(sb instanceof SetOperationList){
 			
 		
-			PlainSelectWrapper wrap = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,fopt);
+			PlainSelectWrapper wrap = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,fopt, translationContext);
 			
 			wrap.addSubselect(this.selectBody2Wrapper
 					.get(sb), false);
@@ -455,7 +451,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			
 			List<String> projectVars = new ArrayList<String>();
 			
-			for(Var var: qi.getProject()
+			for(Var var: translationContext.getQueryInformation().getProject()
 					.getVars()){
 				projectVars.add(var.getName());
 			}
@@ -481,10 +477,10 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			var2termMap = ((PlainSelectWrapper) selectBody2Wrapper.get(sb)).getVar2TermMap();
 
 
-		if (qi.getOrder() != null && toModify.getOrderByElements() == null) {
+		if (translationContext.getQueryInformation().getOrder() != null && toModify.getOrderByElements() == null) {
 			// if the list is not set, we create a new set
 			List<OrderByElement> obys = exprconv.convert(
-					qi.getOrder(), var2termMap);
+					translationContext.getQueryInformation().getOrder(), var2termMap);
 			int i = 0;
 			for (OrderByElement orderByElement : obys) {
 				
@@ -518,16 +514,16 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			toModify.setOrderByElements(obys);
 		}
 
-		if (qi.getSlice() != null && toModify.getLimit() == null) {
+		if (translationContext.getQueryInformation().getSlice() != null && toModify.getLimit() == null) {
 			
 			
-			toModify = dataTypeHelper.slice(toModify,qi.getSlice());
+			toModify = dataTypeHelper.slice(toModify,translationContext.getQueryInformation().getSlice());
 			
 
 		}
 		
 		
-		if(qi.getDistinct()!=null){
+		if(translationContext.getQueryInformation().getDistinct()!=null){
 			toModify.setDistinct(new Distinct());
 		}
 
