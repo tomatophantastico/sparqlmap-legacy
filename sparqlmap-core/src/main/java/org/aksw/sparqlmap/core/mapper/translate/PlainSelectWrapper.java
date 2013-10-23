@@ -66,12 +66,18 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.util.BaseSelectVisitor;
 
+import org.aksw.sparqlmap.core.ImplementationException;
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
+import org.apache.commons.collections.MultiHashMap;
+import org.apache.commons.collections.MultiMap;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.sparql.core.Var;
@@ -80,6 +86,23 @@ import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueNode;
 
 public class PlainSelectWrapper implements Wrapper {
+	
+	private TranslationContext translationContext;
+
+
+	public PlainSelectWrapper(Map<SelectBody, Wrapper> registerTo,
+			DataTypeHelper dth, ExpressionConverter exprconv,
+			FilterOptimizer fopt, TranslationContext translationContext) {
+		super();
+		this.translationContext = translationContext;
+		this.exprconv = exprconv;
+		this.dth = dth;
+		this.fopt = fopt;
+		plainSelect.setSelectItems(new ArrayList<SelectItem>());
+		plainSelect.setJoins(new ArrayList());
+		registerTo.put(plainSelect, this);
+	}
+
 
 	public static int lj_count = 0;
 
@@ -102,18 +125,13 @@ public class PlainSelectWrapper implements Wrapper {
 
 	private Multimap<String, EqualsTo> _optFromItem2joincondition = LinkedListMultimap
 			.create();
-
+	
 	private Map<String, FromItem> _optFromItems = new LinkedHashMap<String, FromItem>();
-
-	//private Map<String, TermMap> colstring2TermMap = new HashMap<String, TermMap>();
 
 	private BiMap<String,TermMap> var2termMap = HashBiMap.create();
 	
-	//private BiMap<String, String> colstring2var = HashBiMap.create();
 
 	private DataTypeHelper dth;
-
-	private int dupcounter = 0;
 
 	ExpressionConverter exprconv;
 
@@ -130,19 +148,9 @@ public class PlainSelectWrapper implements Wrapper {
 
 	private Map<String, String> varEqualsUriMap = new HashMap<String, String>();
 
-	public PlainSelectWrapper(Map<SelectBody, Wrapper> registerTo,
-			DataTypeHelper dth, ExpressionConverter exprconv,
-			FilterOptimizer fopt) {
-		super();
-		this.exprconv = exprconv;
-		this.dth = dth;
-		this.fopt = fopt;
-		plainSelect.setSelectItems(new ArrayList<SelectItem>());
-		plainSelect.setJoins(new ArrayList());
-		registerTo.put(plainSelect, this);
-	}
-
+	
 	private void addColumn(TermMap tc, String tcAlias, boolean isOptional) {
+		
 		TermMap term = tc;
 
 		// we check if the column is already in use.
@@ -396,13 +404,226 @@ public class PlainSelectWrapper implements Wrapper {
 		}
 	}
 
-	/**
-	 * adds a subselect to the plain select. will create the join conditions.
-	 * 
-	 * @param right
-	 * @param optional
-	 *            when true, the plain select will be added with a left join
-	 */
+//	/**
+//	 * adds a subselect to the plain select. will create the join conditions.
+//	 * 
+//	 * @param right
+//	 * @param optional
+//	 *            when true, the plain select will be added with a left join
+//	 */
+//	public void addSubselect(Wrapper right, boolean optional) {
+//
+//		// check if the subselect queries only for a single triple and is
+//		// optional.
+//		// then we can add it directly to the plain select.
+//		boolean shortcutted = false;
+//
+//		if (fopt.optimizeSelfLeftJoin == true && right instanceof PlainSelectWrapper
+//				&& ((PlainSelectWrapper) right).getVarsMentioned().size() == 3
+//				&& ((PlainSelectWrapper) right).subselects.size() == 0) {
+//			PlainSelectWrapper ps = (PlainSelectWrapper) right;
+//
+//			// we require the not shared variable to be either constant resource
+//			// or a literal. column generated resources can be troublesome, if
+//			// generated from more than one column.
+//			for (String var : ps.getVarsMentioned()) {
+//
+//				TermMap rightVarTc = ps.getVar2TermMap().get(var);
+//				// variables already there and equal can be ignored
+//				// if not equal, we cannot use this optimization
+//				TermMap thisVarTc = var2termMap.get( var);
+//				if (thisVarTc != null) {
+//					// compare it
+//
+//					if (thisVarTc.toString().equals(rightVarTc.toString())) {
+//						// every thing is fine
+//					} else {
+//						
+//						break;
+//					}
+//
+//				} else {
+//					// add it if all from items are already in the plain select
+//					// we use the alias to check this.
+//					Set<String> fiAliases = new HashSet<String>();
+//
+//					for (FromItem fi : rightVarTc.getFromItems()) {
+//						fiAliases.add(fi.getAlias());
+//					}
+//
+//					if (this._fromItems.keySet().containsAll(fiAliases)) {
+//						addColumn(rightVarTc, var, true);
+//						shortcutted = true;
+//					}
+//				}
+//			}
+//		}
+//
+//		if (!shortcutted) {
+//			// create a new subselect
+//			SubSelect subsell = new SubSelect();
+//			subsell.setSelectBody(right.getSelectBody());
+//			subsell.setAlias("subsel_" + subsel_count++);
+//			
+//			BiMap<String,TermMap> rightVar2TermMap  = null;
+//			
+//			if(right instanceof UnionWrapper){
+//				UnionWrapper rightWrapper = (UnionWrapper) right;
+//				rightVar2TermMap = rightWrapper.getVar2TermMap(subsell.getAlias());
+//			}else{
+//				PlainSelectWrapper rightWrapper = (PlainSelectWrapper) right;
+//				rightVar2TermMap = rightWrapper.getVar2TermMap();
+//			}
+//			
+//			
+//			
+//
+//			List<SelectExpressionItem> newSeis = new ArrayList<SelectExpressionItem>();
+//
+//			Map<String, SelectExpressionItem> alias2sei = new HashMap<String, SelectExpressionItem>();
+//			Map<String, Expression> alias2expression = new HashMap<String, Expression>();
+//			for (Object selectItemObject : this.plainSelect.getSelectItems()) {
+//				SelectExpressionItem lsei = (SelectExpressionItem) selectItemObject;
+//				alias2expression.put(lsei.getAlias(), lsei.getExpression());
+//				alias2sei.put(lsei.getAlias(), lsei);
+//			}
+//
+//			List<SelectItem> right_seis = new ArrayList<SelectItem>(
+//					right.getSelectExpressionItems());
+//			Map<String, SelectExpressionItem> right_alias2sei = new HashMap<String, SelectExpressionItem>();
+//			Map<String, Expression> right_alias2expression = new LinkedHashMap<String, Expression>();
+//			for (SelectItem rSelectItem : right_seis) {
+//				SelectExpressionItem rsei = (SelectExpressionItem) rSelectItem;
+//				right_alias2expression.put(rsei.getAlias(),
+//						rsei.getExpression());
+//				right_alias2sei.put(rsei.getAlias(), rsei);
+//			}
+//			Multimap<String, Column> newColGroups = ArrayListMultimap.create();
+//
+//			// now iterate over all right select items and check, if they are
+//			// already present in the query.
+//			Set<EqualsTo> joinon = new HashSet<EqualsTo>();
+//			for (String right_alias : right_alias2expression.keySet()) {
+//				if (alias2sei.containsKey(right_alias)) {
+//					// duplicate variable, add equals expression
+//					Expression ljExpression = DataTypeHelper
+//							.uncast(right_alias2expression.get(right_alias));
+//					Expression expression = DataTypeHelper
+//							.uncast(alias2expression.get(right_alias));
+//
+//					if (ljExpression instanceof StringValue
+//							&& expression instanceof StringValue
+//							&& ((StringValue) ljExpression)
+//									.getNotExcapedValue().equals(
+//											((StringValue) expression)
+//													.getNotExcapedValue())) {
+//						// equals, no need to add anything
+//					} else if (!(ljExpression instanceof StringValue)
+//							&& expression instanceof StringValue) {
+//						EqualsTo eq = new EqualsTo();
+//						eq.setLeftExpression(alias2expression.get(right_alias));
+//						eq.setRightExpression(dth.cast(ColumnHelper
+//								.createColumn(subsell.getAlias(), right_alias)
+//
+//						, dth.getStringCastType()));
+//						joinon.add(eq);
+//
+//					} else {
+//						EqualsTo eq = new EqualsTo();
+//						eq.setLeftExpression(alias2expression.get(right_alias));
+//						eq.setRightExpression(ColumnHelper.createCol(
+//								subsell.getAlias(), right_alias));
+//						joinon.add(eq);
+//					}
+//
+//				} else {
+//					// new variable, add to the select items list
+//					SelectExpressionItem sei = new SelectExpressionItem();
+//					sei.setAlias(right_alias);
+//
+//					Column columnProjection = ColumnHelper.createCol(
+//							subsell.getAlias(), right_alias);
+//					sei.setExpression(columnProjection);
+//					newSeis.add(sei);
+//					newColGroups.put(
+//							ColumnHelper.colnameBelongsToVar(right_alias),
+//							columnProjection);
+//
+//				}
+//			}
+//
+//			this.plainSelect.getSelectItems().addAll(newSeis);
+//
+//			for (String var : newColGroups.keySet()) {
+//
+//				List<Expression> expressions = (List) newColGroups.get(var);
+//				TermMap sstc = null;
+//				// the var is already defined, we therefore need to modify the
+//				// exisiting Term Map.
+//				if (var2termMap.get(var) != null) {
+//					List<Expression> exprsToBeExtended = new ArrayList<Expression>(
+//							var2termMap.get(var)
+//									.getExpressions());
+//					exprsToBeExtended.addAll(expressions);
+//					sstc = TermMap.createTermMap(dth, exprsToBeExtended);
+//
+//				} else {
+//					// not in there, we can create a new
+//					sstc = TermMap.createTermMap(dth, expressions);
+//				}
+//				
+//				var2termMap.put(var, sstc);
+//			}
+//
+//			subselects.put(subsell, right);
+//
+//			if (optional) {
+//				for (EqualsTo eq : joinon) {
+//					addOptJoinCondition(eq);
+//				}
+//				addOptFromItem(subsell);
+//
+//			} else {
+//				for (EqualsTo eq : joinon) {
+//					addJoinCondition(eq);
+//				}
+//
+//				addFromItem(subsell);
+//
+//			}
+//
+//		}
+//	}
+
+	public void addTripleQuery(TermMap origSubject, String subjectAlias,
+			TermMap origPredicate, String predicateAlias, TermMap origObject,
+			String objectAlias, boolean isOptional) {
+
+		String suffix = "_" + subjectAlias;
+		TermMap subject = origSubject.clone(suffix);
+		addColumn(subject, subjectAlias, isOptional);
+		TermMap object = origObject.clone(suffix);
+		addColumn(object, objectAlias, isOptional);
+		// if(origPredicate!=null){
+		TermMap predicate = origPredicate.clone(suffix);
+		addColumn(predicate, predicateAlias, isOptional);
+		// }
+
+	}
+	
+	
+	
+	
+	public void putTermMap(TermMap tm, String alias, boolean isOptional){
+		BindingEntry bentry = new BindingEntry();
+		bentry.optional = isOptional;
+		bentry.termMap = tm;
+		bentry.alias = alias;
+		
+		bentries.add(bentry);
+		
+	}
+	
 	public void addSubselect(Wrapper right, boolean optional) {
 
 		// check if the subselect queries only for a single triple and is
@@ -444,7 +665,7 @@ public class PlainSelectWrapper implements Wrapper {
 					}
 
 					if (this._fromItems.keySet().containsAll(fiAliases)) {
-						addColumn(rightVarTc, var, true);
+						putTermMap(rightVarTc, var, true);
 						shortcutted = true;
 					}
 				}
@@ -467,178 +688,63 @@ public class PlainSelectWrapper implements Wrapper {
 				rightVar2TermMap = rightWrapper.getVar2TermMap();
 			}
 			
-			
-			
-
-			List<SelectExpressionItem> newSeis = new ArrayList<SelectExpressionItem>();
-
-			Map<String, SelectExpressionItem> alias2sei = new HashMap<String, SelectExpressionItem>();
-			Map<String, Expression> alias2expression = new HashMap<String, Expression>();
-			for (Object selectItemObject : this.plainSelect.getSelectItems()) {
-				SelectExpressionItem lsei = (SelectExpressionItem) selectItemObject;
-				alias2expression.put(lsei.getAlias(), lsei.getExpression());
-				alias2sei.put(lsei.getAlias(), lsei);
+			for(String var : rightVar2TermMap.keySet()){
+				putTermMap(rightVar2TermMap.get(var), var, optional);
 			}
-
-			List<SelectItem> right_seis = new ArrayList<SelectItem>(
-					right.getSelectExpressionItems());
-			Map<String, SelectExpressionItem> right_alias2sei = new HashMap<String, SelectExpressionItem>();
-			Map<String, Expression> right_alias2expression = new LinkedHashMap<String, Expression>();
-			for (SelectItem rSelectItem : right_seis) {
-				SelectExpressionItem rsei = (SelectExpressionItem) rSelectItem;
-				right_alias2expression.put(rsei.getAlias(),
-						rsei.getExpression());
-				right_alias2sei.put(rsei.getAlias(), rsei);
-			}
-			Multimap<String, Column> newColGroups = ArrayListMultimap.create();
-
-			// now iterate over all right select items and check, if they are
-			// already present in the query.
-			Set<EqualsTo> joinon = new HashSet<EqualsTo>();
-			for (String right_alias : right_alias2expression.keySet()) {
-				if (alias2sei.containsKey(right_alias)) {
-					// duplicate variable, add equals expression
-					Expression ljExpression = DataTypeHelper
-							.uncast(right_alias2expression.get(right_alias));
-					Expression expression = DataTypeHelper
-							.uncast(alias2expression.get(right_alias));
-
-					if (ljExpression instanceof StringValue
-							&& expression instanceof StringValue
-							&& ((StringValue) ljExpression)
-									.getNotExcapedValue().equals(
-											((StringValue) expression)
-													.getNotExcapedValue())) {
-						// equals, no need to add anything
-					} else if (!(ljExpression instanceof StringValue)
-							&& expression instanceof StringValue) {
-						EqualsTo eq = new EqualsTo();
-						eq.setLeftExpression(alias2expression.get(right_alias));
-						eq.setRightExpression(dth.cast(ColumnHelper
-								.createColumn(subsell.getAlias(), right_alias)
-
-						, dth.getStringCastType()));
-						joinon.add(eq);
-
-					} else {
-						EqualsTo eq = new EqualsTo();
-						eq.setLeftExpression(alias2expression.get(right_alias));
-						eq.setRightExpression(ColumnHelper.createCol(
-								subsell.getAlias(), right_alias));
-						joinon.add(eq);
-					}
-
-				} else {
-					// new variable, add to the select items list
-					SelectExpressionItem sei = new SelectExpressionItem();
-					sei.setAlias(right_alias);
-
-					Column columnProjection = ColumnHelper.createCol(
-							subsell.getAlias(), right_alias);
-					sei.setExpression(columnProjection);
-					newSeis.add(sei);
-					newColGroups.put(
-							ColumnHelper.colnameBelongsToVar(right_alias),
-							columnProjection);
-
-				}
-			}
-
-			this.plainSelect.getSelectItems().addAll(newSeis);
-
-			for (String var : newColGroups.keySet()) {
-
-				List<Expression> expressions = (List) newColGroups.get(var);
-				TermMap sstc = null;
-				// the var is already defined, we therefore need to modify the
-				// exisiting Term Map.
-				if (var2termMap.get(var) != null) {
-					List<Expression> exprsToBeExtended = new ArrayList<Expression>(
-							var2termMap.get(var)
-									.getExpressions());
-					exprsToBeExtended.addAll(expressions);
-					sstc = TermMap.createTermMap(dth, exprsToBeExtended);
-
-				} else {
-					// not in there, we can create a new
-					sstc = TermMap.createTermMap(dth, expressions);
-				}
-				
-				var2termMap.put(var, sstc);
-			}
-
-			subselects.put(subsell, right);
-
-			if (optional) {
-				for (EqualsTo eq : joinon) {
-					addOptJoinCondition(eq);
-				}
-				addOptFromItem(subsell);
-
-			} else {
-				for (EqualsTo eq : joinon) {
-					addJoinCondition(eq);
-				}
-
-				addFromItem(subsell);
-
-			}
-
-		}
+		}	
 	}
+	
+	
+	Set<BindingEntry> bentries = new HashSet<BindingEntry>();
+	
 
-	public void addTripleQuery(TermMap origSubject, String subjectAlias,
-			TermMap origPredicate, String predicateAlias, TermMap origObject,
-			String objectAlias, boolean isOptional) {
-
-		String suffix = "_" + subjectAlias;
-		TermMap subject = origSubject.clone(suffix);
-		addColumn(subject, subjectAlias, isOptional);
-		TermMap object = origObject.clone(suffix);
-		addColumn(object, objectAlias, isOptional);
-		// if(origPredicate!=null){
-		TermMap predicate = origPredicate.clone(suffix);
-		addColumn(predicate, predicateAlias, isOptional);
-		// }
-
+	
+	private class BindingEntry{
+		boolean optional;
+		TermMap termMap;
+		String alias;
 	}
+	
+	
+	
+	
 
 	private TermMap cloneColOnDuplicateUsage(TermMap term, String tcAlias) {
 		// same col used for an other variable, so we have to clone
 
-		TermMap cloneTerm = term.clone("_dup" + dupcounter++);
-		
-		Map<String,String> oldAlias2newAlias = new HashMap<String, String>(); 
-		Set<EqualsTo> oldEqs = new HashSet<EqualsTo>();
-		Set<EqualsTo> newEqs = new HashSet<EqualsTo>();
-		
-		for (int fromItemCount = 0; fromItemCount < term.getFromItems().size(); fromItemCount++) {
-			FromItem fri = term.getFromItems().get(fromItemCount);
-			FromItem clfri = cloneTerm.getFromItems().get(fromItemCount);
-			oldAlias2newAlias.put(fri.getAlias(), clfri.getAlias());
-			oldEqs.addAll(getFromItem2joincondition().get(fri.getAlias()));
-		}
-		
-		for(EqualsTo oldEq: oldEqs){
-			
-			EqualsTo newEq = new EqualsTo();
-			newEq.setLeftExpression(cloneEqualsExpression(oldEq.getLeftExpression(), oldAlias2newAlias));
-			newEq.setRightExpression(cloneEqualsExpression(oldEq.getRightExpression(), oldAlias2newAlias));
-			newEqs.add(newEq);
-		}
-		
-		if(!newEqs.isEmpty()){
-			for(EqualsTo eq : newEqs){
-				addJoinCondition(eq);
-			}
-			
-			return cloneTerm;
-		}else{
-			//assuming multiple usage of the same column in a subrequest
-			return term;
-		}
-		
-		
+//		TermMap cloneTerm = term.clone("_dup" + dupcounter++);
+//		
+//		Map<String,String> oldAlias2newAlias = new HashMap<String, String>(); 
+//		Set<EqualsTo> oldEqs = new HashSet<EqualsTo>();
+//		Set<EqualsTo> newEqs = new HashSet<EqualsTo>();
+//		
+//		for (int fromItemCount = 0; fromItemCount < term.getFromItems().size(); fromItemCount++) {
+//			FromItem fri = term.getFromItems().get(fromItemCount);
+//			FromItem clfri = cloneTerm.getFromItems().get(fromItemCount);
+//			oldAlias2newAlias.put(fri.getAlias(), clfri.getAlias());
+//			oldEqs.addAll(getFromItem2joincondition().get(fri.getAlias()));
+//		}
+//		
+//		for(EqualsTo oldEq: oldEqs){
+//			
+//			EqualsTo newEq = new EqualsTo();
+//			newEq.setLeftExpression(cloneEqualsExpression(oldEq.getLeftExpression(), oldAlias2newAlias));
+//			newEq.setRightExpression(cloneEqualsExpression(oldEq.getRightExpression(), oldAlias2newAlias));
+//			newEqs.add(newEq);
+//		}
+//		
+//		if(!newEqs.isEmpty()){
+//			for(EqualsTo eq : newEqs){
+//				addJoinCondition(eq);
+//			}
+//			
+//			return cloneTerm;
+//		}else{
+//			//assuming multiple usage of the same column in a subrequest
+//			return term;
+//		}
+//		
+		return null;
 		
 	}
 
@@ -727,12 +833,11 @@ public class PlainSelectWrapper implements Wrapper {
 		return var2termMap;
 	}
 	
-	public Multimap<String, EqualsTo> getFromItem2joincondition() {
-		return _fromItem2joincondition;
-	}
 
 	public PlainSelect getPlainSelect() {
-
+		if(plainSelect==null){
+			buildPlainSelect();
+		}
 		return plainSelect;
 	}
 
@@ -744,7 +849,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 	@Override
 	public List<SelectItem> getSelectExpressionItems() {
-		return plainSelect.getSelectItems();
+		return getPlainSelect().getSelectItems();
 	}
 
 	public Map<SubSelect, Wrapper> getSubselects() {
@@ -897,10 +1002,57 @@ public class PlainSelectWrapper implements Wrapper {
 		lim.setRowCount(i);
 		this.plainSelect.setLimit(lim);
 	}
+	
+	
+	
+	Multimap<TermMap,TermMap> hasDupClones = HashMultimap.create();
+	Multimap<TermMap,TermMap> joins = HashMultimap.create();
+	Multimap<TermMap,TermMap> optJoins = HashMultimap.create();
+	Set<TermMap> optinalTermMaps = new HashSet<TermMap>();
 
-	public void addNullTriple(String s, String p, String o) {
+
+	private void buildPlainSelect(){
+		
+		// check which term Maps get joined with which other
+		for(BindingEntry be : this.bentries){
+			
+			if(var2termMap.inverse().containsKey(be.termMap)){
+				// term map already in use
+				String varTermMapInUse = var2termMap.inverse().get(be.termMap);
+				if(!varTermMapInUse.equals(be.alias)){
+					// a different variable, a duplication is required.
+					TermMap cloneTerm = be.termMap.clone("_dup" + translationContext.duplicatecounter++);
+					this.hasDupClones.put(be.termMap,cloneTerm);
+				}
+				//else nothing is required
+				
+			}
+			
+			if(var2termMap.containsKey(be.alias)){
+				//we add but we'll have to mark that as joins
+				TermMap termMapInUse = var2termMap.get(be.alias);
+				
+				if(be.optional){
+					optJoins.put(termMapInUse, be.termMap);
+					optJoins.put(be.termMap,termMapInUse);
+				}else{
+					joins.put(termMapInUse, be.termMap);
+					joins.put(be.termMap, termMapInUse);
+				}
+			
+			}else{
+				var2termMap.put(be.alias, be.termMap);
+			}
+			
+			
+			if(be.optional){
+				optinalTermMaps.add(be.termMap);
+			}
+
+		}
 		
 	}
+
 
 
 }
