@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.sql.SQLException;
 
 import org.aksw.sparqlmap.BSBMBaseTest;
-import org.aksw.sparqlmap.core.SparqlMap.ReturnType;
+import org.apache.jena.riot.WebContent;
 import org.junit.Test;
 
 
@@ -249,7 +249,7 @@ public class AlgebraTranslateTest extends BSBMBaseTest{
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		
 		try {
-			r2r.executeSparql(query, ReturnType.XML, bos,null);
+			r2r.executeSparql(query,WebContent.contentTypeRDFXML, bos,null);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			log.error("Error:",e);

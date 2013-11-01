@@ -239,14 +239,14 @@ public class DBAccess {
 	
 	
 	
-	/* (non-Javadoc)
-	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getExpressionDeParser(java.lang.StringBuffer)
-	 */
-	
-	public ExpressionDeParser getExpressionDeParser(StringBuilder fromItemSb) {
-		return getExpressionDeParser(getSelectDeParser(fromItemSb), fromItemSb);
-		
-	}
+//	/* (non-Javadoc)
+//	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getExpressionDeParser(java.lang.StringBuffer)
+//	 */
+//	
+//	public ExpressionDeParser getExpressionDeParser(StringBuilder fromItemSb) {
+//		return getExpressionDeParser(getSelectDeParser(fromItemSb), fromItemSb);
+//		
+//	}
 	
 	
 	/* (non-Javadoc)
@@ -264,27 +264,14 @@ public class DBAccess {
 	 */
 	
 	public SelectDeParser getSelectDeParser(StringBuilder sb) {
-//		if(dbname.equals(MYSQL)){
-//			
-//			ExpressionDeParser expressionDeParser = new ExpressionDeParser();
-//			SelectDeParser selectDeParser = new SelectDeParser();
-//			expressionDeParser.setBuffer(sb);
-//			selectDeParser.setBuffer(sb);
-//			expressionDeParser.setSelectVisitor(selectDeParser);
-//			selectDeParser.setExpressionVisitor(expressionDeParser);
-//			
-//			
-//			return selectDeParser;
-//		} else if(dbname.equals(POSTGRES )|| dbname.equals(HSQLDB)){
+
+			
 			AnsiQuoteSelectDeparser selectDeParser = new AnsiQuoteSelectDeparser();
 			AnsiQuoteExpressionDeParser expressionDeParser = new AnsiQuoteExpressionDeParser(selectDeParser,sb);
 			selectDeParser.setBuffer(sb);
 			selectDeParser.setExpressionVisitor(expressionDeParser);
 			return selectDeParser;
-			
-//		}
-//		log.warn("Selected default deparser");
-//		return new SelectDeParser();
+
 	}
 	
 	
@@ -292,17 +279,19 @@ public class DBAccess {
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getExpressionDeParser(net.sf.jsqlparser.util.deparser.SelectDeParser, java.lang.StringBuffer)
 	 */
 	
-	public ExpressionDeParser getExpressionDeParser(SelectDeParser selectDeParser, StringBuilder out) {
-		return new AnsiQuoteExpressionDeParser(selectDeParser, out);
-//		if(dbname.equals(MYSQL)){
-//			return new ExpressionDeParser(selectDeParser, out);
-//		} else if(dbname.equals(POSTGRES)||dbname.equals(HSQLDB)){
-//			
-//			
-//		}
-//		log.warn("Selected default expresseiondeparser");
-//		return new ExpressionDeParser(selectDeParser,out);
-	}
+//	public ExpressionDeParser getExpressionDeParser(SelectDeParser selectDeParser, StringBuilder out) {
+//		
+//		return new ExpressionDeParser(selectDeParser, out);
+//		//return new AnsiQuoteExpressionDeParser(selectDeParser, out);
+////		if(dbname.equals(MYSQL)){
+////			return new ExpressionDeParser(selectDeParser, out);
+////		} else if(dbname.equals(POSTGRES)||dbname.equals(HSQLDB)){
+////			
+////			
+////		}
+////		log.warn("Selected default expresseiondeparser");
+////		return new ExpressionDeParser(selectDeParser,out);
+//	}
 
 
 

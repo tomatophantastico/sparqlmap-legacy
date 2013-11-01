@@ -345,18 +345,19 @@ public class ColumnHelper {
 				dth.getStringCastType());
 	}
 	
+	public static Table createTable(String tablename){
+		return createTable(null, tablename);
+	}
 	
-	public static Column createCol(String tablename, String colname) {
-		Column col = new Column();
-		col.setColumnName(colname);
+	public static Table createTable(String schema, String tablename){
 		Table tab = new Table();
 		tab.setName(tablename);
 		tab.setAlias(tablename);
-		col.setTable(tab);
-		return col;
-
+		tab.setSchemaName(schema);
+		return tab;
+		
+		
 	}
-	
 	
 	
 	
@@ -367,13 +368,7 @@ public class ColumnHelper {
 	public static Column createColumn(String schema, String table, String column) {
 		Column col = new Column();
 		col.setColumnName(column);
-		Table tab = new Table();
-		tab.setName(table);
-		tab.setAlias(table);
-		if (schema != null) {
-			tab.setSchemaName(schema);
-
-		}
+		Table tab = createTable(schema,table);
 		col.setTable(tab);
 
 		return col;

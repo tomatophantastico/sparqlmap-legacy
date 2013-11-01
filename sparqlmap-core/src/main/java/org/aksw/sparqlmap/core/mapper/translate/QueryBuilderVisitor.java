@@ -72,11 +72,11 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	TermMap crc;
 
-	private FilterOptimizer fopt;
+	private FilterUtil filterUtil;
 	private final TranslationContext translationContext;
 
-	public QueryBuilderVisitor(TranslationContext translationContext,	DataTypeHelper dataTypeHelper, ExpressionConverter expressionConverter, FilterOptimizer fopt) {
-		this.fopt = fopt;
+	public QueryBuilderVisitor(TranslationContext translationContext,	DataTypeHelper dataTypeHelper, ExpressionConverter expressionConverter, FilterUtil filterUtil) {
+		this.filterUtil = filterUtil;
 		this.dataTypeHelper = dataTypeHelper;
 		this.exprconv = expressionConverter;
 		this.translationContext = translationContext;
@@ -128,75 +128,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	@Override
 	public void visit(OpGraph opGraph) {
-//		PlainSelectWrapper wrap = (PlainSelectWrapper) selectBody2Wrapper.get(selects.peek());
-//		
-//		if(opGraph.getNode() instanceof Var){
-//			Var gvar = (Var) opGraph.getNode();
-//			
-//			List<SelectExpressionItem> newGraphSeis = new	ArrayList<SelectExpressionItem>();
-////			newGraphSeis.addAll();
-////			
-////			ColumnHelper.getExpression(col, rdfType, sqlType, datatype, lang, lanColumn, dth, graph)
-////			
-////			new TermMap(dataTypeHelper, ColumnHelper.getBaseExpressions(ColumnHelper.COL_VAL_TYPE_RESOURCE, 2, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, dataTypeHelper, null, null, null, null));
-//			
-//			
-//			
-//			//new Select Item, using the first 
-//			SelectExpressionItem graph_sei = new SelectExpressionItem();
-//			graph_sei.setAlias(gvar.getName() + ColumnHelper.COL_NAME_GRAPH);
-//			List<Expression> additionalFilters = new ArrayList<Expression>();
-//			
-//			for(SelectItem si : wrap.getSelectExpressionItems()){
-//				SelectExpressionItem sei  = (SelectExpressionItem) si;
-//				
-//				if(sei.getAlias().endsWith(ColumnHelper.COL_NAME_GRAPH) && sei.getExpression() instanceof Column){
-//					if(graph_sei.getExpression()==null){
-//						List<Expression> graphExprs =columnhelper.getExpression((Column)sei.getExpression(), ColumnHelper.COL_VAL_TYPE_RESOURCE, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, null, null, null, dataTypeHelper, null,null);
-//						
-//						TermMap tm = new TermMap(dataTypeHelper, graphExprs);
-//						newGraphSeis.addAll(tm.getSelectExpressionItems(opGraph.getNode().getName()));
-//						
-//						
-//						
-//						graph_sei.setExpression(sei.getExpression());
-//					}else{
-//						IsNullExpression seiGraphIsNull = new IsNullExpression();
-//						seiGraphIsNull.setNot(false);
-//						seiGraphIsNull.setLeftExpression(graph_sei.getExpression());
-//						
-//						IsNullExpression thisGRaphIsNull = new IsNullExpression();
-//						thisGRaphIsNull.setNot(false);
-//						thisGRaphIsNull.setLeftExpression(sei.getExpression());
-//						
-//						AndExpression andNull = new AndExpression(seiGraphIsNull, thisGRaphIsNull);
-//						
-//						
-//						EqualsTo eq = new EqualsTo();
-//						
-//						eq.setLeftExpression(graph_sei.getExpression());
-//						eq.setRightExpression(sei.getExpression());
-//						
-//						
-//						OrExpression or = new OrExpression(new Parenthesis(andNull), new Parenthesis(eq));
-//						
-//						
-//						additionalFilters.add(or);
-//					}
-//				}
-//			}
-//			
-//			
-//			wrap.getSelectExpressionItems().addAll(newGraphSeis);
-//			
-//			
-//			wrap.addSQLFilter(FilterUtil.conjunctFilters(additionalFilters));
-//			
-//			
-//		}
-		
-		
-		
+		log.error("Implement OpGraph");
 	}
 
 	@Override
@@ -219,7 +151,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			log.warn("left is empty");
 		}else if(main ==null){
 			main = left;
-			main.setOptional();
+			main.setOptional(true);
 			
 		}else{
 			main.addSubselect(left,true);
@@ -307,7 +239,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	@Override
 	public void visit(OpBGP opBGP) {
 
-		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,fopt, translationContext);
+		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,filterUtil, translationContext);
 
 		// PlainSelect bgpSelect = new PlainSelect();
 
@@ -334,7 +266,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		
 
 		// do we need to create a union?
-		if(trms.size()==1&&trms.iterator().next().getPos().size()==1&&fopt.optimizeSelfJoin){
+		if(trms.size()==1&&trms.iterator().next().getPos().size()==1&&filterUtil.getOptConf().optimizeSelfJoin){
 			TripleMap trm = trms.iterator().next();
 			PO po = trm.getPos().iterator().next();
 			//no we do not need
@@ -366,7 +298,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			for (TripleMap trm : trms) {
 				for (PO po : trm.getPos()) {
 
-					PlainSelectWrapper innerPlainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,fopt, translationContext);
+					PlainSelectWrapper innerPlainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,filterUtil, translationContext);
 					//build a new sql select query for this pattern
 					innerPlainSelect.addTripleQuery(trm.getSubject(), triple
 							.getSubject().getName(), po.getPredicate(),triple
@@ -436,7 +368,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		if(sb instanceof SetOperationList){
 			
 		
-			PlainSelectWrapper wrap = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,fopt, translationContext);
+			PlainSelectWrapper wrap = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,filterUtil, translationContext);
 			
 			wrap.addSubselect(this.selectBody2Wrapper
 					.get(sb), false);

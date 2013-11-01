@@ -1,34 +1,15 @@
 package org.aksw.sparqlmap.core.mapper.translate;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Stack;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
-import net.sf.jsqlparser.expression.CaseExpression;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.Function;
-import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.Parenthesis;
-import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.expression.TimestampValue;
-import net.sf.jsqlparser.expression.WhenClause;
-import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
-import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
-import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
-import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
-import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
-import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
-import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
 import net.sf.jsqlparser.expression.operators.relational.MinorThan;
 import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
@@ -36,54 +17,29 @@ import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 
 import org.aksw.sparqlmap.core.ImplementationException;
-import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMapFactory;
-import org.apache.commons.lang.reflect.MethodUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.BiMap;
-import com.hp.hpl.jena.graph.Node_URI;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
-import com.hp.hpl.jena.sparql.core.Var;
-import com.hp.hpl.jena.sparql.expr.E_Add;
-import com.hp.hpl.jena.sparql.expr.E_Bound;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
-import com.hp.hpl.jena.sparql.expr.E_Function;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
-import com.hp.hpl.jena.sparql.expr.E_IsURI;
-import com.hp.hpl.jena.sparql.expr.E_Lang;
-import com.hp.hpl.jena.sparql.expr.E_LangMatches;
 import com.hp.hpl.jena.sparql.expr.E_LessThan;
 import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
-import com.hp.hpl.jena.sparql.expr.E_LogicalAnd;
-import com.hp.hpl.jena.sparql.expr.E_LogicalNot;
-import com.hp.hpl.jena.sparql.expr.E_LogicalOr;
 import com.hp.hpl.jena.sparql.expr.E_NotEquals;
-import com.hp.hpl.jena.sparql.expr.E_Regex;
-import com.hp.hpl.jena.sparql.expr.E_SameTerm;
-import com.hp.hpl.jena.sparql.expr.E_Str;
-import com.hp.hpl.jena.sparql.expr.E_Subtract;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprFunction;
 import com.hp.hpl.jena.sparql.expr.ExprFunction0;
 import com.hp.hpl.jena.sparql.expr.ExprFunction1;
 import com.hp.hpl.jena.sparql.expr.ExprFunction2;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
-import com.hp.hpl.jena.sparql.expr.ExprVisitor;
 import com.hp.hpl.jena.sparql.expr.ExprVisitorBase;
 import com.hp.hpl.jena.sparql.expr.ExprWalker;
-import com.hp.hpl.jena.sparql.expr.ExprWalker.WalkerBottomUp;
 import com.hp.hpl.jena.sparql.expr.NodeValue;
-import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueDT;
-import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueDouble;
-import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueInteger;
-import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueNode;
-import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueString;
-import com.hp.hpl.jena.vocabulary.XSD;
 
 
 /**
@@ -100,7 +56,7 @@ public class ExpressionConverter {
 	DataTypeHelper dth;
 	
 	@Autowired
-	FilterOptimizer fopt;
+	FilterUtil filterUtil;
 	
 	@Autowired
 	TermMapFactory tmf;
@@ -254,88 +210,16 @@ public class ExpressionConverter {
 
 		public void putXpathTestOnStack(TermMap left, TermMap right, Class<? extends BinaryExpression> test) {
 	
-				try {
-					List<Expression> eqs = new ArrayList<Expression>();
-								
+	
 					
-					// and all the other fields that might be null
-//					Expression literalTypeEquality = bothNullOrBinary(left.literalType, right.literalType, test.newInstance());
-//					eqs.add(literalTypeEquality);
+					Expression binaryTestExpression  = filterUtil.compareTermMaps(left, right, test).getLiteralValBool();
 					
-					Expression literalBinaryEquality = bothNullOrBinary(left.literalValBinary, right.literalValBinary, test.newInstance());
-					eqs.add(literalBinaryEquality);
-					
-					Expression literalBoolEquality = bothNullOrBinary(left.literalValBool,right.literalValBool,test.newInstance());
-					eqs.add(literalBoolEquality);
-					
-					Expression literalDateEquality = bothNullOrBinary(left.literalValDate, right.literalValDate, test.newInstance());
-					eqs.add(literalDateEquality);
-					
-					Expression literalNumericEquality = bothNullOrBinary(left.literalValNumeric, right.literalValNumeric, test.newInstance());
-					eqs.add(literalNumericEquality);
-					
-					Expression literalStringEquality = bothNullOrBinary(left.literalValString,right.literalValString, test.newInstance());
-					eqs.add(literalStringEquality);
-					
-					
-					//and check for the resources
-					
-					if(left.resourceColSeg.size()==0&&right.resourceColSeg.size()==0){
-						//no need to do anything
-					}else{
-						BinaryExpression resourceEq=  test.newInstance();
-						
-						resourceEq.setLeftExpression(FilterUtil.concat(left.resourceColSeg.toArray(new Expression[0])));
-						resourceEq.setRightExpression(FilterUtil.concat(right.resourceColSeg.toArray(new Expression[0])));
-						
-						Expression resourceEquality = bothNullOrBinary(FilterUtil.concat(left.resourceColSeg.toArray(new Expression[0])), FilterUtil.concat(right.resourceColSeg.toArray(new Expression[0])),resourceEq);
-						eqs.add(resourceEquality);
-					}
-					TermMap eqTermMap = tmf.createBoolTermMap(new Parenthesis(FilterUtil.conjunct(eqs)));
+					TermMap eqTermMap = tmf.createBoolTermMap(new Parenthesis(binaryTestExpression));
 					tms.push(eqTermMap);
 					
-				} catch (InstantiationException | IllegalAccessException e) {
-					log.error("Error creating xpathtest",e);
-				}
-			
+				
 		}
 		
-		Expression bothNullOrBinary(Expression expr1, Expression expr2, BinaryExpression function){
-			
-			
-			function.setLeftExpression(expr1);
-			function.setRightExpression(expr2);
-			Parenthesis pt = new Parenthesis( bothNullOr(expr1, expr2, function));
-			
-			return pt;
-			
-		}
-		
-		
-		Expression bothNullOr(Expression expr1, Expression expr2, Expression function){
-			
-			IsNullExpression literalTypeLeftIsNull = new IsNullExpression();
-			literalTypeLeftIsNull.setLeftExpression(expr1);
-			IsNullExpression literalTypeRightIsNull = new IsNullExpression();
-			literalTypeRightIsNull.setLeftExpression(expr2);
-			
-			Expression isNullCheck =  FilterUtil.conjunct(Arrays.asList((Expression)literalTypeLeftIsNull,(Expression)literalTypeRightIsNull));
-
-			
-			
-			WhenClause bothNull = new WhenClause();
-			bothNull.setWhenExpression(isNullCheck);
-			bothNull.setThenExpression(dth.cast(new StringValue("'true'"),dth.getBooleanCastType()));
-			
-			
-			CaseExpression caseExpr = new CaseExpression();
-			caseExpr.setWhenClauses(Arrays.asList(((Expression)bothNull)));
-			
-			caseExpr.setElseExpression(function);
-			
-			
-			return caseExpr;
-		}
 		
 		
 		@Override

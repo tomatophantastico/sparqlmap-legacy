@@ -632,7 +632,7 @@ public class R2RMLModel {
 			
 		}else if(qr.column!=null){
 			
-			Column col = ColumnHelper.createCol(fi.getAlias(), qr.column);
+			Column col = ColumnHelper.createColumn(fi.getAlias(), qr.column);
 			
 			if(termType.equals(R2RML.Literal)){
 				
@@ -892,7 +892,7 @@ public class R2RMLModel {
 				// validate and register the colname first
 				// dbaccess.getDataType(fi,colName);
 				newExprs.add(dth.cast(
-						ColumnHelper.createCol(fi.getAlias(), colName),
+						ColumnHelper.createColumn(fi.getAlias(), colName),
 						dth.getStringCastType()));
 			} else {
 				newExprs.add(dth.cast(new StringValue("\"" + altSeq.get(i)

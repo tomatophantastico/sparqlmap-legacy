@@ -25,6 +25,10 @@ public class TermMapFactory {
 	
 	@Autowired
 	DataTypeHelper dth;
+	public void setDth(DataTypeHelper dth) {
+		this.dth = dth;
+	}
+
 	
 	
 	public TermMap createTermMap(Node node){

@@ -37,7 +37,7 @@ public class BSBMPostgreSQLTests extends BSBMBaseTest{
 	@Test
 	public void testFilterOpt() throws SQLException{
 		
-		String query = "SELECT DISTINCT ?o {<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer1/Product22>  <http://www.w3.org/2000/01/rdf-schema#label> ?o} limit 5";
+		String query = "SELECT ?o {<http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer1/Product22>  <http://www.w3.org/2000/01/rdf-schema#label> ?o} ";
 		String ps = execAsText(query);
 		log.info(ps);
 		

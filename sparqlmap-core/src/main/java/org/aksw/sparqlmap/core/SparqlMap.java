@@ -115,6 +115,16 @@ public class SparqlMap {
 		executeSparql(qstring,  rt,  out,"Unnamed query "+ this.querycount++);
 	}
 	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	/**
 	 * Takes some of the functionality of QueryExecutionbase
 	 * @param queryname 
@@ -307,35 +317,10 @@ public class SparqlMap {
 		}
 	}
 	
-//	public DatasetGraph dump() throws SQLException{
-//		
-//		DatasetGraph graph = DatasetGraphFactory.createMem();
-//
-//	
-//		List<String> queries = mapper.dump();
-//		for (String query : queries) {
-//			log.info("SQL: " + query);
-//			com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(query,baseUri);
-//			while(rs.hasNext()){
-//				Binding bind = rs.nextBinding();
-//				Node graphNode = null;
-//				if(bind.get(Var.alloc("g"))!=null){
-//					graphNode =bind.get(Var.alloc("g"));
-//				}else{
-//					graphNode = Quad.defaultGraphIRI;
-//				}
-//				graph.add(new Quad(graphNode,bind.get(Var.alloc("s")), bind.get(Var.alloc("p")), bind.get(Var.alloc("o"))))	;
-//			}
-//
-//		}
-//		
-//		return graph;
-//	}
+
 	
 	
-	
-	
-	private ResultSet rewriteAndExecute(TranslationContext context) throws SQLException{
+	public ResultSet rewriteAndExecute(TranslationContext context) throws SQLException{
 		
 		
 	
@@ -343,9 +328,9 @@ public class SparqlMap {
 		context.profileStartPhase("Rewriting");	
 		
 		
-		String sql = mapper.rewrite(context);
+		context.setSqlQuery(mapper.rewrite(context));
 		
-		LoggerFactory.getLogger("sqllog").info("SQL " + context.getQueryName() + " " + sql );
+		LoggerFactory.getLogger("sqllog").info("SQL " + context.getQueryName() + " " + context.getSqlQuery() );
 		
 			
 		ResultSet rs = dbConf.executeSQL(context,baseUri);

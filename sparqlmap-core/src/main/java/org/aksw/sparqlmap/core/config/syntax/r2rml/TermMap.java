@@ -2,6 +2,7 @@ package org.aksw.sparqlmap.core.config.syntax.r2rml;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -197,7 +198,7 @@ public class TermMap{
 	}
 	
 	public List<FromItem> getFromItems(){
-		return new ArrayList<FromItem>(this.alias2fromItem.values());
+		return Collections.unmodifiableList(new ArrayList<FromItem>(this.alias2fromItem.values()));
 	}
 	
 	/**
@@ -449,6 +450,10 @@ public class TermMap{
 	
 	public List<Expression> getResourceColSeg() {
 		return resourceColSeg;
+	}
+	
+	public Expression getLiteralValBool() {
+		return literalValBool;
 	}
 	
 	

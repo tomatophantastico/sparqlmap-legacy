@@ -17,6 +17,7 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SetOperation;
 import net.sf.jsqlparser.statement.select.SetOperationList;
+import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.UnionOp;
 
 import org.aksw.sparqlmap.core.ImplementationException;
@@ -40,6 +41,9 @@ public class UnionWrapper implements Wrapper {
 	private SetOperationList union;
 	private Set<String> variablesMentioned = new HashSet<String>();
 	private BiMap<String, TermMap> var2termMap;
+
+
+	private SubSelect subselect;
 
 	/**
 	 * creates a new sql Union and registers it the the wrapper2body map
@@ -155,18 +159,26 @@ public class UnionWrapper implements Wrapper {
 		
 		//bucket the expression by variable
 		
+		
+		
 		Multimap<String,Expression> var2siExpression = LinkedHashMultimap.create();
 		
 		for(String colname: seiTreeMap.keySet()){
 			String var = ColumnHelper.colnameBelongsToVar(colname);
 			SelectExpressionItem sei  = seiTreeMap.get(colname);
-			var2siExpression.put(var, ColumnHelper.createCol(subselectName, sei.getAlias()));
+			var2siExpression.put(var, ColumnHelper.createColumn(subselectName, sei.getAlias()));
 
 		}
 		this.var2termMap =  HashBiMap.create();
 		
+		this.subselect = new SubSelect();
+		subselect.setAlias(subselectName);
+		subselect.setSelectBody(union);
+		
 		for(String var : var2siExpression.keySet()){
-			this.var2termMap.put(var, TermMap.createTermMap(dth, var2siExpression.get(var)));
+			TermMap tm = TermMap.createTermMap(dth, var2siExpression.get(var));
+			tm.addFromItem(subselect);
+			this.var2termMap.put(var, tm);
 		}
 	}
 	

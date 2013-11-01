@@ -18,7 +18,7 @@ import org.aksw.sparqlmap.core.mapper.finder.MappingBinding;
 import org.aksw.sparqlmap.core.mapper.finder.QueryInformation;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.ExpressionConverter;
-import org.aksw.sparqlmap.core.mapper.translate.FilterOptimizer;
+import org.aksw.sparqlmap.core.mapper.translate.OptimizationConfiguration;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -50,13 +50,13 @@ public class QueryDeunifier extends TransformCopy{
 	DataTypeHelper dth;
 	ExpressionConverter exprconv;
 	ColumnHelper colhelp;
-	FilterOptimizer fopt;
+	OptimizationConfiguration fopt;
 	Map<Triple, Collection<TripleMap>> newbindingMap = new HashMap<Triple, Collection<TripleMap>>();
 	Op query;
 	public QueryDeunifier(QueryInformation qi,
 			MappingBinding queryBinding, DataTypeHelper dth,
 			ExpressionConverter exprconv, ColumnHelper colhelp,
-			FilterOptimizer fopt) {
+			OptimizationConfiguration fopt) {
 		this.queryBinding = queryBinding;
 		this.qi =qi;
 		this.dth = dth;

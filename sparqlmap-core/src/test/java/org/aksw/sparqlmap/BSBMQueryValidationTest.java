@@ -6,9 +6,10 @@ import java.io.ByteArrayOutputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import org.aksw.sparqlmap.core.SparqlMap.ReturnType;
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.mapper.AlgebraBasedMapper;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.riot.WebContent;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,6 @@ public class BSBMQueryValidationTest extends BSBMBaseTest{
 	public void query4Test() {
 		
 		String result = processQuery("q4", BSBMQueries.q4);
-		log.info(r2r.mapper.rewrite(QueryFactory.create(BSBMQueries.q4)));
 		assertTrue(result.contains("unfreeze"));
 		assertTrue(result.contains("dataFromProducer39/Product1761"));
 		assertTrue(StringUtils.countMatches(result, "<result>")==1);
@@ -75,7 +75,6 @@ public class BSBMQueryValidationTest extends BSBMBaseTest{
 		
 		log.info(BSBMQueries.q5);
 		log.info(((AlgebraBasedMapper)r2r.mapper).getBeautifier().compileToBeauty(QueryFactory.create(BSBMQueries.q5)).toString());
-		log.info(r2r.mapper.rewrite(QueryFactory.create(BSBMQueries.q5)));
 		String result = processQuery("", BSBMQueries.q5);
 		
 		assertTrue(StringUtils.countMatches(result, "<result>")==2);
@@ -97,7 +96,6 @@ public class BSBMQueryValidationTest extends BSBMBaseTest{
 	@Test
 	public void query8Test() {
 		String result = processQuery("q8", BSBMQueries.q8);
-		log.info(r2r.mapper.rewrite(QueryFactory.create(BSBMQueries.q8)));
 		assertTrue(result.contains("nonchalantly docility torques bloodies commensurations sandlots arsenical hags"));
 		assertTrue(result.contains("Deejay"));
 		assertTrue(result.contains("dataFromRatingSite1/Reviewer455"));
@@ -127,8 +125,6 @@ public class BSBMQueryValidationTest extends BSBMBaseTest{
 		
 		
 		String result = processQuery("q10", BSBMQueries.q10);
-		log.info(r2r.mapper.rewrite(QueryFactory.create(BSBMQueries.q10)));
-
 		assertTrue(result.contains("6546.06"));
 		assertTrue(result.contains("7263.04"));
 		assertTrue(result.contains("dataFromVendor28/Offer52408"));
@@ -172,8 +168,10 @@ public class BSBMQueryValidationTest extends BSBMBaseTest{
 	
 	public String processQuery(String queryShortname, String queryString) {
 		ByteArrayOutputStream result = new ByteArrayOutputStream();
+		
+		
 		try {
-			r2r.executeSparql(queryString,ReturnType.XML,result,null);
+			r2r.executeSparql(queryString,queryShortname,result);
 		} catch (SQLException e) {
 			
 			log.error("Error:",e);
