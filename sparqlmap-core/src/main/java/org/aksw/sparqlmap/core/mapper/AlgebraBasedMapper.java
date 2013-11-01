@@ -25,7 +25,8 @@ import org.aksw.sparqlmap.core.mapper.finder.MappingBinding;
 import org.aksw.sparqlmap.core.mapper.finder.QueryInformation;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.ExpressionConverter;
-import org.aksw.sparqlmap.core.mapper.translate.FilterOptimizer;
+import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
+import org.aksw.sparqlmap.core.mapper.translate.OptimizationConfiguration;
 import org.aksw.sparqlmap.core.mapper.translate.QueryBuilderVisitor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -62,7 +63,10 @@ public class AlgebraBasedMapper implements Mapper {
 	private ExpressionConverter exprconv;
 	
 	@Autowired
-	private FilterOptimizer fopt;
+	private FilterUtil filterUtil;
+	
+	@Autowired
+	private OptimizationConfiguration fopt;
 	
 	private SparqlBeautifier beautifier = new SparqlBeautifier();
 	
@@ -121,7 +125,7 @@ public class AlgebraBasedMapper implements Mapper {
 			}
 		}
 		
-		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(context,dth,exprconv,fopt);
+		QueryBuilderVisitor builderVisitor = new QueryBuilderVisitor(context,dth,exprconv,filterUtil);
 		
 		
 		
@@ -246,7 +250,7 @@ public class AlgebraBasedMapper implements Mapper {
 			context.setQueryInformation(mff);
 			context.setQueryBinding(qbind);
 			
-			QueryBuilderVisitor qbv = new QueryBuilderVisitor(context,dth,exprconv,fopt);
+			QueryBuilderVisitor qbv = new QueryBuilderVisitor(context,dth,exprconv,filterUtil);
 			
 			
 			OpWalker.walk(qop, qbv);
