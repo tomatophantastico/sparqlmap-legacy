@@ -310,24 +310,27 @@ private static BitSet RESERVED = new BitSet();
 		}else{
 			if(test.equals(NotEqualsTo.class)||test.equals(EqualsTo.class)){
 				Expression resourceEquality = compareResource(left, right, test);
-				eqs.add(resourceEquality);
+				if(resourceEquality!=null){
+					eqs.add(resourceEquality);
+				}
+				
 			}else{
 				//only equals and not-equals are defined.
 				eqs.clear();
 				eqs.add(new NullValue());
 			}
-			
-			
-			
 		}
 		
 		} catch (InstantiationException | IllegalAccessException e) {
 			log.error("Error creating xpathtest",e);
 		}
-	
 		
+		if(eqs.isEmpty()){
+			return tmf.createBoolTermMap( new StringExpression("true"));
+		}else{
+			return  tmf.createBoolTermMap( conjunct(eqs));
+		}
 		
-		return  tmf.createBoolTermMap( conjunct(eqs));
 	}
 	
 	
@@ -472,8 +475,7 @@ private static BitSet RESERVED = new BitSet();
 
 			}
 			
-		
-			
+						
 			return FilterUtil.conjunct(tests);
 		}
 	}
@@ -639,11 +641,11 @@ private static BitSet RESERVED = new BitSet();
 	
 	
 	
-	public static Expression bothNullOrBinary(Expression expr1, Expression expr2, BinaryExpression function, DataTypeHelper dth){
+	public Expression bothNullOrBinary(Expression expr1, Expression expr2, BinaryExpression function, DataTypeHelper dth){
 		
-		
-		function.setLeftExpression(expr1);
-		function.setRightExpression(expr2);
+		// odd, but left and right seems to be twisted
+		function.setLeftExpression(expr2);
+		function.setRightExpression(expr1);
 		Parenthesis pt = new Parenthesis( bothNullOr(expr1, expr2, function,dth));
 		
 		return pt;
@@ -690,7 +692,15 @@ private static BitSet RESERVED = new BitSet();
 	
 	
 	
-	public static Expression bothNullOr(Expression expr1, Expression expr2, Expression function, DataTypeHelper dth){
+	public Expression bothNullOr(Expression expr1, Expression expr2, Expression function, DataTypeHelper dth){
+		
+		if(optConf.isShortcutFilters()){
+			if(DataTypeHelper.uncast(expr1) instanceof NullValue && DataTypeHelper.uncast(expr2) instanceof NullValue){
+				return dth.cast(new StringExpression("true"), dth.getBooleanCastType());
+			}else{
+				return function;
+			}
+		}
 		
 		IsNullExpression literalTypeLeftIsNull = new IsNullExpression();
 		literalTypeLeftIsNull.setLeftExpression(expr1);

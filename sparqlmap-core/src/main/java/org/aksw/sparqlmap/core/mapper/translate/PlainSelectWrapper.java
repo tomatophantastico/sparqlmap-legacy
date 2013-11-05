@@ -105,6 +105,14 @@ public class PlainSelectWrapper implements Wrapper {
 		this.dth = dth;
 		this.filterUtil = filterUtil;
 		this.registerTo = registerTo;
+	
+			// init the Plain Select
+		plainSelect = new PlainSelect();
+		
+		plainSelect.setSelectItems(new ArrayList<SelectItem>());
+		plainSelect.setJoins(new ArrayList());
+		registerTo.put(plainSelect, this);
+			
 		
 	
 	}
@@ -130,10 +138,6 @@ public class PlainSelectWrapper implements Wrapper {
 
 	private Map<SubSelect, Wrapper> subselects = new HashMap<SubSelect, Wrapper>();
 	
-
-	
-
-	private Map<String, String> varEqualsUriMap = new HashMap<String, String>();
 
 	
 //	private void addColumn(TermMap tc, String tcAlias, boolean isOptional) {
@@ -782,43 +786,20 @@ public class PlainSelectWrapper implements Wrapper {
 	
 	
 	
-	Multimap<TermMap,TermMap> hasDupClones = HashMultimap.create();
+	Multimap<TermMap,TermMap> dupClones = HashMultimap.create();
 	Multimap<TermMap,TermMap> joins = HashMultimap.create();
 	Multimap<TermMap,TermMap> optJoins = HashMultimap.create();
 	Set<TermMap> optinalTermMaps = new HashSet<TermMap>();
 
 
-	private void buildPlainSelect(){
-		
-		
-		if(plainSelect==null){
 
-			// init the Plain Select
-			plainSelect = new PlainSelect();
-			
-			plainSelect.setSelectItems(new ArrayList<SelectItem>());
-			plainSelect.setJoins(new ArrayList());
-			registerTo.put(plainSelect, this);
-			
-			
-			
-			prepareMaps();
-			
-			createSelectExpressionItems();
-			
-			createJoins();
-		
-		}
-		
-		//filters get always applied, as the might have been added later.
-		
-		applyFilters();
-		
-	}
+	
+
 
 
 
 	private void createSelectExpressionItems() {
+		this.plainSelect.setSelectItems(new ArrayList<SelectItem>());
 		for(String var : var2termMap.keySet()){
 			plainSelect.getSelectItems().addAll(var2termMap.get(var).getSelectExpressionItems(var));
 		}
@@ -826,26 +807,19 @@ public class PlainSelectWrapper implements Wrapper {
 	
 	private void createJoins() {
 		
+		this.plainSelect.setFromItem(null);
+		this.plainSelect.setJoins(new ArrayList<Join>());
+		
 		// create a Set of all the non optional from items
 		Set<FromItem> fromItems = new LinkedHashSet<FromItem>();
-		Set<FromItem> optionalFromItems = new LinkedHashSet<FromItem>();
 		
-		// put all not-optional items in there 
-		for(BindingEntry be: this.bentries){
-			if(!be.optional){
-				fromItems.addAll(be.termMap.getFromItems());
-			}
-		}
-		// put all optional from items in there, if they have not been previously added as non-optional
-		for(BindingEntry be: this.bentries){
-			
-			if(be.optional){
-				fromItems.addAll(be.termMap.getFromItems());
+		
+		for(TermMap tm : var2termMap.values()){
+			for(FromItem fi : tm.getFromItems()){
+				fromItems.add(fi);
 			}
 		}
 		
-		//remove all that are alread in there in the non-optional part
-		optionalFromItems.removeAll(fromItems);
 		
 		
 		
@@ -861,112 +835,70 @@ public class PlainSelectWrapper implements Wrapper {
 				plainSelect.getJoins().add(join);
 			}
 		}
-		// and one for the optionals
-		if(!optionalFromItems.isEmpty()){
-			Iterator<FromItem> optFromItemIter = fromItems.iterator();
-			if(plainSelect.getFromItem()==null){
-				plainSelect.setFromItem(optFromItemIter.next());
+		
+		
+		Multimap<TermMap, TermMap> cloneJoins = HashMultimap.create();
+		//check for joins on cloned 
+		for(TermMap orig: dupClones.keySet()){
+			Collection<TermMap> clones = dupClones.get(orig);
+			for(TermMap clone: clones){
+				for(TermMap joinkey: joins.keySet()){
+					if(orig.equals(joinkey)){
+						cloneJoins.putAll(clone, joins.get(joinkey));
+					}
+					for(TermMap joinvalue : joins.get(joinkey)){
+						if(joinvalue.equals(orig)){
+							cloneJoins.put(joinkey, clone);
+						}
+					}
+					
+				}
 			}
-			while(optFromItemIter.hasNext()){
-				Join optjoin = new Join();
-				optjoin.setLeft(true);
-				optjoin.setRightItem(optFromItemIter.next());
-				plainSelect.getJoins().add(optjoin);
-			}
+			
 		}
+		joins.putAll(cloneJoins);
 
+	}
+	
+	
+
+	// in this method we apply the filter there were not created by joins
+	private void setFilter(){
+		plainSelect.setWhere(null);
 		
 		// add joins as filters
-		List<Expression> joinequals = new ArrayList<Expression>(); 
+		List<Expression> filtersToAdd = new ArrayList<Expression>(this.filters); 
 		for(TermMap left : joins.keySet()){
 			for(TermMap right: joins.get(left)){
-				joinequals.add(filterUtil.compareTermMaps(left, right, EqualsTo.class).getLiteralValBool());
-			}
-		}
-		
-		
-		
-		
-		
-	}
-	
-	
-
-	private void prepareMaps() {
-		// check which term Maps get joined with which other
-		for(BindingEntry be : this.bentries){
-			
-			if(var2termMap.inverse().containsKey(be.termMap)){
-				// term map already in use
-				String varTermMapInUse = var2termMap.inverse().get(be.termMap);
-				if(!varTermMapInUse.equals(be.alias)){
-					// a different variable, a duplication is required.
-					TermMap cloneTerm = be.termMap.clone("_dup" + translationContext.duplicatecounter++);
-					this.hasDupClones.put(be.termMap,cloneTerm);
+				TermMap joinCond = filterUtil.compareTermMaps(left, right, EqualsTo.class);
+				if(joinCond!=null){
+					filtersToAdd.add(joinCond.getLiteralValBool());	
 				}
-				//else nothing is required
-			}
-			
-			if(var2termMap.containsKey(be.alias)){
-				//we add but we'll have to mark that as joins
-				TermMap termMapInUse = var2termMap.get(be.alias);
 				
-				if(be.optional){
-					//optJoins.put(termMapInUse, be.termMap);
-					//optJoins.put(be.termMap,termMapInUse);
-					joins.put(termMapInUse, be.termMap);
-				}else{
-					joins.put(termMapInUse, be.termMap);
-					//joins.put(be.termMap, termMapInUse);
-				}
+			}
+		}
+
+		if(plainSelect.getWhere()!=null){
+			List<Expression> tmpExpressions = new ArrayList<Expression>();
+			tmpExpressions.add(plainSelect.getWhere());
+			tmpExpressions.addAll(filtersToAdd);
+			plainSelect.setWhere(FilterUtil.conjunct(tmpExpressions));
 			
-			}else{
-				var2termMap.put(be.alias, be.termMap);
-			}
-
-			if(be.optional){
-				optinalTermMaps.add(be.termMap);
-			}
-
-		}
-	}
-	// in this method we apply the filter there were not created by joins
-	private void applyFilters(){
-		for (Expr expr : this.filters) {
-			boolean dupe = false;
-			if (expr instanceof E_Equals
-					&& ((E_Equals) expr).getArg1().isVariable()
-					&& ((E_Equals) expr).getArg2() instanceof NodeValueNode) {
-				String varname = ((E_Equals) expr).getArg1().getVarName();
-				String constValue = ((NodeValueNode) ((E_Equals) expr)
-						.getArg2()).toString();
-
-				if (varEqualsUriMap.containsKey(varname)
-						&& varEqualsUriMap.get(varname).equals(constValue)) {
-					dupe = true;
-				} else {
-					varEqualsUriMap.put(varname, constValue);
-				}
-			}
-
-			if (!dupe) {
-
-				Expression sqlEx = exprconv.asFilter(expr,
-						var2termMap);
-				if (sqlEx != null) {
-//					addSQLFilter(sqlEx);
-				} else {
-					log.warn("Unmappable filter condition encountered: "
-							+ expr.toString());
-				}
-
-			}
+		}else{
+			plainSelect.setWhere(FilterUtil.conjunct(filtersToAdd));
 		}
 	}
 
-	Set<Expr> filters = new HashSet<Expr>();
+	List<Expression> filters = new ArrayList<Expression>();
+	
 	public void addFilterExpression(Collection<Expr> exprs) {
-		this.filters.addAll(exprs);
+		for(Expr expr:exprs){
+			this.filters.add(exprconv.asFilter(expr, var2termMap));
+		}
+		
+		
+		
+		setFilter();
 		
 	}
 	
@@ -1001,7 +933,6 @@ public class PlainSelectWrapper implements Wrapper {
 
 	public PlainSelect getPlainSelect() {
 		
-		buildPlainSelect();
 
 		return plainSelect;
 	}
@@ -1060,19 +991,44 @@ public class PlainSelectWrapper implements Wrapper {
 	
 	
 	
-	public void putTermMap(TermMap tm, String alias, boolean isOptional){
+	public void putTermMap(TermMap termMap, String alias, boolean isOptional){
 		
-		if(plainSelect!=null){
-			throw new ImplementationException("Attempting to insert Termmap after plainselect was initalized");
+		mapTermMap(termMap, alias, isOptional);
+		
+		createJoins();
+		createSelectExpressionItems();
+		setFilter();
+
+	}
+
+
+	public void mapTermMap(TermMap termMap, String alias, boolean isOptional) {
+		if(var2termMap.inverse().containsKey(termMap)){
+			// term map already in use
+			String varTermMapInUse = var2termMap.inverse().get(termMap);
+			if(!varTermMapInUse.equals(alias)){
+				// a different variable, a duplication is required.
+				TermMap cloneTerm = termMap.clone("_dup" + translationContext.duplicatecounter++);
+				this.dupClones.put(termMap,cloneTerm);
+				termMap = cloneTerm;
+			}
+			//else nothing is required
 		}
 		
-		BindingEntry bentry = new BindingEntry();
-		bentry.optional = isOptional;
-		bentry.termMap = tm;
-		bentry.alias = alias;
+		if(var2termMap.containsKey(alias)){
+			//we add but we'll have to mark that as joins
+			TermMap termMapInUse = var2termMap.get(alias);
+			joins.put(termMapInUse, termMap);
+
+
 		
-		bentries.add(bentry);
-		
+		}else{
+			var2termMap.put(alias,termMap);
+		}
+
+		if(isOptional){
+			optinalTermMaps.add(termMap);
+		}
 	}
 	
 	public void addSubselect(Wrapper right, boolean optional) {
@@ -1150,18 +1106,10 @@ public class PlainSelectWrapper implements Wrapper {
 	}
 	
 	
-	Set<BindingEntry> bentries = new LinkedHashSet<BindingEntry>();
-
 	private boolean optional = false;
 	
 
 	
-	private class BindingEntry{
-		boolean optional;
-		TermMap termMap;
-		String alias;
-	}
-
 
 
 	public void setOptional(boolean optional) {

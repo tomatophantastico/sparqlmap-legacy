@@ -10,6 +10,7 @@ import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
+import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 import net.sf.jsqlparser.expression.operators.relational.MinorThan;
 import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
@@ -19,12 +20,14 @@ import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMapFactory;
+import org.hamcrest.core.IsNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.BiMap;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
+import com.hp.hpl.jena.sparql.expr.E_Bound;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
@@ -175,7 +178,17 @@ public class ExpressionConverter {
 		
 		@Override
 		public void visit(ExprFunction1 func) {
+			if(func instanceof E_Bound){
+				IsNullExpression inexpr = new IsNullExpression();
+				
+				
+				inexpr.setLeftExpression(tms.p)
+			}else{
 				throw new ImplementationException("Implement Conversion for " + func.toString());
+			}
+			
+			
+				
 		}
 		
 		

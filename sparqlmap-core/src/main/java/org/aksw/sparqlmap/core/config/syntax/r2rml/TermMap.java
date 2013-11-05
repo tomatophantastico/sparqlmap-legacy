@@ -32,6 +32,8 @@ import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.mapper.compatibility.CompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
@@ -458,37 +460,39 @@ public class TermMap{
 	
 	
 	
+	@Override
+	public int hashCode() {
+		HashCodeBuilder hcb = new HashCodeBuilder();
+		for(Expression expr: getExpressions()){
+			hcb.append(expr.toString());
+		}
+		
+		return hcb.toHashCode();
+	}
+	
+	
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof TermMap) {
-			TermMap otherTm = (TermMap) obj;
-			List<Expression> thisExprs = getExpressions();
-			List<Expression> otherExprs = otherTm.getExpressions();
-			if(thisExprs.size()==otherExprs.size()){
-				Iterator<Expression> thisIter = thisExprs.iterator();
-				Iterator<Expression> otherIter = otherExprs.iterator();
-				while(thisIter.hasNext()){
-					Expression thisExpr = thisIter.next();
-					Expression otherExpr = otherIter.next();
-					if(!thisExpr.equals(otherExpr)){
-						if(log.isDebugEnabled()){
-							if(thisExpr.toString().equals(otherExpr.toString())){
-								log.debug("Expression not considered equal, althoug their string representation are equal.");
-							}
-						}
-						return false;
-					}
-					
-				}
-				
-				return true;
-			}
-			
-			
-		}
-		
-		return false;
+
+		   if (obj == null) { return false; }
+		   if (obj == this) { return true; }
+		   if (obj.getClass() != getClass()) {
+		     return false;
+		   }
+		   TermMap otherTm = (TermMap) obj;
+		   if(getExpressions().size()!=otherTm.getExpressions().size()){
+			   return false;
+		   }
+		   
+		   EqualsBuilder eqb =  new EqualsBuilder();
+		                 
+		   for(int i = 0; i< getExpressions().size(); i++){
+			   eqb.append(getExpressions().get(i).toString(), otherTm.getExpressions().get(i).toString());
+		   }
+		                 
+		   return eqb.isEquals();
+
 	}
 	
 
