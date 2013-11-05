@@ -42,6 +42,28 @@ public class BSBMPostgreSQLTests extends BSBMBaseTest{
 		log.info(ps);
 		
 	}
+	
+
+	String  q1 = "PREFIX bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/>\n" + 
+			"PREFIX bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/>\n" + 
+			"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" + 
+			"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" + 
+			"\n" + 
+			"SELECT DISTINCT ?product " + 
+			"WHERE { \n" + 
+			 "?product rdfs:label ?label .\n" + 
+			"    ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature439> . \n" + 
+			"    ?product bsbm:productFeature <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/ProductFeature4> . \n" + 
+			"        }\n";
+	
+	@Test
+	public void testMultiPropUse() throws SQLException{
+
+		String ps = execAsText(q1);
+		log.info(ps);
+		
+	}
+
 
 	
 	

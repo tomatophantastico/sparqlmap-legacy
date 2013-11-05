@@ -63,8 +63,16 @@ public class SparqlBeautifier extends TransformCopy {
 		}
 
 		OpBGP newOp = new OpBGP(BasicPattern.wrap(newPatterns));
+		
+		Op op = OpFilter.filter(exprList, newOp);
 
-		return OpFilter.filter(exprList, newOp);
+		return op;
+	}
+	
+	@Override
+	public Op transform(OpFilter opFilter, Op subOp) {
+
+		return opFilter;
 	}
 
 	
