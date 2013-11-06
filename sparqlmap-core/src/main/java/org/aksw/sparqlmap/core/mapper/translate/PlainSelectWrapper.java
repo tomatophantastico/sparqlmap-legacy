@@ -1025,6 +1025,12 @@ public class PlainSelectWrapper implements Wrapper {
 		}else{
 			var2termMap.put(alias,termMap);
 		}
+		
+		//the join conditions have to be added anyways
+		
+		filters.addAll(termMap.getFromJoins());
+		
+		
 
 		if(isOptional){
 			optinalTermMaps.add(termMap);

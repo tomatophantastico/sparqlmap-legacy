@@ -8,7 +8,6 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 
 import org.aksw.sparqlmap.core.SparqlMap;
-import org.aksw.sparqlmap.core.SparqlMap.ReturnType;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.WebContent;
@@ -67,19 +66,20 @@ public class SparqlMapWeb {
 			
 			String query = req.getParameter("query");
 			String outputformat = req.getParameter("output");
+			String[] acceptHeaders = req.getHeaderValues("accept");
 			log.debug("Receveived query: " + query);
 			try {
 
 				if(outputformat!=null && outputformat.contains("json")){
-					resp.setContentType("application/sparql-results+json");
+					resp.setContentType( WebContent.contentTypeResultsJSON);
 					ByteArrayOutputStream bio = new ByteArrayOutputStream();
 					
-					sparqlmap.executeSparql(query, ReturnType.JSON,bio);
+					sparqlmap.executeSparql(query, WebContent.contentTypeResultsJSON,bio);
 					resp.getWriter().append(bio.toString());
 					
 				}else{
-					resp.setContentType("application/sparql-results+xml");
-					sparqlmap.executeSparql(query, ReturnType.XML, resp.getOutputStream());
+					resp.setContentType(WebContent.contentTypeRDFXML);
+					sparqlmap.executeSparql(query,WebContent.contentTypeRDFXML, resp.getOutputStream());
 					
 				}
 			} catch (SQLException e) {

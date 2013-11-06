@@ -1,13 +1,34 @@
 package org.aksw.sparqlmap.core.mapper.translate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
+import net.sf.jsqlparser.expression.CaseExpression;
+import net.sf.jsqlparser.expression.DateValue;
+import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.Parenthesis;
+import net.sf.jsqlparser.expression.StringExpression;
+import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.TimeValue;
+import net.sf.jsqlparser.expression.TimestampValue;
+import net.sf.jsqlparser.expression.WhenClause;
+import net.sf.jsqlparser.expression.operators.arithmetic.Addition;
+import net.sf.jsqlparser.expression.operators.arithmetic.Division;
+import net.sf.jsqlparser.expression.operators.arithmetic.Multiplication;
+import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
@@ -20,20 +41,32 @@ import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMapFactory;
+import org.apache.commons.math3.analysis.function.Subtract;
 import org.hamcrest.core.IsNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.BiMap;
+import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
+import com.hp.hpl.jena.sparql.expr.E_Add;
 import com.hp.hpl.jena.sparql.expr.E_Bound;
+import com.hp.hpl.jena.sparql.expr.E_Divide;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
+import com.hp.hpl.jena.sparql.expr.E_Lang;
+import com.hp.hpl.jena.sparql.expr.E_LangMatches;
 import com.hp.hpl.jena.sparql.expr.E_LessThan;
 import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
+import com.hp.hpl.jena.sparql.expr.E_LogicalAnd;
+import com.hp.hpl.jena.sparql.expr.E_LogicalNot;
+import com.hp.hpl.jena.sparql.expr.E_LogicalOr;
+import com.hp.hpl.jena.sparql.expr.E_Multiply;
 import com.hp.hpl.jena.sparql.expr.E_NotEquals;
+import com.hp.hpl.jena.sparql.expr.E_Str;
+import com.hp.hpl.jena.sparql.expr.E_Subtract;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprFunction;
 import com.hp.hpl.jena.sparql.expr.ExprFunction0;
@@ -43,6 +76,7 @@ import com.hp.hpl.jena.sparql.expr.ExprVar;
 import com.hp.hpl.jena.sparql.expr.ExprVisitorBase;
 import com.hp.hpl.jena.sparql.expr.ExprWalker;
 import com.hp.hpl.jena.sparql.expr.NodeValue;
+import com.hp.hpl.jena.sparql.pfunction.library.str;
 
 
 /**
@@ -55,11 +89,34 @@ public class ExpressionConverter {
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ExpressionConverter.class);
 	
+	
+	static Set<Class> constantValueExpressions;
+	
+	{
+		constantValueExpressions =new HashSet<Class>();
+		constantValueExpressions.add(StringValue.class);
+		constantValueExpressions.add(StringExpression.class);
+		constantValueExpressions.add(DateValue.class);
+		constantValueExpressions.add(TimestampValue.class);
+		constantValueExpressions.add(TimeValue.class);
+		constantValueExpressions.add(LongValue.class);
+		constantValueExpressions.add(DoubleValue.class);
+		constantValueExpressions.add(NullValue.class);
+		
+		
+	}
+	
+
+	
+	
 	@Autowired
 	DataTypeHelper dth;
 	
 	@Autowired
 	FilterUtil filterUtil;
+	
+	@Autowired
+	OptimizationConfiguration optConf;
 	
 	@Autowired
 	TermMapFactory tmf;
@@ -179,17 +236,118 @@ public class ExpressionConverter {
 		@Override
 		public void visit(ExprFunction1 func) {
 			if(func instanceof E_Bound){
-				IsNullExpression inexpr = new IsNullExpression();
+				TermMap boundCheck = tms.pop();
+				tms.push(translateIsBound(boundCheck));
+				
+			} else if(func instanceof E_LogicalNot){
+				TermMap notCheck = tms.pop();
+				Expression bool = DataTypeHelper.uncast( notCheck.getLiteralValBool());
+				if(bool instanceof IsNullExpression){
+					((IsNullExpression) bool).setNot(!((IsNullExpression) bool).isNot());
+	
+				}else{
+					Parenthesis parenthesis = new Parenthesis(bool);
+					parenthesis.setNot();
+					
+					notCheck = tmf.createBoolTermMap(parenthesis);
+					
+				}
+				
+				tms.push(notCheck);
+				
+			}else if(func instanceof E_Lang){
+				TermMap langFunc = tms.pop();
+				Expression lang = DataTypeHelper.uncast( langFunc.getLiteralLang());
+				TermMap langTermMap = tmf.createStringTermMap(lang);
+				tms.push(langTermMap);
+				
+			} else if (func instanceof E_Str){
+				TermMap strParam = tms.pop();
 				
 				
-				inexpr.setLeftExpression(tms.p)
-			}else{
+				//create the coalesce function here
+				
+				List<Expression> strExpressions = new ArrayList<Expression>();
+
+				strExpressions.add(dth.cast(DataTypeHelper.uncast(strParam.getLiteralValBinary()) , dth.getStringCastType()));
+				strExpressions.add(dth.cast(DataTypeHelper.uncast(strParam.getLiteralValBool()) , dth.getStringCastType()));
+				strExpressions.add(dth.cast(DataTypeHelper.uncast(strParam.getLiteralValDate()) , dth.getStringCastType()));
+				strExpressions.add(dth.cast(DataTypeHelper.uncast(strParam.getLiteralValNumeric()) , dth.getStringCastType()));
+				strExpressions.add(dth.cast(DataTypeHelper.uncast(strParam.getLiteralValString()) , dth.getStringCastType()));
+				
+								
+				strExpressions.add(FilterUtil.concat(strParam.getExpressions().toArray(new Expression[0])));
+				
+				Expression toString = FilterUtil.coalesce(strExpressions.toArray(new Expression[0]));
+				
+				
+				tms.push(tmf.createStringTermMap(toString));
+			}
+			
+			else{
 				throw new ImplementationException("Implement Conversion for " + func.toString());
 			}
 			
 			
 				
 		}
+		
+		private TermMap translateIsBound(TermMap tm){
+			List<Expression> isNotNullExprs = new ArrayList<Expression>();
+		isNotNullExprs.add(isExpressionBound(tm.getLiteralValBinary()));
+		isNotNullExprs.add(isExpressionBound(tm.getLiteralValBool()));
+		isNotNullExprs.add(isExpressionBound(tm.getLiteralValDate()));
+		isNotNullExprs.add(isExpressionBound(tm.getLiteralValNumeric()));
+		isNotNullExprs.add(isExpressionBound(tm.getLiteralValString()));
+		
+		for(Expression resExpr: tm.getResourceColSeg()){
+			isNotNullExprs.add(isExpressionBound(resExpr));
+		}
+		
+			List<Expression> nonConstantExpressions = new ArrayList<Expression>();
+			for (Expression isNotNullExpr : isNotNullExprs) {
+				if (isNotNullExpr instanceof StringExpression) {
+					if (((StringExpression) isNotNullExpr).getString().equals(
+							"true")) {
+						return tmf.createBoolTermMap(isNotNullExpr);
+					}
+					// ignore it
+				} else {
+					nonConstantExpressions.add(isNotNullExpr);
+				}
+
+			}
+
+			if (nonConstantExpressions.isEmpty()) {
+
+				// all were shortcutted because they were null, so it is not
+				// bound
+				return tmf.createBoolTermMap(new StringExpression("false"));
+			} else {
+				return tmf.createBoolTermMap(FilterUtil
+						.disjunct(nonConstantExpressions));
+			}
+		}
+		
+			
+		
+		private Expression isExpressionBound(Expression expr){
+			expr = DataTypeHelper.uncast(expr);
+			// date col check
+			if(optConf.shortcutFilters&& expr instanceof NullValue){
+				//do nothing
+				return new StringExpression("false");
+			}if(optConf.shortcutFilters&&( constantValueExpressions.contains( expr.getClass()))){
+			// constant value detected is therefore bound
+				return new StringExpression("true");
+			}else{
+				IsNullExpression isNullExpr = new IsNullExpression();
+				isNullExpr.setLeftExpression(expr);
+				isNullExpr.setNot(true);
+				return isNullExpr;
+			}
+		}
+		
 		
 		
 		@Override 
@@ -198,9 +356,7 @@ public class ExpressionConverter {
 			TermMap right = tms.pop();
 			
 			if(func instanceof E_Equals){
-				
 				putXpathTestOnStack(left, right, EqualsTo.class );
-				
 			}else if(func instanceof E_NotEquals){
 				putXpathTestOnStack(left, right, NotEqualsTo.class);
 			}else if(func instanceof E_LessThan){
@@ -211,6 +367,20 @@ public class ExpressionConverter {
 				putXpathTestOnStack(left, right, GreaterThan.class);
 			}else if(func instanceof E_GreaterThanOrEqual){
 				putXpathTestOnStack(left, right, GreaterThanEquals.class);
+			}else if(func instanceof E_LangMatches){
+				putLanMatchesOnStack(left, right);				
+			}else if(func instanceof E_Add){
+				putArithmeticOnStack(left,right,Addition.class);
+			}else if(func instanceof E_Subtract){
+				putArithmeticOnStack(left, right, Subtraction.class);
+			}else if(func instanceof E_Multiply){
+				putArithmeticOnStack(left, right, Multiplication.class);
+			}else if(func instanceof E_Divide){
+				putArithmeticOnStack(left, right, Division.class);
+			}else if(func instanceof E_LogicalAnd){
+				putLogicalOnStack(left,right,AndExpression.class);
+			}else if(func instanceof E_LogicalOr){
+				putLogicalOnStack(left,right,OrExpression.class);
 			}
 			
 			
@@ -218,6 +388,115 @@ public class ExpressionConverter {
 				throw new ImplementationException("Expression not implemented:" + func.toString());
 			}
 			
+		}
+
+
+		private void putLogicalOnStack(TermMap left, TermMap right,
+				Class<? extends BinaryExpression> logicalClass) {
+			try {
+				BinaryExpression logical =  logicalClass.newInstance();
+				logical.setLeftExpression(DataTypeHelper.uncast(left.getLiteralValBool()));
+				logical.setRightExpression(DataTypeHelper.uncast(right.getLiteralValBool()));
+				
+				tms.push(tmf.createBoolTermMap(logical));
+			} catch (InstantiationException | IllegalAccessException e) {
+				log.error("Error creating logical operator",e);
+			}
+			
+			
+		}
+
+
+		private void putArithmeticOnStack(TermMap left, TermMap right,
+				Class<? extends BinaryExpression> arithmeticOp) {
+			try {
+				BinaryExpression arithmetical  = arithmeticOp.newInstance();
+				arithmetical.setLeftExpression(DataTypeHelper.uncast(left.getLiteralValNumeric()));
+				arithmetical.setRightExpression(DataTypeHelper.uncast( right.getLiteralValNumeric()));
+				
+				
+				
+				// for division we always return decimal
+				if(arithmeticOp.equals(Division.class)){
+					Expression datatype = dth.cast(new StringValue("'" + XSDDatatype.XSDdecimal.getURI()+ "'"), dth.getStringCastType());
+					tms.push(tmf.createNumericalTermMap(arithmetical, datatype));
+				}else{
+					
+					//determine the datatype
+					
+					if(optConf.isShortcutFilters()){
+						//check if we can determine the datatype of both parameters
+						Expression dtLeft = DataTypeHelper.uncast(left.getLiteralType());
+						Expression dtRight = DataTypeHelper.uncast(right.getLiteralType());
+						if(constantValueExpressions.contains(dtLeft.getClass())
+								&& constantValueExpressions.contains(dtRight.getClass())){
+							if(dtLeft.toString().equals(dtRight.toString())){
+								//the same, so we use
+								tms.push(tmf.createNumericalTermMap(arithmetical, dtLeft));
+							}else{
+								//we just use decimal
+								Expression datatype = dth.cast(new StringValue("'" + XSDDatatype.XSDdecimal.getURI()+ "'"), dth.getStringCastType());
+								tms.push(tmf.createNumericalTermMap(arithmetical, datatype));
+							}
+							
+							return;
+						}
+						
+						
+					}
+					
+					//it was not possible to short, so create the dynamic datatype expression
+					CaseExpression datatypeCase = new CaseExpression();
+					
+					WhenClause datatypeEquals = new WhenClause();
+					EqualsTo datatypesAreEqualwhen = new EqualsTo();
+					datatypesAreEqualwhen.setLeftExpression(left.getLiteralType());
+					Expression datatypesEqualThen = left.getLiteralType();
+					
+					datatypeEquals.setWhenExpression(datatypesAreEqualwhen);
+					datatypeEquals.setThenExpression(datatypesEqualThen);
+					
+					
+					Expression elseDataType = new StringValue("'" + XSDDatatype.XSDdecimal.getURI()+ "'");
+					
+					datatypeCase.setWhenClauses(Arrays.asList((Expression)datatypeEquals));
+					
+					datatypeCase.setElseExpression(elseDataType);
+					
+					tms.push(tmf.createNumericalTermMap(arithmetical, datatypeCase));
+					
+					
+					
+				}
+				
+				
+				
+			} catch (InstantiationException | IllegalAccessException e) {
+				log.error("Error creating arithmetic operator",e);
+			}
+			
+			
+		}
+		
+		
+		
+
+
+		public void putLanMatchesOnStack(TermMap left, TermMap right) {
+			EqualsTo eqExpr = new EqualsTo();
+			//wrap into to_lowercase functions
+			Function funcLeftLower = new Function();
+			funcLeftLower.setName("LOWER");
+			funcLeftLower.setParameters(new ExpressionList(Arrays.asList(left.getLiteralValString())));
+			
+			Function funcRightLower = new Function();
+			funcRightLower.setName("LOWER");
+			funcRightLower.setParameters(new ExpressionList(Arrays.asList(right.getLiteralValString())));
+			
+			eqExpr.setLeftExpression(funcLeftLower);
+			eqExpr.setRightExpression(funcRightLower);
+			
+			tms.push(tmf.createBoolTermMap(eqExpr));
 		}
 
 

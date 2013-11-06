@@ -186,8 +186,10 @@ private static BitSet RESERVED = new BitSet();
 
 	public static Expression concat(Expression... expr) {
 		
-		if(expr.length==1){
+		if(expr.length==0){
 			return new NullValue();
+		}else if(expr.length==1){
+			return expr[0];
 		}
 		
 		Function concat = new Function();
@@ -283,7 +285,7 @@ private static BitSet RESERVED = new BitSet();
 			Expression literalBinaryEquality = bothNullOrBinary(left.literalValBinary, right.literalValBinary, test.newInstance(),dth);
 			eqs.add(literalBinaryEquality);
 		}	
-		if(!isAlwaysTrue(left.literalType, left.literalValBool)){
+		if(!isAlwaysTrue(left.literalValBool, left.literalValBool)){
 			Expression literalBoolEquality = bothNullOrBinary(left.literalValBool,right.literalValBool,test.newInstance(),dth);
 			eqs.add(literalBoolEquality);
 		}
@@ -697,8 +699,6 @@ private static BitSet RESERVED = new BitSet();
 		if(optConf.isShortcutFilters()){
 			if(DataTypeHelper.uncast(expr1) instanceof NullValue && DataTypeHelper.uncast(expr2) instanceof NullValue){
 				return dth.cast(new StringExpression("true"), dth.getBooleanCastType());
-			}else{
-				return function;
 			}
 		}
 		

@@ -63,7 +63,21 @@ public class BSBMPostgreSQLTests extends BSBMBaseTest{
 		log.info(ps);
 		
 	}
+	
+	
+	String constructPart = "SELECT * \n" + 
+			//"  { <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite1/Reviewer83> ?p_sm ?o_sm .}\n" + 
+			"WHERE\n" + 
+			"  { <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromRatingSite1/Reviewer83> ?p_sm ?o_sm }\n" + 
+			""; 
 
+	@Test
+	public void testConstructPart() throws SQLException{
+
+		String ps = execAsText(constructPart);
+		log.info(ps);
+		
+	}
 
 	
 	

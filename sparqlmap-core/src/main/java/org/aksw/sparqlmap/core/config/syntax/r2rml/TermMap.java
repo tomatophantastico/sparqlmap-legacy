@@ -494,6 +494,31 @@ public class TermMap{
 		   return eqb.isEquals();
 
 	}
+
+
+	public Expression getLiteralValBinary() {
+		return literalValBinary;
+	}
+	
+	public Expression getLiteralValDate() {
+		return literalValDate;
+	}
+	
+	public Expression getLiteralValNumeric() {
+		return literalValNumeric;
+	}
+	
+	public Expression getLiteralValString() {
+		return literalValString;
+	}
+	
+	public Expression getLiteralLang() {
+		return literalLang;
+	}
+	
+	public Expression getLiteralType() {
+		return literalType;
+	}
 	
 
 	
