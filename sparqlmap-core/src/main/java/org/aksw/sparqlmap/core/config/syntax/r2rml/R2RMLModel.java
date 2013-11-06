@@ -667,7 +667,7 @@ public class R2RMLModel {
 				}
 
 			}else{
-				tm.resourceColSeg.add(dth.castNull(dth.getStringCastType()));
+				//tm.resourceColSeg.add(dth.castNull(dth.getStringCastType()));
 				tm.resourceColSeg.add(dth.cast(col,dth.getStringCastType()));
 			}		
 		}

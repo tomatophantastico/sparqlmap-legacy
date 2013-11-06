@@ -1,5 +1,8 @@
 package org.aksw.sparqlmap.core.config.syntax.r2rml;
 
+import java.sql.Timestamp;
+
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -8,10 +11,12 @@ import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.TimestampValue;
 
 import com.hp.hpl.jena.datatypes.BaseDatatype;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
+import com.hp.hpl.jena.datatypes.xsd.XSDDateTime;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.rdf.model.Literal;
@@ -60,9 +65,17 @@ public class TermMapFactory {
 				tm.literalValBinary = dth.cast(binVal, dth.getBinaryDataType());
 				
 			}else if(dth.getCastTypeString(dt).equals(dth.getDateCastType())){
+				Long timestamp;
+				Object value = constLit.getValue();
+				if(value  instanceof XSDDateTime){
+					
+					timestamp  = ((XSDDateTime) value).asCalendar().getTimeInMillis();
+				}else{
+					throw new ImplementationException("Encountered unkown datatype as data:" + value.getClass());
+				}
 				
 				
-				DateValue dateValue = new DateValue(constLit.getLexicalForm()); 
+				TimestampValue dateValue = new TimestampValue(new Timestamp(timestamp)); 
 				tm.literalValDate = dth.cast(dateValue, dth.getDateCastType());
 				
 			}else if(dth.getCastTypeString(dt).equals(dth.getBooleanCastType())){
@@ -96,6 +109,24 @@ public class TermMapFactory {
 		tm.setTermTyp(R2RML.Literal);
 		tm.setLiteralDataType(XSDDatatype.XSDboolean.getURI());
 		tm.literalValBool = dth.cast(bool, dth.getBooleanCastType());
+		
+		return tm;
+	}
+	
+	public TermMap createStringTermMap(Expression string){
+		TermMap tm = new TermMap(dth);
+		tm.setTermTyp(R2RML.Literal);
+		tm.setLiteralDataType(RDFS.Literal.getURI());
+		tm.literalValString = dth.cast(string, dth.getStringCastType());
+		
+		return tm;
+	}
+	
+	public TermMap createNumericalTermMap(Expression numeric,Expression datatype){
+		TermMap tm = new TermMap(dth);
+		tm.setTermTyp(R2RML.Literal);
+		tm.literalType = datatype;
+		tm.literalValNumeric = dth.cast(numeric, dth.getNumericCastType());
 		
 		return tm;
 	}
