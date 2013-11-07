@@ -125,7 +125,8 @@ public class PlainSelectWrapper implements Wrapper {
 			.create();
 
 
-	private BiMap<String,TermMap> var2termMap = HashBiMap.create();
+	private Map<String,TermMap> var2termMap = new HashMap<String,TermMap>();
+	private Map<TermMap,String> termMap2var = new HashMap<TermMap,String>();
 	
 
 	private DataTypeHelper dth;
@@ -926,7 +927,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 	}
 
-	public BiMap<String, TermMap> getVar2TermMap() {
+	public Map<String, TermMap> getVar2TermMap() {
 		return var2termMap;
 	}
 	
@@ -1003,9 +1004,9 @@ public class PlainSelectWrapper implements Wrapper {
 
 
 	public void mapTermMap(TermMap termMap, String alias, boolean isOptional) {
-		if(var2termMap.inverse().containsKey(termMap)){
+		if(termMap2var.containsKey(termMap)){
 			// term map already in use
-			String varTermMapInUse = var2termMap.inverse().get(termMap);
+			String varTermMapInUse = termMap2var.get(termMap);
 			if(!varTermMapInUse.equals(alias)){
 				// a different variable, a duplication is required.
 				TermMap cloneTerm = termMap.clone("_dup" + translationContext.duplicatecounter++);
@@ -1024,6 +1025,7 @@ public class PlainSelectWrapper implements Wrapper {
 		
 		}else{
 			var2termMap.put(alias,termMap);
+			termMap2var.put(termMap, alias);
 		}
 		
 		//the join conditions have to be added anyways
@@ -1095,7 +1097,7 @@ public class PlainSelectWrapper implements Wrapper {
 			subsell.setSelectBody(right.getSelectBody());
 			subsell.setAlias(SUBSEL_SUFFIX + translationContext.subquerycounter++);
 			
-			BiMap<String,TermMap> rightVar2TermMap  = null;
+			Map<String,TermMap> rightVar2TermMap  = null;
 			
 			if(right instanceof UnionWrapper){
 				UnionWrapper rightWrapper = (UnionWrapper) right;

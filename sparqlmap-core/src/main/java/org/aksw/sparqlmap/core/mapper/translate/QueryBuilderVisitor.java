@@ -172,60 +172,77 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	@Override
 	public void visit(OpFilter opfilter){
-		PlainSelectWrapper wrap  = (PlainSelectWrapper) this.selectBody2Wrapper.get(selects.peek());
+		Wrapper wrap  =  this.selectBody2Wrapper.get(selects.peek());
 		
-		if(this.pushFilters == true && wrap.getSubselects().size()>0){
-			// try to stuff everything into the unions
+		if(wrap instanceof UnionWrapper){
+			UnionWrapper unionWrap = (UnionWrapper) wrap;
+			boolean unpushable = true;
 			for(Expr toPush : opfilter.getExprs().getList()){
 				
 				Set<String> filterVars = new HashSet<String>();
 				for(Var var: toPush.getVarsMentioned()){
 					filterVars.add(var.getName());
 				}
-			
-				
-				
-				boolean unpushable = false;
-				for(SubSelect subselect :wrap.getSubselects().keySet()){
-					Wrapper subSelectWrapper = wrap.getSubselects().get(subselect);
-					if(subSelectWrapper instanceof UnionWrapper){
-						//do that now for all plainselects of the union
-						for(PlainSelect ps: ((UnionWrapper)subSelectWrapper).getUnion().getPlainSelects()){
-							PlainSelectWrapper psw = (PlainSelectWrapper) selectBody2Wrapper.get(ps);
-							Set<String> pswVars = psw.getVarsMentioned();
-							if(pswVars.containsAll(filterVars)){
-								// if all filter variables are covered by the triples of the subselect, it can answer it.
-								psw.addFilterExpression(Arrays.asList(toPush));
-							}else if(Collections.disjoint(filterVars, pswVars)){
-								//if none are shared, than this filter simply does not matter for this wrapper 
-							}else{
-								//if there only some variables of the filter covered by the wrapper, answering in the top opration is neccessary.
-								unpushable = true;
-							}
-							
+				unpushable = pushIntoUnion(toPush, filterVars, unionWrap);
 
-						}
-						
-						
-					}else{
-						// do nothing else, here be dragons
-						unpushable = true;
-					}
-				}
-				if(unpushable){
-					//so the filter could not be pushed, we need to evaluate in the upper select
-					wrap.addFilterExpression(new ArrayList<Expr>(Arrays.asList(toPush)));
-				}
+			}
+
+			if(unpushable){
+				//so the filter could not be pushed, we need to evaluate in the upper select
+				//we have to wrap the union uinto a plainselect;
+				PlainSelectWrapper ps = new PlainSelectWrapper(selectBody2Wrapper, dataTypeHelper, exprconv, filterUtil, translationContext);
+				ps.addSubselect(unionWrap, false);
+				
+				ps.addFilterExpression(new ArrayList<Expr>(opfilter.getExprs().getList()));
+				selects.pop();
+				selects.push(ps.getSelectBody());
+				
 			}
 			
 			
 			
-			
 		}else{
-			//no filter pushing, just put it in
-			
-			wrap.addFilterExpression(new ArrayList<Expr>(opfilter.getExprs().getList()));
+			PlainSelectWrapper pswrap = (PlainSelectWrapper) wrap;
+			if(this.pushFilters == true && pswrap.getSubselects().size()>0){
+				// try to stuff everything into the unions
+				for(Expr toPush : opfilter.getExprs().getList()){
+					
+					Set<String> filterVars = new HashSet<String>();
+					for(Var var: toPush.getVarsMentioned()){
+						filterVars.add(var.getName());
+					}
+				
+					
+					
+					boolean unpushable = false;
+					for(SubSelect subselect :pswrap.getSubselects().keySet()){
+						Wrapper subSelectWrapper = pswrap.getSubselects().get(subselect);
+						if(subSelectWrapper instanceof UnionWrapper){
+							unpushable = pushIntoUnion(toPush, filterVars,subSelectWrapper);
+							
+							
+						}else{
+							// do nothing else, here be dragons
+							unpushable = true;
+						}
+					}
+					if(unpushable){
+						//so the filter could not be pushed, we need to evaluate in the upper select
+						pswrap.addFilterExpression(new ArrayList<Expr>(Arrays.asList(toPush)));
+					}
+				}
+				
+				
+				
+				
+			}else{
+				//no filter pushing, just put it in
+				
+				pswrap.addFilterExpression(new ArrayList<Expr>(opfilter.getExprs().getList()));
+			}
 		}
+		
+		
 		
 		
 		
@@ -233,6 +250,28 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		
 	
 		
+	}
+
+	public boolean pushIntoUnion(Expr toPush, Set<String> filterVars,
+			Wrapper subSelectWrapper) {
+		boolean unpushable = false;
+		//do that now for all plainselects of the union
+		for(PlainSelect ps: ((UnionWrapper)subSelectWrapper).getUnion().getPlainSelects()){
+			PlainSelectWrapper psw = (PlainSelectWrapper) selectBody2Wrapper.get(ps);
+			Set<String> pswVars = psw.getVarsMentioned();
+			if(pswVars.containsAll(filterVars)){
+				// if all filter variables are covered by the triples of the subselect, it can answer it.
+				psw.addFilterExpression(Arrays.asList(toPush));
+			}else if(Collections.disjoint(filterVars, pswVars)){
+				//if none are shared, than this filter simply does not matter for this wrapper 
+			}else{
+				//if there only some variables of the filter covered by the wrapper, answering in the top opration is neccessary.
+				unpushable = true;
+			}
+			
+
+		}
+		return unpushable;
 	}
 	
 
@@ -363,7 +402,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		SelectBody sb = selects.pop();
 		PlainSelect toModify = null;
 
-		BiMap<String, TermMap> var2termMap;
+		Map<String, TermMap> var2termMap;
 		
 		if(sb instanceof SetOperationList){
 			

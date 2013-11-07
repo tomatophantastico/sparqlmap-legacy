@@ -24,6 +24,7 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.riot.RDFFormatVariant;
 import org.apache.jena.riot.RDFLanguages;
+import org.apache.jena.riot.WebContent;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -145,9 +146,9 @@ public class sparqlmap {
 
 			// process the database options
 			processDbOptions(options, cl, props);
-			Lang outputlang = null;
+			String outputlang = null;
 			if(cl.hasOption("outputformat")){
-				outputlang =  RDFLanguages.nameToLang(cl.getOptionValue("outputformat"));
+				outputlang =  cl.getOptionValue("outputformat");
 			}
 			
 			
@@ -248,26 +249,26 @@ public class sparqlmap {
 	
 	
 	
-	public void dump(Lang langoutputf) throws SQLException{
+	public void dump(String langoutputf) throws SQLException{
 		if(langoutputf==null){
-			langoutputf = Lang.NTRIPLES;
+			langoutputf = WebContent.contentTypeNTriples;
 		}
 		
 		SparqlMap sm = ctxt.getBean(SparqlMap.class);
 		
-		sm.dump(System.out, new RDFFormat(langoutputf));
+		sm.dump(System.out, langoutputf);
 		
 	}
 	
 
 	
 	
-	public void generateMapping(Lang format) throws FileNotFoundException, SQLException{
+	public void generateMapping(String format) throws FileNotFoundException, SQLException{
 		
 		AutomapperWrapper am = ctxt.getBean(AutomapperWrapper.class);
 		
 		if(format==null){
-			format = Lang.TURTLE;
+			format = WebContent.contentTypeTurtle;
 		}
 		
 		if (!format.equals(Lang.TURTLE)){
@@ -275,7 +276,7 @@ public class sparqlmap {
 		}
 		
 				
-		RDFDataMgr.write(out, am.automap(), format);
+		RDFDataMgr.write(out, am.automap(), RDFLanguages.nameToLang(format));
 		
 	}
 

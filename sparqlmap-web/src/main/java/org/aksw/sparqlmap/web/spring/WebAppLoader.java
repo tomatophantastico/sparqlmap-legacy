@@ -19,4 +19,6 @@ public class WebAppLoader extends AbstractAnnotationConfigDispatcherServletIniti
     protected String[] getServletMappings() {
         return new String[] { "/" };
     }
+    
+    
 }
