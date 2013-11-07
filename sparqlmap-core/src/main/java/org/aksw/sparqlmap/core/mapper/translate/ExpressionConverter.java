@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -65,6 +66,7 @@ import com.hp.hpl.jena.sparql.expr.E_LogicalNot;
 import com.hp.hpl.jena.sparql.expr.E_LogicalOr;
 import com.hp.hpl.jena.sparql.expr.E_Multiply;
 import com.hp.hpl.jena.sparql.expr.E_NotEquals;
+import com.hp.hpl.jena.sparql.expr.E_SameTerm;
 import com.hp.hpl.jena.sparql.expr.E_Str;
 import com.hp.hpl.jena.sparql.expr.E_Subtract;
 import com.hp.hpl.jena.sparql.expr.Expr;
@@ -131,7 +133,7 @@ public class ExpressionConverter {
 	 */
 
 	public List<OrderByElement> convert(OpOrder opo,
-			BiMap<String, TermMap> var2termMap) {
+			Map<String, TermMap> var2termMap) {
 
 		List<OrderByElement> obys = new ArrayList<OrderByElement>();
 		for (SortCondition soCond : opo.getConditions()) {
@@ -192,7 +194,7 @@ public class ExpressionConverter {
 //	}
 	
 	
-	public Expression asFilter(Expr expr, BiMap<String, TermMap> var2termMap){
+	public Expression asFilter(Expr expr, Map<String, TermMap> var2termMap){
 		
 		TermMap tm = asTermMap(expr, var2termMap);
 		return DataTypeHelper.uncast(tm.literalValBool);
@@ -202,7 +204,7 @@ public class ExpressionConverter {
 	}
 	
 	
-	public TermMap asTermMap(Expr expr,BiMap<String, TermMap> var2termMap){
+	public TermMap asTermMap(Expr expr,Map<String, TermMap> var2termMap){
 		ExprToTermapVisitor ettm = new ExprToTermapVisitor(var2termMap);
 		
 		ExprWalker.walk(ettm, expr);
@@ -216,11 +218,11 @@ public class ExpressionConverter {
 	
 	public class ExprToTermapVisitor extends ExprVisitorBase{
 		Stack<TermMap> tms=  new Stack<TermMap>();
-		BiMap<String, TermMap> var2termMap;
+		Map<String, TermMap> var2termMap;
 	
 		
 		
-		public ExprToTermapVisitor(BiMap<String, TermMap> var2termMap) {
+		public ExprToTermapVisitor(Map<String, TermMap> var2termMap) {
 			super();
 			this.var2termMap = var2termMap;
 		}
@@ -357,6 +359,8 @@ public class ExpressionConverter {
 			
 			if(func instanceof E_Equals){
 				putXpathTestOnStack(left, right, EqualsTo.class );
+			}else if(func instanceof E_SameTerm){
+				putXpathTestOnStack(left, right, EqualsTo.class );
 			}else if(func instanceof E_NotEquals){
 				putXpathTestOnStack(left, right, NotEqualsTo.class);
 			}else if(func instanceof E_LessThan){
@@ -389,6 +393,8 @@ public class ExpressionConverter {
 			}
 			
 		}
+		
+		
 
 
 		private void putLogicalOnStack(TermMap left, TermMap right,

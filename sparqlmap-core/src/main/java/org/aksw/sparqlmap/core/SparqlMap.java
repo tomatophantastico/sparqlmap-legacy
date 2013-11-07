@@ -21,6 +21,7 @@ import org.apache.commons.math3.stat.StatUtils;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.riot.RDFLanguages;
 import org.apache.jena.riot.WebContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -259,7 +260,7 @@ public class SparqlMap {
 	 * @throws SQLException 
 	 */
 
-	public void dump(OutputStream out,RDFFormat format) throws SQLException{
+	public void dump(OutputStream out,String format) throws SQLException{
 		PrintStream writer = new PrintStream(out);
 		
 		List<String> queries = mapper.dump();
@@ -301,9 +302,9 @@ public class SparqlMap {
 				}
 			}
 			if(usesGraph){
-				RDFDataMgr.write(out, graph, RDFFormat.NQUADS);
+				RDFDataMgr.write(out, graph,RDFLanguages.nameToLang(format));
 			}else{
-				RDFDataMgr.write(out, graph.getDefaultGraph(),Lang.NTRIPLES);
+				RDFDataMgr.write(out, graph.getDefaultGraph(), RDFLanguages.nameToLang(format));
 			}
 			
 			writer.flush();
@@ -345,6 +346,16 @@ public class SparqlMap {
 		return dataset;
 	}
 	
+	
+	public ResultSet rewriteAndExecute(String query) throws SQLException{
+		
+		TranslationContext context = new TranslationContext();
+		context.setQueryString(query);
+		context.setQuery(QueryFactory.create(query));
+		
+		return rewriteAndExecute(context);
+		
+	}
 
 	
 	

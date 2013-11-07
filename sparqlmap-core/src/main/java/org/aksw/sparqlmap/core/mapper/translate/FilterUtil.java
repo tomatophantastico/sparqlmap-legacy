@@ -366,10 +366,10 @@ private static BitSet RESERVED = new BitSet();
 			
 			while( currentLeft!=null || leftExprIter.hasNext() ||  currentRight!=null|| rightExprIter.hasNext()){
 				
-				if(currentLeft==null){
+				if(currentLeft==null && leftExprIter.hasNext()){
 					currentLeft = DataTypeHelper.uncast(leftExprIter.next());
 				}
-				if(currentRight==null){
+				if(currentRight==null && rightExprIter.hasNext()){
 					currentRight = DataTypeHelper.uncast(rightExprIter.next());
 				}
 				

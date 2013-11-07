@@ -22,6 +22,7 @@ import org.aksw.sparqlmap.core.automapper.AutomapperWrapper;
 import org.aksw.sparqlmap.core.db.Connector;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.riot.WebContent;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -110,7 +111,7 @@ public abstract class R2RMLTest {
 		ctxt.refresh();
 		
 		SparqlMap r2r = ctxt.getBean(SparqlMap.class);
-		r2r.dump(new FileOutputStream(new File(outputLocation)),RDFFormat.NTRIPLES);
+		r2r.dump(new FileOutputStream(new File(outputLocation)),WebContent.contentTypeNTriples);
 		ctxt.close();
 	}
 	
