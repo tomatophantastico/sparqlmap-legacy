@@ -49,11 +49,10 @@ public class UnionWrapper implements Wrapper {
 	 * creates a new sql Union and registers it the the wrapper2body map
 	 * @param selectBody2Wrapper
 	 */
-	public UnionWrapper(Map<SelectBody, Wrapper> selectBody2Wrapper, DataTypeHelper dth) {
+	public UnionWrapper( DataTypeHelper dth) {
 		this.dth = dth;
 		this.union = new SetOperationList();
 		union.setOpsAndSelects(new ArrayList<PlainSelect>(),new ArrayList<SetOperation>());
-		selectBody2Wrapper.put(union, this);
 	}
 
 

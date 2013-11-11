@@ -87,16 +87,16 @@ import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.nodevalue.NodeValueNode;
 
-public class PlainSelectWrapper implements Wrapper {
+public class PlainSelectWrapper implements Wrapper{
 	
 	public static final String SUBSEL_SUFFIX = "subsel_";
 
 	private TranslationContext translationContext;
 	
-	private Map<SelectBody, Wrapper> registerTo;
+	private Map<PlainSelect, PlainSelectWrapper> registerTo;
 
 
-	public PlainSelectWrapper(Map<SelectBody, Wrapper> registerTo,
+	public PlainSelectWrapper(Map<PlainSelect, PlainSelectWrapper> registerTo,
 			DataTypeHelper dth, ExpressionConverter exprconv,
 			FilterUtil filterUtil, TranslationContext translationContext) {
 		super();
@@ -126,7 +126,7 @@ public class PlainSelectWrapper implements Wrapper {
 
 
 	private Map<String,TermMap> var2termMap = new HashMap<String,TermMap>();
-	private Map<TermMap,String> termMap2var = new HashMap<TermMap,String>();
+	private Map<TermMap,String> termMap2var = new LinkedHashMap<TermMap,String>();
 	
 
 	private DataTypeHelper dth;
@@ -938,13 +938,12 @@ public class PlainSelectWrapper implements Wrapper {
 		return plainSelect;
 	}
 
-	@Override
-	public SelectBody getSelectBody() {
+	public PlainSelect getSelectBody() {
 
 		return getPlainSelect();
 	}
 
-	@Override
+	
 	public List<SelectItem> getSelectExpressionItems() {
 		return getPlainSelect().getSelectItems();
 	}
@@ -953,7 +952,7 @@ public class PlainSelectWrapper implements Wrapper {
 		return subselects;
 	}
 
-	@Override
+	
 	public Set<String> getVarsMentioned() {
 
 		return new HashSet<String>(this.getVar2TermMap().keySet());

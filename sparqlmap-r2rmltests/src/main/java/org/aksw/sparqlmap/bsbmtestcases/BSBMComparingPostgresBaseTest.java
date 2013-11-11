@@ -66,8 +66,26 @@ public class BSBMComparingPostgresBaseTest {
 			assertFalse("Virtuoso had more results",rsVirt.hasNext());
 			
 			for(String var:vars){
-				for(RDFNode smNode: smResults.get(var)){				
-					assertTrue("Virtuso result did not contain: " + smNode.toString(), virtResults.get(var).contains(smNode));
+				for(RDFNode smNode: smResults.get(var)){
+					boolean contains = false;
+					for(RDFNode virtNode : virtResults.get(var)){
+						if(smNode.isLiteral() && virtNode.isLiteral()){
+							if(smNode.asLiteral().getValue().equals(virtNode.asLiteral().getValue())
+								&& (	smNode.asLiteral().getDatatype()==null && virtNode.asLiteral().getDatatype()==null
+										||(smNode.asLiteral().getDatatype()!=null && virtNode.asLiteral().getDatatype()!=null
+										&& smNode.asLiteral().getDatatype().equals(virtNode.asLiteral().getDatatype())))){
+								contains = true;
+								break;	
+									
+							}
+						}else{
+							contains = smNode.equals(virtNode);
+							if(contains){
+								break;
+							}
+						}
+					}
+					assertTrue("Virtuso result did not contain: " + smNode.toString(), contains);
 				}
 			}
 		} catch (SQLException e) {

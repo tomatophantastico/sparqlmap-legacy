@@ -67,8 +67,8 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	private static Logger log = LoggerFactory
 			.getLogger(QueryBuilderVisitor.class);
 	
-	private Map<SelectBody, Wrapper> selectBody2Wrapper = new HashMap<SelectBody, Wrapper>();
-	private Stack<SelectBody> selects = new Stack<SelectBody>();
+	private Map<PlainSelect, PlainSelectWrapper> selectBody2Wrapper = new HashMap<PlainSelect, PlainSelectWrapper>();
+	private Stack<PlainSelect> selects = new Stack<PlainSelect>();
 	
 	TermMap crc;
 
@@ -104,10 +104,13 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			log.info("found empty select for union, skipping it");
 			selects.push(ps1.getSelectBody());
 		}else{
-			UnionWrapper union = new UnionWrapper(selectBody2Wrapper, dataTypeHelper);
+			UnionWrapper union = new UnionWrapper(dataTypeHelper);
 			union.addPlainSelectWrapper(ps1);
 			union.addPlainSelectWrapper(ps2);
-			selects.push(union.getSelectBody());
+			
+			PlainSelectWrapper ps = new PlainSelectWrapper(selectBody2Wrapper, dataTypeHelper, exprconv, filterUtil, translationContext);
+			ps.addSubselect(union, false);
+			selects.push(ps.getPlainSelect());
 		}
 	}
 	@Override
@@ -116,7 +119,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 
 	}
 	
-	public static class DummyBody implements SelectBody{
+	public static class DummyBody extends PlainSelect{
 
 		@Override
 		public void accept(SelectVisitor selectVisitor) {
@@ -297,7 +300,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		super.visit(opBGP);
 	}
 	
-	private Wrapper addTripleBindings( PlainSelectWrapper psw, Triple triple, boolean isOptional) {
+	private void addTripleBindings( PlainSelectWrapper psw, Triple triple, boolean isOptional) {
 
 		
 		
@@ -318,7 +321,6 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			}
 	
 			
-			return psw;
 		}else if(trms.size()==0){
 			// no triple maps found.
 			//bind to null values instead.
@@ -326,7 +328,6 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 					.getSubject().getName(), TermMap.createNullTermMap(dataTypeHelper),triple
 					.getPredicate().getName(),TermMap.createNullTermMap(dataTypeHelper),triple.getObject().getName(), isOptional);
 			
-			return psw; 
 			
 		}else{
 			List<PlainSelectWrapper> pselects = new ArrayList<PlainSelectWrapper>();
@@ -351,14 +352,13 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 				}
 			}
 			
-			UnionWrapper union = new UnionWrapper(this.selectBody2Wrapper,dataTypeHelper);
+			UnionWrapper union = new UnionWrapper(dataTypeHelper);
 			for (PlainSelectWrapper plainSelectWrapper : pselects) {
 				union.addPlainSelectWrapper(plainSelectWrapper);
 
 			}
 			
 			psw.addSubselect(union,isOptional);
-			return union;
 		}
 		
 		
@@ -376,8 +376,8 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	public void visit(OpJoin opJoin) {
 		
-		SelectBody left = this.selects.pop();
-		SelectBody right = this.selects.pop();
+		PlainSelect left = this.selects.pop();
+		PlainSelect right = this.selects.pop();
 		
 		PlainSelectWrapper leftWrapper = (PlainSelectWrapper) this.selectBody2Wrapper.get(left);
 		PlainSelectWrapper rightWrapper = (PlainSelectWrapper) this.selectBody2Wrapper.get(right);
