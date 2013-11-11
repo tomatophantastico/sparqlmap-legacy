@@ -40,6 +40,7 @@ import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 
 import org.aksw.sparqlmap.core.ImplementationException;
+import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMapFactory;
 import org.apache.commons.math3.analysis.function.Subtract;
@@ -57,6 +58,9 @@ import com.hp.hpl.jena.sparql.expr.E_Divide;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
+import com.hp.hpl.jena.sparql.expr.E_IsBlank;
+import com.hp.hpl.jena.sparql.expr.E_IsIRI;
+import com.hp.hpl.jena.sparql.expr.E_IsLiteral;
 import com.hp.hpl.jena.sparql.expr.E_Lang;
 import com.hp.hpl.jena.sparql.expr.E_LangMatches;
 import com.hp.hpl.jena.sparql.expr.E_LessThan;
@@ -284,6 +288,24 @@ public class ExpressionConverter {
 				
 				
 				tms.push(tmf.createStringTermMap(toString));
+			}else if(func instanceof E_IsBlank){
+				TermMap isBlank =  tms.pop();
+				EqualsTo eq = new EqualsTo();
+				eq.setLeftExpression(isBlank.getTermType());
+				eq.setRightExpression(new StringValue("'" +ColumnHelper.COL_VAL_TYPE_BLANK+ "'"));
+				tms.push(tmf.createBoolTermMap(eq));
+			}else if(func instanceof E_IsIRI){
+				TermMap isIri =  tms.pop();
+				EqualsTo eq = new EqualsTo();
+				eq.setLeftExpression(isIri.getTermType());
+				eq.setRightExpression(new StringValue("'" +ColumnHelper.COL_VAL_TYPE_RESOURCE+ "'"));
+				tms.push(tmf.createBoolTermMap(eq));
+			}else if(func instanceof E_IsLiteral){
+				TermMap isLiteral =  tms.pop();
+				EqualsTo eq = new EqualsTo();
+				eq.setLeftExpression(isLiteral.getTermType());
+				eq.setRightExpression(new StringValue("'" +ColumnHelper.COL_VAL_TYPE_LITERAL+ "'"));
+				tms.push(tmf.createBoolTermMap(eq));
 			}
 			
 			else{

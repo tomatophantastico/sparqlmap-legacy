@@ -429,8 +429,10 @@ public class TermMap{
 		}
 	}
 	
+
 	
-	public Resource getTermType(){
+	
+	public Resource getTermTypeAsResource(){
 		String tt = ((LongValue)DataTypeHelper.uncast(termType)).getStringValue();
 		
 		if(tt.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE.toString())){
@@ -520,6 +522,9 @@ public class TermMap{
 		return literalType;
 	}
 	
+	public Expression getTermType() {
+		return termType;
+	}
 
 	
 	

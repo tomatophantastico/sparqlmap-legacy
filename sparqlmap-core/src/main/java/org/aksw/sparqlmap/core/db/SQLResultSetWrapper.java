@@ -26,8 +26,10 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 import com.hp.hpl.jena.datatypes.BaseDatatype;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
+import com.hp.hpl.jena.datatypes.TypeMapper;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.rdf.model.AnonId;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -222,7 +224,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		String litType = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_TYPE);
 		RDFDatatype dt = null;
 		if(litType!=null&&!litType.isEmpty()&&!litType.equals(RDFS.Literal.getURI())){
-			dt = new BaseDatatype(litType);
+			dt = TypeMapper.getInstance().getSafeTypeByName(litType);
 		}
 		
 		String lang =  rs.getString(var + ColumnHelper.COL_NAME_LITERAL_LANG);
@@ -275,7 +277,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		}
 		
 		if(literalValue !=null){
-			node = Node.createLiteral(literalValue,	lang, dt);
+			node = NodeFactory.createLiteral(literalValue,	lang, dt);
 		}else{
 			node = null; 
 		}
@@ -315,20 +317,20 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 			if(type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE)){
 				if(baseUri!=null){
 					try{
-						node = Node.createURI(uri.toString());
+						node = NodeFactory.createURI(uri.toString());
 					}catch(IRIException e){
 						try {
-							node = Node.createURI(uri.toString());
+							node = NodeFactory.createURI(uri.toString());
 						} catch (IRIException e1) {
 							log.warn("Trying to create invalid IRIs, using :" + uri.toString());
 							node = null;
 						}
 					}
 				}else{
-					node = Node.createURI(uri.toString());
+					node = NodeFactory.createURI(uri.toString());
 				}
 			}else{
-				node = Node.createAnon(new AnonId(uri.toString()));
+				node = NodeFactory.createAnon(new AnonId(uri.toString()));
 			}
 			
 		}

@@ -1,5 +1,6 @@
 package org.aksw.sparqlmap.core.config.syntax.r2rml;
 
+import java.io.StringReader;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -19,10 +20,19 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.parser.CCJSqlParser;
+import net.sf.jsqlparser.parser.CCJSqlParserManager;
+import net.sf.jsqlparser.parser.JSqlParser;
+import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectBodyString;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
 import org.aksw.sparqlmap.core.ImplementationException;
@@ -74,7 +84,7 @@ public class R2RMLModel {
 	Model r2rmlSchema = null;
 	
 
-	Map<String, Map<String, String>> col2castTo = new HashMap<String, Map<String, String>>();
+	
 
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory
 			.getLogger(R2RMLModel.class);
@@ -93,9 +103,59 @@ public class R2RMLModel {
 		
 		loadTripleMaps();
 		loadParentTripleStatements();
+		
+		decomposeVirtualTableQueries();
 
 		loadCompatibilityChecker();
 		validatepost();
+	}
+
+	/**
+	 * if a triple map s based on a query, we attempt to decompose it.
+	 */
+	private void decomposeVirtualTableQueries() {
+		for(TripleMap trm: tripleMaps.values()){
+			FromItem fi = trm.getFrom();
+			if(fi instanceof SubSelect){
+				SelectBody sb  = ((SubSelect) fi).getSelectBody();
+				if(sb instanceof SelectBodyString){
+					String queryString = ((SelectBodyString) sb).getQuery();
+					CCJSqlParser sqlParser = new CCJSqlParser(new StringReader(queryString));
+					try {
+						sb = sqlParser.SelectBody();
+					} catch (ParseException e) {
+						log.warn("Could not parse query for optimization " + queryString);
+						continue;
+					}		
+				}
+				
+				if(sb instanceof PlainSelect){
+					//validate that there are only normal joins in there
+					
+					for(Join join : ((PlainSelect) sb).getJoins()){
+						if(!(join.isSimple())){
+							continue;
+						}
+					}
+					// create a projection map
+					Map<String,Column> projections = new HashMap<String,Column>();
+					
+					for(SelectItem si : ((PlainSelect) sb).getSelectItems()){
+						if(si instanceof SelectExpressionItem){
+							if(!(((SelectExpressionItem) si).getExpression() instanceof Column)){
+								//no  a column in there, so we skip this query
+								continue;
+							}
+							projections.put(((SelectExpressionItem) si).getAlias() , (Column) ((SelectExpressionItem) si).getExpression());	
+						}
+					}
+					
+					// create join conditions
+				}
+			}
+			
+		}
+		
 	}
 
 	private void resolveMultipleGraphs() {
