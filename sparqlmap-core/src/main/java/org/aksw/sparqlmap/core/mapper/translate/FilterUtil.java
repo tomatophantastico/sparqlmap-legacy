@@ -695,9 +695,10 @@ private static BitSet RESERVED = new BitSet();
 	
 	
 	public Expression bothNullOr(Expression expr1, Expression expr2, Expression function, DataTypeHelper dth){
-		
+		Expression uncast1 = DataTypeHelper.uncast(expr1);
+		Expression uncast2 = DataTypeHelper.uncast(expr2);
 		if(optConf.isShortcutFilters()){
-			if(DataTypeHelper.uncast(expr1) instanceof NullValue && DataTypeHelper.uncast(expr2) instanceof NullValue){
+			if(uncast1 instanceof NullValue && uncast2 instanceof NullValue){
 				return dth.cast(new StringExpression("true"), dth.getBooleanCastType());
 			}
 		}

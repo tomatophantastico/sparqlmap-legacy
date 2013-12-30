@@ -131,7 +131,8 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	@Override
 	public void visit(OpGraph opGraph) {
-		log.error("Implement OpGraph");
+		log.error("implement opGRaph");
+		
 	}
 
 	@Override

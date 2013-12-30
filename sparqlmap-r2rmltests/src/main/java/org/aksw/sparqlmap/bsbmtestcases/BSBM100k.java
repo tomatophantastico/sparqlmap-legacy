@@ -220,7 +220,7 @@ public class BSBM100k {
 			"    OPTIONAL { ?review bsbm:rating2 ?rating2 . } \n" + 
 			"    }\n" + 
 			"}\n" + 
-			"";
+			" ORDER BY ?review";
 	public static int q7count = 7;
 	public static Multimap<String,String> q7Res(){
 		Multimap<String,String> res = HashMultimap.create();

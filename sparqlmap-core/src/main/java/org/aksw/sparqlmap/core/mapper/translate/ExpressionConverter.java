@@ -96,21 +96,6 @@ public class ExpressionConverter {
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ExpressionConverter.class);
 	
 	
-	static Set<Class> constantValueExpressions;
-	
-	{
-		constantValueExpressions =new HashSet<Class>();
-		constantValueExpressions.add(StringValue.class);
-		constantValueExpressions.add(StringExpression.class);
-		constantValueExpressions.add(DateValue.class);
-		constantValueExpressions.add(TimestampValue.class);
-		constantValueExpressions.add(TimeValue.class);
-		constantValueExpressions.add(LongValue.class);
-		constantValueExpressions.add(DoubleValue.class);
-		constantValueExpressions.add(NullValue.class);
-		
-		
-	}
 	
 
 	
@@ -361,7 +346,7 @@ public class ExpressionConverter {
 			if(optConf.shortcutFilters&& expr instanceof NullValue){
 				//do nothing
 				return new StringExpression("false");
-			}if(optConf.shortcutFilters&&( constantValueExpressions.contains( expr.getClass()))){
+			}if(optConf.shortcutFilters&&( DataTypeHelper.constantValueExpressions.contains( expr.getClass()))){
 			// constant value detected is therefore bound
 				return new StringExpression("true");
 			}else{
@@ -439,8 +424,9 @@ public class ExpressionConverter {
 				Class<? extends BinaryExpression> arithmeticOp) {
 			try {
 				BinaryExpression arithmetical  = arithmeticOp.newInstance();
-				arithmetical.setLeftExpression(DataTypeHelper.uncast(left.getLiteralValNumeric()));
-				arithmetical.setRightExpression(DataTypeHelper.uncast( right.getLiteralValNumeric()));
+				arithmetical.setLeftExpression(DataTypeHelper.uncast(right.getLiteralValNumeric()));
+				
+				arithmetical.setRightExpression(DataTypeHelper.uncast(left.getLiteralValNumeric()));
 				
 				
 				
@@ -456,8 +442,8 @@ public class ExpressionConverter {
 						//check if we can determine the datatype of both parameters
 						Expression dtLeft = DataTypeHelper.uncast(left.getLiteralType());
 						Expression dtRight = DataTypeHelper.uncast(right.getLiteralType());
-						if(constantValueExpressions.contains(dtLeft.getClass())
-								&& constantValueExpressions.contains(dtRight.getClass())){
+						if(DataTypeHelper.constantValueExpressions.contains(dtLeft.getClass())
+								&& DataTypeHelper.constantValueExpressions.contains(dtRight.getClass())){
 							if(dtLeft.toString().equals(dtRight.toString())){
 								//the same, so we use
 								tms.push(tmf.createNumericalTermMap(arithmetical, dtLeft));

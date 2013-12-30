@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.aksw.sparqlmap.core.ImplementationException;
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.apache.commons.codec.binary.Hex;
@@ -50,7 +51,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	String iriPattern = " ^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?";
 	
 	String baseUri = null;
-	DecimalFormat doubleFormatter = new DecimalFormat("0.0##########################E0");
+	DecimalFormat doubleFormatter = new DecimalFormat("0.0##########################");
 		static org.slf4j.Logger log = org.slf4j.LoggerFactory
 			.getLogger(SQLResultSetWrapper.class);
 
@@ -68,22 +69,20 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	private DataTypeHelper dth;
 	
 	
-	private Stopwatch sw;
-	Multimap<String, Long>  profiler;
+	private TranslationContext tcontext;
 
-	public SQLResultSetWrapper(ResultSet rs, Connection conn, DataTypeHelper dth, String baseUri)
+	public SQLResultSetWrapper(ResultSet rs, Connection conn, DataTypeHelper dth, String baseUri, TranslationContext tcontext)
 			throws SQLException {
 		this.conn = conn;
+		this.tcontext = tcontext;
 		this.rs = rs;
 		this.dth = dth;
 		this.baseUri = baseUri;
 		initVars();
-		sw = new Stopwatch().start();
+		tcontext.profileStartPhase("result set retrival");
 	}
 	
-	public void setProfiler(Multimap<String, Long> profiler) {
-		this.profiler = profiler;
-	}
+
 
 
 
@@ -97,15 +96,21 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	 * @throws SQLException
 	 */
 	public void initVars() throws SQLException {
+		
+		for(Var var: tcontext.getQuery().getProjectVars()){
+			this.vars.add(var.getName());
+		}
+		
+		
 
 		for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
 			String colname = rs.getMetaData().getColumnName(i);
 			colNames.add(colname);
 
-			if (colname.endsWith(ColumnHelper.COL_NAME_RDFTYPE)) {
-				vars.add(colname.substring(0, colname.length()
-						- ColumnHelper.COL_NAME_RDFTYPE.length()));
-			}
+//			if (colname.endsWith(ColumnHelper.COL_NAME_RDFTYPE)) {
+//				vars.add(colname.substring(0, colname.length()
+//						- ColumnHelper.COL_NAME_RDFTYPE.length()));
+//			}
 			
 			if(colname.contains(ColumnHelper.COL_NAME_RESOURCE_COL_SEGMENT)){
 				//we extract the var name
@@ -243,6 +248,9 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		
 		}else if( XSDDatatype.XSDint.getURI().equals(litType)||XSDDatatype.XSDinteger.getURI().equals(litType)){
 			literalValue =Integer.toString(rs.getInt((var + ColumnHelper.COL_NAME_LITERAL_NUMERIC)));
+			if(rs.wasNull()){
+				literalValue = null;
+			}
 		
 		}else if(XSDDatatype.XSDstring.getURI().equals( litType)|| litType ==null){
 			literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
@@ -359,10 +367,8 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	}
 
 	public void close() {
-		if(profiler!=null&&sw.isRunning()){
-			sw.stop();
-			profiler.put("3 closed after ",sw.elapsedTime(TimeUnit.MICROSECONDS));
-		}
+		tcontext.profileStop();
+		
 		
 		try {
 			if (rs.isClosed() == false) {

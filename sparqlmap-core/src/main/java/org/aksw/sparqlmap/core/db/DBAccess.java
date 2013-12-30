@@ -67,7 +67,7 @@ public class DBAccess {
 			ResultSet rs = stmt.executeQuery(context.getSqlQuery());
 			
 			wrap = new DeUnionResultWrapper(new  SQLResultSetWrapper(rs, connect,
-					dataTypeHelper, baseUri));
+					dataTypeHelper, baseUri, context));
 		} catch (SQLException e) {
 			log.error("Error executing Query: " + context.getSqlQuery());
 			throw new SQLException(e);
