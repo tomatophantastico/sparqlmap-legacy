@@ -1,6 +1,11 @@
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashSet;
 import java.util.Set;
 
+import net.sf.jsqlparser.schema.Table;
+
+import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -20,6 +25,20 @@ public class Playground {
 
 		
 		
+	}
+	
+	
+	@Test
+	public void testTableEquivalence(){
+		
+		
+		Set<Table> tables =  new HashSet<Table>();
+		Table test1 = ColumnHelper.createTable("test");
+		tables.add( test1);
+		Table test2 = ColumnHelper.createTable("test");
+		assertTrue(test1.hashCode()==test2.hashCode());
+		assertTrue(tables.contains(test2));
+		assertTrue(test1.equals(test2));
 	}
 	
 	

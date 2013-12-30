@@ -219,10 +219,15 @@ public class TermMap{
 	
 	public String toString(){
 		StringBuffer out = new StringBuffer();
-		for(Expression exp: getExpressions() ){
-			out.append(exp.toString());
-			out.append("|");
+		out.append("||");
+		for(Expression exp: getValueExpressions() ){
+			if(! (DataTypeHelper.uncast(exp) instanceof NullValue)){
+				out.append(DataTypeHelper.uncast( exp).toString());
+				out.append("|");
+			}
+			
 		}
+		out.append("|");
 		
 		return out.toString();
 	}
@@ -303,6 +308,10 @@ public class TermMap{
 		for(EqualsTo joinCondition : joinConditions){
 			clone.joinConditions.add(cloneJoinCondition(suffix, joinCondition));
 		}
+		
+		
+		
+	
 			
 		return clone;
 	}
@@ -401,13 +410,33 @@ public class TermMap{
 		
 		return true;
 	}
-
+	/**
+	 * get all expressions that consitute this term map
+	 * @return
+	 */
 	public List<Expression> getExpressions(){
 		
 		List<Expression> exprs = Lists.newArrayList(
 				termType,
 				literalType,
 				literalLang,
+				literalValString,
+				literalValNumeric,
+				literalValDate,
+				literalValBool,
+				literalValBinary);
+		exprs.addAll(resourceColSeg);
+		
+		return exprs;
+	}
+	
+	/**
+	 * get all expressions that can hold the str() value of an term map
+	 * @return
+	 */
+	public List<Expression> getValueExpressions(){
+		
+		List<Expression> exprs = Lists.newArrayList(
 				literalValString,
 				literalValNumeric,
 				literalValDate,

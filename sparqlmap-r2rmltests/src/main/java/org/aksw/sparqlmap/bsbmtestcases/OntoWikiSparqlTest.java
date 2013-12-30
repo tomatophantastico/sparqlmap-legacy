@@ -1,12 +1,14 @@
 package org.aksw.sparqlmap.bsbmtestcases;
 
+import java.sql.SQLException;
+
 import org.junit.Test;
 
 public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 	
 	
 	@Test
-	public void query0(){
+	public void query0() throws SQLException{
 		String query = "SELECT  ?0 ?1 \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -16,7 +18,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 	}
 	
 	@Test
-	public void query1(){
+	public void query1() throws SQLException{
 		String query = "SELECT DISTINCT ?resourceUri  \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -30,7 +32,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 	}
 	
 	@Test
-	public void query2(){
+	public void query2() throws SQLException{
 		String query = "SELECT DISTINCT ?resourceUri  \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -56,7 +58,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 	
 	
 	@Test
-	public void query3(){
+	public void query3() throws SQLException{
 		String query = "SELECT DISTINCT ?resourceUri  \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -91,7 +93,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 	
 	
 	@Test
-	public void query4(){
+	public void query4() throws SQLException{
 		String query = "SELECT DISTINCT ?resourceUri  \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -120,7 +122,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 	
 	
 	@Test
-	public void query5(){
+	public void query5() throws SQLException{
 		String query = "SELECT DISTINCT ?resourceUri  \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -139,7 +141,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 	}
 	
 	@Test
-	public void query6(){
+	public void query6() throws SQLException{
 		String query = "SELECT DISTINCT ?resourceUri  \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -157,7 +159,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 
 	}
 	@Test
-	public void query7(){
+	public void query7() throws SQLException{
 		String query = "SELECT DISTINCT ?resourceUri  \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -172,7 +174,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 
 	}
 	@Test
-	public void query8(){
+	public void query8() throws SQLException{
 		String query = "SELECT DISTINCT ?resourceUri  \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -187,7 +189,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 	}
 	 
 	@Test
-	public void query9(){
+	public void query9() throws SQLException{
 		String query = "SELECT  ?0 ?1 \n" + 
 				"\n" + 
 				"			FROM <http://bsbm/10m>\n" + 
@@ -197,7 +199,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 	}
 
 	@Test
-	public void query10(){
+	public void query10() throws SQLException{
 		String query = "SELECT  ?0 ?1 \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
@@ -206,7 +208,7 @@ public class OntoWikiSparqlTest extends BSBMComparingPostgresBaseTest  {
 
 	}
 	@Test
-	public void query11(){
+	public void query11() throws SQLException{
 		String query = "SELECT DISTINCT ?resourceUri  \n" + 
 				"\n" + 
 				"FROM <http://bsbm/10m>\n" + 
