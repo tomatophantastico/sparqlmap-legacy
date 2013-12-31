@@ -1,5 +1,6 @@
 package org.aksw.sparqlmap.core.config.syntax.r2rml;
 
+import java.io.StringReader;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -16,22 +17,36 @@ import javax.annotation.PostConstruct;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.ExpressionVisitor;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.parser.CCJSqlParser;
+import net.sf.jsqlparser.parser.CCJSqlParserManager;
+import net.sf.jsqlparser.parser.JSqlParser;
+import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectBodyString;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SelectItem;
+import net.sf.jsqlparser.statement.select.SelectVisitor;
 import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.util.BaseSelectVisitor;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap.PO;
 import org.aksw.sparqlmap.core.db.DBAccess;
 import org.aksw.sparqlmap.core.mapper.compatibility.CompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.compatibility.SimpleCompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
@@ -53,24 +68,27 @@ import com.hp.hpl.jena.vocabulary.RDFS;
 
 public class R2RMLModel {
 
-	public R2RMLModel(ColumnHelper columnhelper, DBAccess dbconf,
+	public R2RMLModel(DBAccess dbconf,
 			DataTypeHelper dth, Model mapping, Model r2rmlSchema) {
 		super();
-		this.columnhelper = columnhelper;
+		
 		this.dbconf = dbconf;
 		this.dth = dth;
 		this.mapping = mapping;
 		this.r2rmlSchema = r2rmlSchema;
 	}
+	
+	@Autowired
+	private TermMapFactory tfac;
 
-	private ColumnHelper columnhelper;
+	
 	private DBAccess dbconf;
 	private DataTypeHelper dth;
 	Model mapping = null;
 	Model r2rmlSchema = null;
 	
 
-	Map<String, Map<String, String>> col2castTo = new HashMap<String, Map<String, String>>();
+	
 
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory
 			.getLogger(R2RMLModel.class);
@@ -89,10 +107,185 @@ public class R2RMLModel {
 		
 		loadTripleMaps();
 		loadParentTripleStatements();
+		
+		decomposeVirtualTableQueries();
 
 		loadCompatibilityChecker();
 		validatepost();
 	}
+
+	/**
+	 * if a triple map s based on a query, we attempt to decompose it.
+	 */
+	private void decomposeVirtualTableQueries() {
+		TERMMAPLOOP: for(TripleMap trm: tripleMaps.values()){
+			FromItem fi = trm.getFrom();
+			if(fi instanceof SubSelect){
+				SelectBody sb  = ((SubSelect) fi).getSelectBody();
+				if(sb instanceof SelectBodyString){
+					String queryString = ((SelectBodyString) sb).getQuery();
+					CCJSqlParser sqlParser = new CCJSqlParser(new StringReader(queryString));
+					try {
+						sb = sqlParser.SelectBody();
+					} catch (ParseException e) {
+						log.warn("Could not parse query for optimization " + queryString);
+						continue TERMMAPLOOP;
+					}		
+				}
+				
+				if(sb instanceof PlainSelect){
+					cleanColumnNames((PlainSelect) sb);
+					//validate that there are only normal joins on tables are here
+					List<Table> tables = new ArrayList<Table>();
+					List<EqualsTo> joinConds = new ArrayList<EqualsTo>();
+					
+					if(!(((PlainSelect) sb).getFromItem() instanceof Table)){
+						continue;
+					}
+					tables.add((Table) ((PlainSelect) sb).getFromItem());
+					
+					
+					for(Join join : ((PlainSelect) sb).getJoins()){
+						if((join.isSimple() )|| join.isFull() || join.isLeft()||
+									!(join.getRightItem() instanceof Table)){
+							log.warn("Only simple joins can be opzimized");
+							continue TERMMAPLOOP;
+						}
+						
+						Table tab  = (Table) join.getRightItem();
+						if(tab.getAlias()==null){
+							log.warn("Table: " + tab.getName() + " needs an alias in order to be optimized");
+							continue TERMMAPLOOP;
+						}
+						
+						tables.add(tab);
+						
+						//check if we can make use of the on condition.
+						
+						
+							
+						Expression onExpr = join.getOnExpression();
+						
+						//shaving of parenthesis
+						if(onExpr instanceof Parenthesis){
+							onExpr = ((Parenthesis) onExpr).getExpression();
+						}
+						
+						if(!(onExpr instanceof EqualsTo)){
+							log.warn("only simple equals statements can be processed, aborting optimization ");
+							continue TERMMAPLOOP;
+						}
+						
+						
+						
+						joinConds.add((EqualsTo) onExpr);
+						
+					}
+					// create a projection map
+					Map<String,Column> projections = new HashMap<String,Column>();
+					
+					for(SelectItem si : ((PlainSelect) sb).getSelectItems()){
+						if(si instanceof SelectExpressionItem){
+							if(!(((SelectExpressionItem) si).getExpression() instanceof Column)){
+								//no  a column in there, so we skip this query
+								continue TERMMAPLOOP;
+							}
+							Column col = (Column) ((SelectExpressionItem) si).getExpression();
+							if(col.getTable().getAlias()==null){
+								col.getTable().setAlias(col.getTable().getName());
+							}
+							String alias = ((SelectExpressionItem) si).getAlias();
+							projections.put( alias,col );	
+						}
+					}
+					
+					// modify the columns in the term maps
+					
+					TermMap s = trm.getSubject();
+					trm.setSubject(replaceColumn(s, trm, projections, tables, joinConds));
+					for(PO po : trm.getPos()){
+						po.setObject(replaceColumn(po.getObject(),trm, projections, tables, joinConds));
+						po.setPredicate(replaceColumn(po.getPredicate(),trm, projections, tables, joinConds));
+					}
+					
+					log.info("Rewrote query " + trm.getFrom());
+					
+				}
+			}
+			
+		}
+		
+	}
+	
+	private void cleanColumnNames(PlainSelect sb) {
+		
+		
+		SelectVisitor cleaningVisitior = new BaseSelectVisitor(){
+			@Override
+			public void visit(Column tableColumn) {
+				super.visit(tableColumn);
+
+				tableColumn.setColumnName(unescape(tableColumn.getColumnName())); 
+				
+			}
+			
+			@Override
+			public void visit(Table table) {
+				super.visit(table);
+				table.setAlias(unescape(table.getAlias()!=null?table.getAlias():table.getName()));
+				table.setName(unescape(table.getName()));
+				table.setSchemaName(unescape(table.getSchemaName()));
+			}
+			@Override
+			public void visit(SelectExpressionItem selectExpressionItem) {
+				super.visit(selectExpressionItem);
+				selectExpressionItem.setAlias(unescape(selectExpressionItem.getAlias()));
+			}
+			
+		};
+		
+		sb.accept(cleaningVisitior);
+		
+
+		
+	}
+
+	private TermMap replaceColumn(TermMap tm,TripleMap trm, Map<String,Column> name2Col, List<Table> tables, List<EqualsTo> joinConditions){
+		List<Expression> expressions =  new ArrayList<Expression>();
+		//we use this to make sure constant value triple maps do not get the column set.
+		boolean hasReplaced = false;
+		for(Expression casted : tm.getExpressions()){
+			String castType = DataTypeHelper.getCastType(casted);
+			Expression uncast = DataTypeHelper.uncast(casted);
+			
+			if(uncast instanceof Column){
+				Column col =  name2Col.get(((Column) uncast).getColumnName());
+				expressions.add(dth.cast(col, castType));
+				hasReplaced = true;
+				
+			}else if (DataTypeHelper.constantValueExpressions.contains(uncast.getClass())){
+				expressions.add(dth.cast(uncast, castType));
+			}else{
+				throw new ImplementationException("unknown expression in TermMap");
+			}	
+		}
+		TermMap newTm =TermMap.createTermMap(dth, expressions);
+		if(hasReplaced){
+			for(Table table: tables){
+				newTm.alias2fromItem.put(table.getAlias(), table);
+			}
+			newTm.joinConditions.addAll(joinConditions);
+		}
+		
+		newTm.trm = trm;
+		
+
+		return newTm; 
+	}
+	
+	
+	
+	
 
 	private void resolveMultipleGraphs() {
 		
@@ -192,15 +385,8 @@ public class R2RMLModel {
 				TermMapQueryResult ptmqr = new TermMapQueryResult(pnode.asResource(),
 						reasoningModel, tripleMap.from);
 				
-				TermMap ptm = new TermMap(dth);
-				ptm.setTermTyp(R2RML.IRI);
-				mapQueryResultOnTermMap(ptmqr, ptm, tripleMap.from,tripleMap);
+				TermMap ptm = mapQueryResultOnTermMap(ptmqr, tripleMap.from,tripleMap,R2RML.IRI);
 				
-//				TermMap ptm = createTermMap(tm.from,
-//						ResourceFactory.createResource(), tm, null
-//						,ptmqr,
-//						ColumnHelper.COL_VAL_TYPE_RESOURCE);
-
 				tripleMap.addPO(ptm, newoTermMap);
 
 			}
@@ -388,12 +574,12 @@ public class R2RMLModel {
 				graph = Arrays.asList( resourceToExpression(R2RML.defaultGraph));
 			}
 			
-			TermMap stm = new TermMap(dth);
+			TermMap stm = null;
 
 			if (sres.termType != null) {
-				stm.setTermTyp(sres.termType);
+				stm = mapQueryResultOnTermMap(sres, fromItem,triplemap, sres.termType);
 			} else {
-				stm.setTermTyp(R2RML.IRI);
+				stm = mapQueryResultOnTermMap(sres, fromItem,triplemap, R2RML.IRI);
 			}
 			// some validation
 			if (sres.termType != null && sres.termType.equals(R2RML.Literal)) {
@@ -405,7 +591,7 @@ public class R2RMLModel {
 						"Must IRI in predicate position");
 
 			}
-			mapQueryResultOnTermMap(sres, stm, fromItem,triplemap);
+			
 			stm.trm = triplemap;
 			triplemap.setSubject(stm);
 			
@@ -434,53 +620,42 @@ public class R2RMLModel {
 
 				TermMapQueryResult p = new TermMapQueryResult(posol, "p",
 						fromItem);
-				TermMap ptm = new TermMap(dth);
-				// some general validation
+				
+				
 				if (p.termType != null
 						&& !p.termType.getURI().equals(R2RML.IRI)) {
 					throw new R2RMLValidationException(
 							"Only use iris in predicate position");
 				}
-				ptm.setTermTyp(R2RML.IRI);
-				
+		
+				TermMap ptm = mapQueryResultOnTermMap(p, fromItem,triplemap,R2RML.IRI);
+			
 
-				mapQueryResultOnTermMap(p, ptm,fromItem,triplemap);
-				
-				
-				
-				
 
 				TermMapQueryResult qr_o = new TermMapQueryResult(posol, "o",
 						fromItem);
 				//the term type definition according to the R2RML spec  http://www.w3.org/TR/r2rml/#termtype
 				
-				TermMap otm = new TermMap(dth);
+				TermMap otm = null;
 			
 				//Identify the term type here
 				if(qr_o.termType != null){
-					otm.setTermTyp(qr_o.termType);	
+					otm = mapQueryResultOnTermMap(qr_o, fromItem,triplemap,qr_o.termType);
 				}else if(qr_o.constant!=null){
-					//use the termtype of the constant
-					if(qr_o.constant.isAnon()){
-						otm.setTermTyp(R2RML.BlankNode);
-					}else if(qr_o.constant.isURIResource()){
-						otm.setTermTyp(R2RML.IRI);
-					}else{
-						otm.setTermTyp(R2RML.Literal);
-					}
+					otm = mapQueryResultOnTermMap(qr_o, fromItem, triplemap, null);
 				}else if(qr_o.column != null //when column, etc. then it is a literal
 							|| qr_o.lang != null
 							|| qr_o.datatypeuri != null
 							|| (qr_o.termType != null && qr_o.termType.equals(
 									R2RML.Literal))){
-						otm.setTermTyp(R2RML.Literal);
+					otm = mapQueryResultOnTermMap(qr_o, fromItem, triplemap,R2RML.Literal);
 					}else{
 						//it stays IRI
-						otm.setTermTyp(R2RML.IRI);
+						
+						otm = mapQueryResultOnTermMap(qr_o, fromItem, triplemap,R2RML.IRI);
 					}
 				
 				
-				mapQueryResultOnTermMap(qr_o, otm,fromItem,triplemap);
 				triplemap.addPO(ptm, otm);
 
 			}
@@ -616,54 +791,24 @@ public class R2RMLModel {
 		
 	}
 	
-	public void mapQueryResultOnTermMap(TermMapQueryResult qr, TermMap tm, FromItem fi, TripleMap tripleMap){
-		tm.trm = tripleMap;
+	public TermMap mapQueryResultOnTermMap(TermMapQueryResult qr, FromItem fi, TripleMap tripleMap, Resource termType){
+		
+		TermMap tm =  TermMap.createNullTermMap(dth);
+		
+		if(termType!=null){
+			tm.setTermTyp(termType);
+		}
+		
 		
 		
 		if(qr.constant!=null){
-			if(qr.constant.isLiteral()){
-				RDFDatatype dt = qr.constant.asLiteral().getDatatype();
-				Literal constLit = qr.constant.asLiteral().asLiteral();
-				if(dt==null){
-					tm.setLiteralDataType(RDFS.Literal.getURI());
-				}else{
-					tm.setLiteralDataType(dt.getURI());
-				}
-				
-				
-				// set the value here
-				if(dth.getCastTypeString(dt).equals(dth.getStringCastType())){
-					StringValue stringVal = new StringValue("'"+constLit.getString()+"'");
-					tm.literalValString = dth.cast( stringVal, dth.getStringCastType());
-					
-				}else if(dth.getCastTypeString(dt).equals(dth.getNumericCastType())){
-					LongValue longValue  = new LongValue(Double.toString(constLit.getDouble()));
-					tm.literalValNumeric = dth.cast(longValue, dth.getNumericCastType());
-					
-				}else if(dth.getCastTypeString(dt).equals(dth.getBinaryDataType())){
-					StringValue binVal = new StringValue("'"+constLit.getString()+"'");
-					tm.literalValBinary = dth.cast(binVal, dth.getBinaryDataType());
-					
-				}else if(dth.getCastTypeString(dt).equals(dth.getDateCastType())){
-					
-					
-					DateValue dateValue = new DateValue(constLit.getValue().toString()); 
-					tm.literalValDate = dth.cast(dateValue, dth.getDateCastType());
-					
-				}else if(dth.getCastTypeString(dt).equals(dth.getBooleanCastType())){
-					StringValue bool = new StringValue(Boolean.toString(qr.constant.asLiteral().getBoolean()));
-					tm.literalValBool = dth.cast(bool, dth.getBooleanCastType());
-				}
-				 
-				
-			}else{
-				//not a Literal, so it has to be a resource
-				tm.getResourceColSeg().add(resourceToExpression(qr.constant.asResource()));
-			}
+			
+			tm = tfac.createTermMap(qr.constant.asNode());
+			
 			
 			
 		}else if(qr.template!=null){
-			if(tm.getTermType().equals(R2RML.Literal)){
+			if(termType.equals(R2RML.Literal)){
 				
 				List<Expression> resourceExpression = templateToResourceExpression(qr.template, fi, dth);
 				
@@ -676,9 +821,9 @@ public class R2RMLModel {
 			
 		}else if(qr.column!=null){
 			
-			Column col = ColumnHelper.createCol(fi.getAlias(), qr.column);
+			Column col = ColumnHelper.createColumn(fi.getAlias(), qr.column);
 			
-			if(tm.getTermType().equals(R2RML.Literal)){
+			if(termType.equals(R2RML.Literal)){
 				
 				int sqlType = dbconf.getDataType(fi, qr.column);
 						
@@ -711,7 +856,7 @@ public class R2RMLModel {
 				}
 
 			}else{
-				tm.resourceColSeg.add(dth.castNull(dth.getStringCastType()));
+				//tm.resourceColSeg.add(dth.castNull(dth.getStringCastType()));
 				tm.resourceColSeg.add(dth.cast(col,dth.getStringCastType()));
 			}		
 		}
@@ -720,6 +865,8 @@ public class R2RMLModel {
 		if(!tm.isConstant()){
 			tm.alias2fromItem.put(fi.getAlias(), fi);
 		}
+		tm.trm = tripleMap;
+		return tm;
 	}
 	
 	
@@ -934,7 +1081,7 @@ public class R2RMLModel {
 				// validate and register the colname first
 				// dbaccess.getDataType(fi,colName);
 				newExprs.add(dth.cast(
-						ColumnHelper.createCol(fi.getAlias(), colName),
+						ColumnHelper.createColumn(fi.getAlias(), colName),
 						dth.getStringCastType()));
 			} else {
 				newExprs.add(dth.cast(new StringValue("\"" + altSeq.get(i)

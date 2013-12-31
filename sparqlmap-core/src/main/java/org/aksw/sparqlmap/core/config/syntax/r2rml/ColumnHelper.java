@@ -14,10 +14,10 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.db.DBAccess;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,10 +41,10 @@ public class ColumnHelper {
 			+ "_04LS";
 	public static String COL_NAME_LITERAL_NUMERIC = R2R_COL_SUFFIX
 			+ "_05LN";
-	public static String COL_NAME_LITERAL_DATE = R2R_COL_SUFFIX + "_6LD";
+	public static String COL_NAME_LITERAL_DATE = R2R_COL_SUFFIX + "_06LD";
 	public static String COL_NAME_LITERAL_BOOL = R2R_COL_SUFFIX
 			+ "_07LB";
-	public static String COL_NAME_LITERAL_BINARY = R2R_COL_SUFFIX + "08_L0";
+	public static String COL_NAME_LITERAL_BINARY = R2R_COL_SUFFIX + "_08_LZ";
 	public static String COL_NAME_RESOURCE_COL_SEGMENT = R2R_COL_SUFFIX
 			+ "_09R";
 	public static String COL_NAME_ORDER_BY = R2R_COL_SUFFIX + "_XXOB";
@@ -345,18 +345,19 @@ public class ColumnHelper {
 				dth.getStringCastType());
 	}
 	
+	public static Table createTable(String tablename){
+		return createTable(null, tablename);
+	}
 	
-	public static Column createCol(String tablename, String colname) {
-		Column col = new Column();
-		col.setColumnName(colname);
+	public static Table createTable(String schema, String tablename){
 		Table tab = new Table();
 		tab.setName(tablename);
 		tab.setAlias(tablename);
-		col.setTable(tab);
-		return col;
-
+		tab.setSchemaName(schema);
+		return tab;
+		
+		
 	}
-	
 	
 	
 	
@@ -367,13 +368,7 @@ public class ColumnHelper {
 	public static Column createColumn(String schema, String table, String column) {
 		Column col = new Column();
 		col.setColumnName(column);
-		Table tab = new Table();
-		tab.setName(table);
-		tab.setAlias(table);
-		if (schema != null) {
-			tab.setSchemaName(schema);
-
-		}
+		Table tab = createTable(schema,table);
 		col.setTable(tab);
 
 		return col;

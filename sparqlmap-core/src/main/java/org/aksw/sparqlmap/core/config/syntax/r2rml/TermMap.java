@@ -2,11 +2,14 @@ package org.aksw.sparqlmap.core.config.syntax.r2rml;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import net.sf.jsqlparser.expression.CastExpression;
 import net.sf.jsqlparser.expression.Expression;
@@ -25,15 +28,20 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.mapper.compatibility.CompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.hp.hpl.jena.rdf.model.Resource;
 
 public class TermMap{
+	
+	org.slf4j.Logger log = LoggerFactory.getLogger(TermMap.class); 
 	
 	DataTypeHelper dth;
 
@@ -45,16 +53,16 @@ public class TermMap{
 		
 	private CompatibilityChecker cchecker;
 
-	Expression termType;
-	Expression literalType;
-	Expression literalLang;
-	Expression literalValString;
-	Expression literalValNumeric;
-	Expression literalValDate;
-	Expression literalValBool;
-	Expression literalValBinary;
+	public Expression termType;
+	public Expression literalType;
+	public Expression literalLang;
+	public Expression literalValString;
+	public Expression literalValNumeric;
+	public Expression literalValDate;
+	public Expression literalValBool;
+	public Expression literalValBinary;
 	
-	List<Expression> resourceColSeg = new ArrayList<Expression>(); 
+	public List<Expression> resourceColSeg = new ArrayList<Expression>(); 
 	
 	protected LinkedHashMap<String,FromItem> alias2fromItem = new LinkedHashMap<String, FromItem>();
 
@@ -93,9 +101,9 @@ public class TermMap{
 	}
 
 
-	public static  TermMap createTermMap(DataTypeHelper dataTypeHelper, List<Expression> expressions) {
+	public static  TermMap createTermMap(DataTypeHelper dataTypeHelper, Collection<Expression> expressions) {
 		TermMap tm = new TermMap(dataTypeHelper);
-		tm.setExpressions(expressions);
+		tm.setExpressions(new ArrayList<Expression>(expressions));
 		
 		return tm;
 			
@@ -192,7 +200,7 @@ public class TermMap{
 	}
 	
 	public List<FromItem> getFromItems(){
-		return new ArrayList<FromItem>(this.alias2fromItem.values());
+		return Collections.unmodifiableList(new ArrayList<FromItem>(this.alias2fromItem.values()));
 	}
 	
 	/**
@@ -211,10 +219,15 @@ public class TermMap{
 	
 	public String toString(){
 		StringBuffer out = new StringBuffer();
-		for(Expression exp: getExpressions() ){
-			out.append(exp.toString());
-			out.append("|");
+		out.append("||");
+		for(Expression exp: getValueExpressions() ){
+			if(! (DataTypeHelper.uncast(exp) instanceof NullValue)){
+				out.append(DataTypeHelper.uncast( exp).toString());
+				out.append("|");
+			}
+			
 		}
+		out.append("|");
 		
 		return out.toString();
 	}
@@ -295,6 +308,10 @@ public class TermMap{
 		for(EqualsTo joinCondition : joinConditions){
 			clone.joinConditions.add(cloneJoinCondition(suffix, joinCondition));
 		}
+		
+		
+		
+	
 			
 		return clone;
 	}
@@ -393,13 +410,33 @@ public class TermMap{
 		
 		return true;
 	}
-
+	/**
+	 * get all expressions that consitute this term map
+	 * @return
+	 */
 	public List<Expression> getExpressions(){
 		
 		List<Expression> exprs = Lists.newArrayList(
 				termType,
 				literalType,
 				literalLang,
+				literalValString,
+				literalValNumeric,
+				literalValDate,
+				literalValBool,
+				literalValBinary);
+		exprs.addAll(resourceColSeg);
+		
+		return exprs;
+	}
+	
+	/**
+	 * get all expressions that can hold the str() value of an term map
+	 * @return
+	 */
+	public List<Expression> getValueExpressions(){
+		
+		List<Expression> exprs = Lists.newArrayList(
 				literalValString,
 				literalValNumeric,
 				literalValDate,
@@ -421,8 +458,10 @@ public class TermMap{
 		}
 	}
 	
+
 	
-	public Resource getTermType(){
+	
+	public Resource getTermTypeAsResource(){
 		String tt = ((LongValue)DataTypeHelper.uncast(termType)).getStringValue();
 		
 		if(tt.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE.toString())){
@@ -446,7 +485,75 @@ public class TermMap{
 		return resourceColSeg;
 	}
 	
+	public Expression getLiteralValBool() {
+		return literalValBool;
+	}
 	
+	
+	
+	@Override
+	public int hashCode() {
+		HashCodeBuilder hcb = new HashCodeBuilder();
+		for(Expression expr: getExpressions()){
+			hcb.append(expr.toString());
+		}
+		
+		return hcb.toHashCode();
+	}
+	
+	
+	
+	@Override
+	public boolean equals(Object obj) {
+
+		   if (obj == null) { return false; }
+		   if (obj == this) { return true; }
+		   if (obj.getClass() != getClass()) {
+		     return false;
+		   }
+		   TermMap otherTm = (TermMap) obj;
+		   if(getExpressions().size()!=otherTm.getExpressions().size()){
+			   return false;
+		   }
+		   
+		   EqualsBuilder eqb =  new EqualsBuilder();
+		                 
+		   for(int i = 0; i< getExpressions().size(); i++){
+			   eqb.append(getExpressions().get(i).toString(), otherTm.getExpressions().get(i).toString());
+		   }
+		                 
+		   return eqb.isEquals();
+
+	}
+
+
+	public Expression getLiteralValBinary() {
+		return literalValBinary;
+	}
+	
+	public Expression getLiteralValDate() {
+		return literalValDate;
+	}
+	
+	public Expression getLiteralValNumeric() {
+		return literalValNumeric;
+	}
+	
+	public Expression getLiteralValString() {
+		return literalValString;
+	}
+	
+	public Expression getLiteralLang() {
+		return literalLang;
+	}
+	
+	public Expression getLiteralType() {
+		return literalType;
+	}
+	
+	public Expression getTermType() {
+		return termType;
+	}
 
 	
 	

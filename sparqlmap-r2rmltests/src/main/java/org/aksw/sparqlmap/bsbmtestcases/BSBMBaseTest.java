@@ -5,9 +5,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.aksw.sparqlmap.core.SparqlMap;
-import org.aksw.sparqlmap.core.SparqlMap.ReturnType;
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.db.SQLResultSetWrapper;
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.jena.riot.WebContent;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,7 +29,12 @@ public abstract class BSBMBaseTest {
 	}
 
 	public ResultSet exec(String query) throws SQLException{
-		ResultSet rsw = getSparqlMap().executeSparql(QueryFactory.create(query));
+		TranslationContext context = new TranslationContext();
+		context.setQueryName("Junit Test Query");
+		context.setQuery(QueryFactory.create(query));
+		context.setTargetContentType(WebContent.contentTypeRDFXML);
+		
+		ResultSet rsw = getSparqlMap().rewriteAndExecute(context);
 		
 		return rsw;
 
@@ -42,8 +48,8 @@ public abstract class BSBMBaseTest {
 	public String execAsText(String query) throws SQLException{
 		
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		getSparqlMap().executeSparql(query, ReturnType.XML, out);
-		ResultSet rsw = getSparqlMap().executeSparql(QueryFactory.create(query));
+		getSparqlMap().executeSparql(query, WebContent.contentTypeRDFXML, out);
+		//ResultSet rsw = getSparqlMap().executeSparql(QueryFactory.create(query),null);
 		
 		return out.toString();
 

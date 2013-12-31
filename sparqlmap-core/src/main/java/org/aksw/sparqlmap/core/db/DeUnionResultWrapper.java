@@ -30,7 +30,7 @@ public class DeUnionResultWrapper implements ResultSet{
 //	Map<String,String> duvar2var = new HashMap<String, String>();
 	Multimap<String,String> suffix2duvar = TreeMultimap.create();
 	List<String> non_du_var = new ArrayList<String>();
-	Set<String> vars = new HashSet<String>();
+	List<String> vars = new ArrayList<String>();
 	
 	
 	SQLResultSetWrapper srs;
@@ -43,7 +43,7 @@ public class DeUnionResultWrapper implements ResultSet{
 		super();
 		this.srs = srs;
 		List<String> oVars = new ArrayList<String>(srs.getResultVars());
-		Collections.sort(oVars);
+//		Collections.sort(oVars);
 		for(String ovar: oVars){
 			if(ovar.matches(".*-du[0-9][0-9]$")){
 				//put it in the du map
@@ -174,10 +174,7 @@ public class DeUnionResultWrapper implements ResultSet{
 		return null;
 	}
 	
-	
-	public void setProfiler(Multimap<String,Long> profiler){
-		srs.setProfiler(profiler);
-	}
+
 	
 	
 

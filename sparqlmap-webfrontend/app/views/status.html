@@ -1,0 +1,24 @@
+<div>
+	<div class="page-header">
+        <h1>All defined mappings</h1>
+        <p class="lead">View basic information about all defined mappings here.</p>
+    </div>
+    <table class="table" ng-controller="StatusCtrl">
+    	<thead>
+    		<th>Context</th>
+    		<th>Status</th>
+    		<th>Mapping</th>
+    		<th>SPARQL</th>
+    		<th>Linked Data</th>
+
+    	</thead>
+    	<tbody>
+    		<tr ng-repeat="state in status">
+    			<td>{{state.context}}</td>
+    			<td>{{state.errors}}</td>
+    			<td><a ng-href="#/map/mapping/{{state.context}}">check</a></td>
+    		</tr>
+    	</tbody>	
+    </table>
+</div>
+

@@ -10,9 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.aksw.sparqlmap.core.ImplementationException;
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.jena.iri.IRI;
 import org.apache.jena.iri.IRIException;
@@ -26,8 +27,10 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
 import com.hp.hpl.jena.datatypes.BaseDatatype;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
+import com.hp.hpl.jena.datatypes.TypeMapper;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.rdf.model.AnonId;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -48,7 +51,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	String iriPattern = " ^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?";
 	
 	String baseUri = null;
-	DecimalFormat doubleFormatter = new DecimalFormat("0.0##########################E0");
+	DecimalFormat doubleFormatter = new DecimalFormat("0.0##########################");
 		static org.slf4j.Logger log = org.slf4j.LoggerFactory
 			.getLogger(SQLResultSetWrapper.class);
 
@@ -66,22 +69,20 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	private DataTypeHelper dth;
 	
 	
-	private Stopwatch sw;
-	Multimap<String, Long>  profiler;
+	private TranslationContext tcontext;
 
-	public SQLResultSetWrapper(ResultSet rs, Connection conn, DataTypeHelper dth, String baseUri)
+	public SQLResultSetWrapper(ResultSet rs, Connection conn, DataTypeHelper dth, String baseUri, TranslationContext tcontext)
 			throws SQLException {
 		this.conn = conn;
+		this.tcontext = tcontext;
 		this.rs = rs;
 		this.dth = dth;
 		this.baseUri = baseUri;
 		initVars();
-		sw = new Stopwatch().start();
+		tcontext.profileStartPhase("result set retrival");
 	}
 	
-	public void setProfiler(Multimap<String, Long> profiler) {
-		this.profiler = profiler;
-	}
+
 
 
 
@@ -95,15 +96,21 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	 * @throws SQLException
 	 */
 	public void initVars() throws SQLException {
+		
+		for(Var var: tcontext.getQuery().getProjectVars()){
+			this.vars.add(var.getName());
+		}
+		
+		
 
 		for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
 			String colname = rs.getMetaData().getColumnName(i);
 			colNames.add(colname);
 
-			if (colname.endsWith(ColumnHelper.COL_NAME_RDFTYPE)) {
-				vars.add(colname.substring(0, colname.length()
-						- ColumnHelper.COL_NAME_RDFTYPE.length()));
-			}
+//			if (colname.endsWith(ColumnHelper.COL_NAME_RDFTYPE)) {
+//				vars.add(colname.substring(0, colname.length()
+//						- ColumnHelper.COL_NAME_RDFTYPE.length()));
+//			}
 			
 			if(colname.contains(ColumnHelper.COL_NAME_RESOURCE_COL_SEGMENT)){
 				//we extract the var name
@@ -172,12 +179,10 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 					Node node= null;
 					// create the binding here
 					// first check for type
-					if(rs.getObject(var + ColumnHelper.COL_NAME_RDFTYPE)!=null){
+					if(rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE)!=0){
 						
 						Integer type = rs.getInt(var + ColumnHelper.COL_NAME_RDFTYPE);
-						if(type.equals(0)){ // funny as getInt for null-values returns 0. We should have checked before.
-							throw new ImplementationException("Unidentifiable rdf type encountered.");
-						} else 	if (type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE) || type.equals(ColumnHelper.COL_VAL_TYPE_BLANK)) {
+						if (type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE) || type.equals(ColumnHelper.COL_VAL_TYPE_BLANK)) {
 							node = createResource(var, type);			
 						} else if (type == ColumnHelper.COL_VAL_TYPE_LITERAL) {
 							node = createLiteral(var);
@@ -224,7 +229,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		String litType = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_TYPE);
 		RDFDatatype dt = null;
 		if(litType!=null&&!litType.isEmpty()&&!litType.equals(RDFS.Literal.getURI())){
-			dt = new BaseDatatype(litType);
+			dt = TypeMapper.getInstance().getSafeTypeByName(litType);
 		}
 		
 		String lang =  rs.getString(var + ColumnHelper.COL_NAME_LITERAL_LANG);
@@ -243,6 +248,9 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		
 		}else if( XSDDatatype.XSDint.getURI().equals(litType)||XSDDatatype.XSDinteger.getURI().equals(litType)){
 			literalValue =Integer.toString(rs.getInt((var + ColumnHelper.COL_NAME_LITERAL_NUMERIC)));
+			if(rs.wasNull()){
+				literalValue = null;
+			}
 		
 		}else if(XSDDatatype.XSDstring.getURI().equals( litType)|| litType ==null){
 			literalValue = rs.getString(var + ColumnHelper.COL_NAME_LITERAL_STRING);
@@ -277,7 +285,7 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 		}
 		
 		if(literalValue !=null){
-			node = Node.createLiteral(literalValue,	lang, dt);
+			node = NodeFactory.createLiteral(literalValue,	lang, dt);
 		}else{
 			node = null; 
 		}
@@ -317,20 +325,20 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 			if(type.equals(ColumnHelper.COL_VAL_TYPE_RESOURCE)){
 				if(baseUri!=null){
 					try{
-						node = Node.createURI(uri.toString());
+						node = NodeFactory.createURI(uri.toString());
 					}catch(IRIException e){
 						try {
-							node = Node.createURI(uri.toString());
+							node = NodeFactory.createURI(uri.toString());
 						} catch (IRIException e1) {
 							log.warn("Trying to create invalid IRIs, using :" + uri.toString());
 							node = null;
 						}
 					}
 				}else{
-					node = Node.createURI(uri.toString());
+					node = NodeFactory.createURI(uri.toString());
 				}
 			}else{
-				node = Node.createAnon(new AnonId(uri.toString()));
+				node = NodeFactory.createAnon(new AnonId(uri.toString()));
 			}
 			
 		}
@@ -359,10 +367,8 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
 	}
 
 	public void close() {
-		if(profiler!=null&&sw.isRunning()){
-			sw.stop();
-			profiler.put("3 closed after ",sw.elapsedTime(TimeUnit.MICROSECONDS));
-		}
+		tcontext.profileStop();
+		
 		
 		try {
 			if (rs.isClosed() == false) {

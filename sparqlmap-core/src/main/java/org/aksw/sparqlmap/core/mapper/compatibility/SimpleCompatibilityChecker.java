@@ -10,15 +10,16 @@ import java.util.Map;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.statement.select.FromItem;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.db.DBAccess;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+
 
 import com.google.common.base.Splitter;
 import com.hp.hpl.jena.graph.Node;
@@ -42,8 +43,16 @@ public class SimpleCompatibilityChecker implements CompatibilityChecker{
 		//we now create the colname2castType
 		for(Expression expression: tm.getExpressions()){
 			if(DataTypeHelper.uncast(expression) instanceof Column){
-				 String columnName = ((Column) DataTypeHelper.uncast(expression)).getColumnName();
-				Integer dt = dba.getDataType(tm.getTripleMap().from, columnName);
+				Column column = (Column) DataTypeHelper.uncast(expression);
+				String columnName = column.getColumnName();
+				FromItem fi =null;
+				
+				for(FromItem fiToCheck : tm.getFromItems()){
+					if(fiToCheck.getAlias().equals(column.getTable().getAlias())){
+						fi = fiToCheck;
+					}
+				}
+				Integer dt = dba.getDataType(fi, columnName);
 				 
 				 colname2castType.put( columnName ,dth.getCastTypeString(dt));
 			}

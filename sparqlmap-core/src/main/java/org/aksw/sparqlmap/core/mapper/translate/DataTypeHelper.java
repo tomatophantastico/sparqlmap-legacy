@@ -2,15 +2,23 @@ package org.aksw.sparqlmap.core.mapper.translate;
 
 import java.sql.Types;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.CastExpression;
+import net.sf.jsqlparser.expression.DateValue;
+import net.sf.jsqlparser.expression.DoubleValue;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.StringExpression;
 import net.sf.jsqlparser.expression.StringValue;
+import net.sf.jsqlparser.expression.TimeValue;
+import net.sf.jsqlparser.expression.TimestampValue;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -29,6 +37,22 @@ public abstract  class DataTypeHelper {
 	
 	@Autowired
 	private DBAccess dbaccess;
+	
+	public static Set<Class> constantValueExpressions;
+	
+	{
+		constantValueExpressions =new HashSet<Class>();
+		constantValueExpressions.add(StringValue.class);
+		constantValueExpressions.add(StringExpression.class);
+		constantValueExpressions.add(DateValue.class);
+		constantValueExpressions.add(TimestampValue.class);
+		constantValueExpressions.add(TimeValue.class);
+		constantValueExpressions.add(LongValue.class);
+		constantValueExpressions.add(DoubleValue.class);
+		constantValueExpressions.add(NullValue.class);
+		
+		
+	}
 		
 	Map<String,String> suffix2datatype = new HashMap<String, String>();
 	
@@ -331,6 +355,9 @@ public abstract  class DataTypeHelper {
 	public Expression asNumeric(Integer intVal){
 		return cast(new LongValue(intVal.toString()), getNumericCastType());
 	}
+	
+	
+	
 
 
 }

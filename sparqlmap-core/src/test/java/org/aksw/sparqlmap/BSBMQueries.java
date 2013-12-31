@@ -3,7 +3,6 @@ package org.aksw.sparqlmap;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 
-import org.aksw.sparqlmap.core.SparqlMap.ReturnType;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

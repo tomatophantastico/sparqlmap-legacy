@@ -21,9 +21,10 @@ import net.sf.jsqlparser.util.deparser.AnsiQuoteSelectDeparser;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 import net.sf.jsqlparser.util.deparser.SelectDeParser;
 
+import org.aksw.sparqlmap.core.ImplementationException;
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLValidationException;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.base.Stopwatch;
@@ -49,43 +50,26 @@ public class DBAccess {
 
 	private Connector dbConnector;
 
-	public com.hp.hpl.jena.query.ResultSet executeSQL(String sql, String baseUri) throws SQLException{
-		return executeSQL(sql, baseUri, null);
-	}
 
-	public com.hp.hpl.jena.query.ResultSet executeSQL(String sql, String baseUri,Multimap<String,Long> profiler) throws SQLException{
-		Stopwatch sw=null;
-		if(profiler!=null){
-			sw = new Stopwatch().start();
-		}
+	public com.hp.hpl.jena.query.ResultSet executeSQL(TranslationContext context, String baseUri) throws SQLException{
+		context.profileStartPhase("Connection Acquisition");
 		Connection connect  = dbConnector.getConnection();
 		java.sql.Statement stmt = connect.createStatement();
-		if(profiler!=null){
-			sw.stop();
-			profiler.put("2 1 acquired connection in", sw.elapsedTime(TimeUnit.MICROSECONDS));
-			sw.reset().start();
-		}
+		
 		
 		
 		if(log.isDebugEnabled()){
-			log.debug("Executing translated Query: " +  sql);
+			log.debug("Executing translated Query: " +  context.getSqlQuery());
 		}
-		
+		context.profileStartPhase("Query Execution");
 		com.hp.hpl.jena.query.ResultSet wrap;
 		try {
-			ResultSet rs = stmt.executeQuery(sql);
-			if(profiler!=null){
-				
-				profiler.put("2 2 executed query in", sw.stop().elapsedTime(TimeUnit.MICROSECONDS));
-				sw.reset().start();
-			}
+			ResultSet rs = stmt.executeQuery(context.getSqlQuery());
+			
 			wrap = new DeUnionResultWrapper(new  SQLResultSetWrapper(rs, connect,
-					dataTypeHelper, baseUri));
-			if(profiler!=null){
-				profiler.put("2 3 initialized rs in", sw.stop().elapsedTime(TimeUnit.MICROSECONDS));
-			}
+					dataTypeHelper, baseUri, context));
 		} catch (SQLException e) {
-			log.error("Error executing Query: " + sql);
+			log.error("Error executing Query: " + context.getSqlQuery());
 			throw new SQLException(e);
 		}
 		
@@ -255,14 +239,14 @@ public class DBAccess {
 	
 	
 	
-	/* (non-Javadoc)
-	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getExpressionDeParser(java.lang.StringBuffer)
-	 */
-	
-	public ExpressionDeParser getExpressionDeParser(StringBuilder fromItemSb) {
-		return getExpressionDeParser(getSelectDeParser(fromItemSb), fromItemSb);
-		
-	}
+//	/* (non-Javadoc)
+//	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getExpressionDeParser(java.lang.StringBuffer)
+//	 */
+//	
+//	public ExpressionDeParser getExpressionDeParser(StringBuilder fromItemSb) {
+//		return getExpressionDeParser(getSelectDeParser(fromItemSb), fromItemSb);
+//		
+//	}
 	
 	
 	/* (non-Javadoc)
@@ -280,27 +264,14 @@ public class DBAccess {
 	 */
 	
 	public SelectDeParser getSelectDeParser(StringBuilder sb) {
-//		if(dbname.equals(MYSQL)){
-//			
-//			ExpressionDeParser expressionDeParser = new ExpressionDeParser();
-//			SelectDeParser selectDeParser = new SelectDeParser();
-//			expressionDeParser.setBuffer(sb);
-//			selectDeParser.setBuffer(sb);
-//			expressionDeParser.setSelectVisitor(selectDeParser);
-//			selectDeParser.setExpressionVisitor(expressionDeParser);
-//			
-//			
-//			return selectDeParser;
-//		} else if(dbname.equals(POSTGRES )|| dbname.equals(HSQLDB)){
+
+			
 			AnsiQuoteSelectDeparser selectDeParser = new AnsiQuoteSelectDeparser();
 			AnsiQuoteExpressionDeParser expressionDeParser = new AnsiQuoteExpressionDeParser(selectDeParser,sb);
 			selectDeParser.setBuffer(sb);
 			selectDeParser.setExpressionVisitor(expressionDeParser);
 			return selectDeParser;
-			
-//		}
-//		log.warn("Selected default deparser");
-//		return new SelectDeParser();
+
 	}
 	
 	
@@ -308,17 +279,19 @@ public class DBAccess {
 	 * @see org.aksw.sparqlmap.config.syntax.IDBAccess#getExpressionDeParser(net.sf.jsqlparser.util.deparser.SelectDeParser, java.lang.StringBuffer)
 	 */
 	
-	public ExpressionDeParser getExpressionDeParser(SelectDeParser selectDeParser, StringBuilder out) {
-		return new AnsiQuoteExpressionDeParser(selectDeParser, out);
-//		if(dbname.equals(MYSQL)){
-//			return new ExpressionDeParser(selectDeParser, out);
-//		} else if(dbname.equals(POSTGRES)||dbname.equals(HSQLDB)){
-//			
-//			
-//		}
-//		log.warn("Selected default expresseiondeparser");
-//		return new ExpressionDeParser(selectDeParser,out);
-	}
+//	public ExpressionDeParser getExpressionDeParser(SelectDeParser selectDeParser, StringBuilder out) {
+//		
+//		return new ExpressionDeParser(selectDeParser, out);
+//		//return new AnsiQuoteExpressionDeParser(selectDeParser, out);
+////		if(dbname.equals(MYSQL)){
+////			return new ExpressionDeParser(selectDeParser, out);
+////		} else if(dbname.equals(POSTGRES)||dbname.equals(HSQLDB)){
+////			
+////			
+////		}
+////		log.warn("Selected default expresseiondeparser");
+////		return new ExpressionDeParser(selectDeParser,out);
+//	}
 
 
 

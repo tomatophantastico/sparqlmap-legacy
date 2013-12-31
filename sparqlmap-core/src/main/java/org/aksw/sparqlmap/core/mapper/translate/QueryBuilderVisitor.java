@@ -32,6 +32,7 @@ import net.sf.jsqlparser.statement.select.SelectVisitor;
 import net.sf.jsqlparser.statement.select.SetOperationList;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap;
@@ -58,8 +59,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	
 	private DataTypeHelper dataTypeHelper;
-	private ColumnHelper columnhelper;
-	ExpressionConverter exprconv;
+	private ExpressionConverter exprconv;
 	//defines if the filters should be pushed into the unions
 	private boolean pushFilters = true;
 	
@@ -67,23 +67,19 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	private static Logger log = LoggerFactory
 			.getLogger(QueryBuilderVisitor.class);
 	
-	private MappingBinding queryBinding;
-
-	private Map<SelectBody, Wrapper> selectBody2Wrapper = new HashMap<SelectBody, Wrapper>();
-	private Stack<SelectBody> selects = new Stack<SelectBody>();
+	private Map<PlainSelect, PlainSelectWrapper> selectBody2Wrapper = new HashMap<PlainSelect, PlainSelectWrapper>();
+	private Stack<PlainSelect> selects = new Stack<PlainSelect>();
 	
 	TermMap crc;
 
-	private QueryInformation qi;
-	private FilterOptimizer fopt;
+	private FilterUtil filterUtil;
+	private final TranslationContext translationContext;
 
-	public QueryBuilderVisitor(	QueryInformation qi, MappingBinding queryBinding, DataTypeHelper dataTypeHelper, ExpressionConverter expressionConverter, ColumnHelper colhelper,FilterOptimizer fopt) {
-		this.fopt = fopt;
-		this.queryBinding = queryBinding;
-		this.qi= qi;
+	public QueryBuilderVisitor(TranslationContext translationContext,	DataTypeHelper dataTypeHelper, ExpressionConverter expressionConverter, FilterUtil filterUtil) {
+		this.filterUtil = filterUtil;
 		this.dataTypeHelper = dataTypeHelper;
 		this.exprconv = expressionConverter;
-		this.columnhelper = colhelper;
+		this.translationContext = translationContext;
 	}
 
 	@Override
@@ -96,22 +92,25 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		PlainSelectWrapper ps2 = (PlainSelectWrapper) selectBody2Wrapper
 				.get(selects.pop());
 		
-		if(ps1.getColstring2Var().isEmpty()&& ps2.getColstring2Var().isEmpty()){
+		if(ps1.getVar2TermMap().isEmpty()&& ps2.getVar2TermMap().isEmpty()){
 			log.error("For union, both queries are empty. This rather problematic");
 			selects.push(ps1.getSelectBody());
 			
-		}else if (ps1.getColstring2Var().isEmpty()){
+		}else if (ps1.getVar2TermMap().isEmpty()){
 			log.info("found empty select for union, skipping it");
 			selects.push(ps2.getSelectBody());
 			
-		}else if(ps2.getColstring2Var().isEmpty()){
+		}else if(ps2.getVar2TermMap().isEmpty()){
 			log.info("found empty select for union, skipping it");
 			selects.push(ps1.getSelectBody());
 		}else{
-			UnionWrapper union = new UnionWrapper(selectBody2Wrapper, dataTypeHelper);
+			UnionWrapper union = new UnionWrapper(dataTypeHelper);
 			union.addPlainSelectWrapper(ps1);
 			union.addPlainSelectWrapper(ps2);
-			selects.push(union.getSelectBody());
+			
+			PlainSelectWrapper ps = new PlainSelectWrapper(selectBody2Wrapper, dataTypeHelper, exprconv, filterUtil, translationContext);
+			ps.addSubselect(union, false);
+			selects.push(ps.getPlainSelect());
 		}
 	}
 	@Override
@@ -120,7 +119,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 
 	}
 	
-	public static class DummyBody implements SelectBody{
+	public static class DummyBody extends PlainSelect{
 
 		@Override
 		public void accept(SelectVisitor selectVisitor) {
@@ -132,74 +131,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	@Override
 	public void visit(OpGraph opGraph) {
-//		PlainSelectWrapper wrap = (PlainSelectWrapper) selectBody2Wrapper.get(selects.peek());
-//		
-//		if(opGraph.getNode() instanceof Var){
-//			Var gvar = (Var) opGraph.getNode();
-//			
-//			List<SelectExpressionItem> newGraphSeis = new	ArrayList<SelectExpressionItem>();
-////			newGraphSeis.addAll();
-////			
-////			ColumnHelper.getExpression(col, rdfType, sqlType, datatype, lang, lanColumn, dth, graph)
-////			
-////			new TermMap(dataTypeHelper, ColumnHelper.getBaseExpressions(ColumnHelper.COL_VAL_TYPE_RESOURCE, 2, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, dataTypeHelper, null, null, null, null));
-//			
-//			
-//			
-//			//new Select Item, using the first 
-//			SelectExpressionItem graph_sei = new SelectExpressionItem();
-//			graph_sei.setAlias(gvar.getName() + ColumnHelper.COL_NAME_GRAPH);
-//			List<Expression> additionalFilters = new ArrayList<Expression>();
-//			
-//			for(SelectItem si : wrap.getSelectExpressionItems()){
-//				SelectExpressionItem sei  = (SelectExpressionItem) si;
-//				
-//				if(sei.getAlias().endsWith(ColumnHelper.COL_NAME_GRAPH) && sei.getExpression() instanceof Column){
-//					if(graph_sei.getExpression()==null){
-//						List<Expression> graphExprs =columnhelper.getExpression((Column)sei.getExpression(), ColumnHelper.COL_VAL_TYPE_RESOURCE, ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE, null, null, null, dataTypeHelper, null,null);
-//						
-//						TermMap tm = new TermMap(dataTypeHelper, graphExprs);
-//						newGraphSeis.addAll(tm.getSelectExpressionItems(opGraph.getNode().getName()));
-//						
-//						
-//						
-//						graph_sei.setExpression(sei.getExpression());
-//					}else{
-//						IsNullExpression seiGraphIsNull = new IsNullExpression();
-//						seiGraphIsNull.setNot(false);
-//						seiGraphIsNull.setLeftExpression(graph_sei.getExpression());
-//						
-//						IsNullExpression thisGRaphIsNull = new IsNullExpression();
-//						thisGRaphIsNull.setNot(false);
-//						thisGRaphIsNull.setLeftExpression(sei.getExpression());
-//						
-//						AndExpression andNull = new AndExpression(seiGraphIsNull, thisGRaphIsNull);
-//						
-//						
-//						EqualsTo eq = new EqualsTo();
-//						
-//						eq.setLeftExpression(graph_sei.getExpression());
-//						eq.setRightExpression(sei.getExpression());
-//						
-//						
-//						OrExpression or = new OrExpression(new Parenthesis(andNull), new Parenthesis(eq));
-//						
-//						
-//						additionalFilters.add(or);
-//					}
-//				}
-//			}
-//			
-//			
-//			wrap.getSelectExpressionItems().addAll(newGraphSeis);
-//			
-//			
-//			wrap.addSQLFilter(FilterUtil.conjunctFilters(additionalFilters));
-//			
-//			
-//		}
-		
-		
+		log.error("implement opGRaph");
 		
 	}
 
@@ -219,11 +151,11 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 					.get(leftsb);
 	
 		
-		if(left.getColstring2Var().isEmpty()){
+		if(left.getVar2TermMap().isEmpty()){
 			log.warn("left is empty");
 		}else if(main ==null){
 			main = left;
-			main.setOptional();
+			main.setOptional(true);
 			
 		}else{
 			main.addSubselect(left,true);
@@ -244,60 +176,77 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	@Override
 	public void visit(OpFilter opfilter){
-		PlainSelectWrapper wrap  = (PlainSelectWrapper) this.selectBody2Wrapper.get(selects.peek());
+		Wrapper wrap  =  this.selectBody2Wrapper.get(selects.peek());
 		
-		if(this.pushFilters == true && wrap.getSubselects().size()>0){
-			// try to stuff everything into the unions
+		if(wrap instanceof UnionWrapper){
+			UnionWrapper unionWrap = (UnionWrapper) wrap;
+			boolean unpushable = true;
 			for(Expr toPush : opfilter.getExprs().getList()){
 				
 				Set<String> filterVars = new HashSet<String>();
 				for(Var var: toPush.getVarsMentioned()){
 					filterVars.add(var.getName());
 				}
-			
-				
-				
-				boolean unpushable = false;
-				for(SubSelect subselect :wrap.getSubselects().keySet()){
-					Wrapper subSelectWrapper = wrap.getSubselects().get(subselect);
-					if(subSelectWrapper instanceof UnionWrapper){
-						//do that now for all plainselects of the union
-						for(PlainSelect ps: ((UnionWrapper)subSelectWrapper).getUnion().getPlainSelects()){
-							PlainSelectWrapper psw = (PlainSelectWrapper) selectBody2Wrapper.get(ps);
-							Set<String> pswVars = psw.getVarsMentioned();
-							if(pswVars.containsAll(filterVars)){
-								// if all filter variables are covered by the triples of the subselect, it can answer it.
-								psw.addFilterExpression(Arrays.asList(toPush));
-							}else if(Collections.disjoint(filterVars, pswVars)){
-								//if none are shared, than this filter simply does not matter for this wrapper 
-							}else{
-								//if there only some variables of the filter covered by the wrapper, answering in the top opration is neccessary.
-								unpushable = true;
-							}
-							
+				unpushable = pushIntoUnion(toPush, filterVars, unionWrap);
 
-						}
-						
-						
-					}else{
-						// do nothing else, here be dragons
-						unpushable = true;
-					}
-				}
-				if(unpushable){
-					//so the filter could not be pushed, we need to evaluate in the upper select
-					wrap.addFilterExpression(new ArrayList<Expr>(Arrays.asList(toPush)));
-				}
+			}
+
+			if(unpushable){
+				//so the filter could not be pushed, we need to evaluate in the upper select
+				//we have to wrap the union uinto a plainselect;
+				PlainSelectWrapper ps = new PlainSelectWrapper(selectBody2Wrapper, dataTypeHelper, exprconv, filterUtil, translationContext);
+				ps.addSubselect(unionWrap, false);
+				
+				ps.addFilterExpression(new ArrayList<Expr>(opfilter.getExprs().getList()));
+				selects.pop();
+				selects.push(ps.getSelectBody());
+				
 			}
 			
 			
 			
-			
 		}else{
-			//no filter pushing, just put it in
-			
-			wrap.addFilterExpression(new ArrayList<Expr>(opfilter.getExprs().getList()));
+			PlainSelectWrapper pswrap = (PlainSelectWrapper) wrap;
+			if(this.pushFilters == true && pswrap.getSubselects().size()>0){
+				// try to stuff everything into the unions
+				for(Expr toPush : opfilter.getExprs().getList()){
+					
+					Set<String> filterVars = new HashSet<String>();
+					for(Var var: toPush.getVarsMentioned()){
+						filterVars.add(var.getName());
+					}
+				
+					
+					
+					boolean unpushable = false;
+					for(SubSelect subselect :pswrap.getSubselects().keySet()){
+						Wrapper subSelectWrapper = pswrap.getSubselects().get(subselect);
+						if(subSelectWrapper instanceof UnionWrapper){
+							unpushable = pushIntoUnion(toPush, filterVars,subSelectWrapper);
+							
+							
+						}else{
+							// do nothing else, here be dragons
+							unpushable = true;
+						}
+					}
+					if(unpushable){
+						//so the filter could not be pushed, we need to evaluate in the upper select
+						pswrap.addFilterExpression(new ArrayList<Expr>(Arrays.asList(toPush)));
+					}
+				}
+				
+				
+				
+				
+			}else{
+				//no filter pushing, just put it in
+				
+				pswrap.addFilterExpression(new ArrayList<Expr>(opfilter.getExprs().getList()));
+			}
 		}
+		
+		
 		
 		
 		
@@ -306,12 +255,34 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 		
 	}
+
+	public boolean pushIntoUnion(Expr toPush, Set<String> filterVars,
+			Wrapper subSelectWrapper) {
+		boolean unpushable = false;
+		//do that now for all plainselects of the union
+		for(PlainSelect ps: ((UnionWrapper)subSelectWrapper).getUnion().getPlainSelects()){
+			PlainSelectWrapper psw = (PlainSelectWrapper) selectBody2Wrapper.get(ps);
+			Set<String> pswVars = psw.getVarsMentioned();
+			if(pswVars.containsAll(filterVars)){
+				// if all filter variables are covered by the triples of the subselect, it can answer it.
+				psw.addFilterExpression(Arrays.asList(toPush));
+			}else if(Collections.disjoint(filterVars, pswVars)){
+				//if none are shared, than this filter simply does not matter for this wrapper 
+			}else{
+				//if there only some variables of the filter covered by the wrapper, answering in the top opration is neccessary.
+				unpushable = true;
+			}
+			
+
+		}
+		return unpushable;
+	}
 	
 
 	@Override
 	public void visit(OpBGP opBGP) {
 
-		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,fopt);
+		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,filterUtil, translationContext);
 
 		// PlainSelect bgpSelect = new PlainSelect();
 
@@ -330,28 +301,27 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		super.visit(opBGP);
 	}
 	
-	private Wrapper addTripleBindings( PlainSelectWrapper psw, Triple triple, boolean isOptional) {
+	private void addTripleBindings( PlainSelectWrapper psw, Triple triple, boolean isOptional) {
 
 		
 		
-		Collection<TripleMap> trms = queryBinding.getBindingMap().get(triple);
+		Collection<TripleMap> trms = translationContext.getQueryBinding().getBindingMap().get(triple);
 		
 
 		// do we need to create a union?
-		if(trms.size()==1&&trms.iterator().next().getPos().size()==1&&fopt.optimizeSelfJoin){
+		if(trms.size()==1&&trms.iterator().next().getPos().size()==1&&filterUtil.getOptConf().optimizeSelfJoin){
 			TripleMap trm = trms.iterator().next();
 			PO po = trm.getPos().iterator().next();
 			//no we do not need
 			psw.addTripleQuery(trm.getSubject(), triple
 					.getSubject().getName(), po.getPredicate(),triple
 					.getPredicate().getName(),po.getObject(),triple.getObject().getName(), isOptional);
-			if(qi.isProjectionPush()){
+			if(translationContext.getQueryInformation().isProjectionPush()){
 				//psw.setDistinct(true);
 				psw.setLimit(1);
 			}
 	
 			
-			return psw;
 		}else if(trms.size()==0){
 			// no triple maps found.
 			//bind to null values instead.
@@ -359,7 +329,6 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 					.getSubject().getName(), TermMap.createNullTermMap(dataTypeHelper),triple
 					.getPredicate().getName(),TermMap.createNullTermMap(dataTypeHelper),triple.getObject().getName(), isOptional);
 			
-			return psw; 
 			
 		}else{
 			List<PlainSelectWrapper> pselects = new ArrayList<PlainSelectWrapper>();
@@ -370,12 +339,12 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			for (TripleMap trm : trms) {
 				for (PO po : trm.getPos()) {
 
-					PlainSelectWrapper innerPlainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,fopt);
+					PlainSelectWrapper innerPlainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,filterUtil, translationContext);
 					//build a new sql select query for this pattern
 					innerPlainSelect.addTripleQuery(trm.getSubject(), triple
 							.getSubject().getName(), po.getPredicate(),triple
 							.getPredicate().getName(),po.getObject(),triple.getObject().getName(), isOptional);
-					if(qi.isProjectionPush()){
+					if(translationContext.getQueryInformation().isProjectionPush()){
 						//innerPlainSelect.setDistinct(true);
 						innerPlainSelect.setLimit(1);
 					}
@@ -384,14 +353,13 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 				}
 			}
 			
-			UnionWrapper union = new UnionWrapper(this.selectBody2Wrapper,dataTypeHelper);
+			UnionWrapper union = new UnionWrapper(dataTypeHelper);
 			for (PlainSelectWrapper plainSelectWrapper : pselects) {
 				union.addPlainSelectWrapper(plainSelectWrapper);
 
 			}
 			
 			psw.addSubselect(union,isOptional);
-			return union;
 		}
 		
 		
@@ -409,8 +377,8 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 	
 	public void visit(OpJoin opJoin) {
 		
-		SelectBody left = this.selects.pop();
-		SelectBody right = this.selects.pop();
+		PlainSelect left = this.selects.pop();
+		PlainSelect right = this.selects.pop();
 		
 		PlainSelectWrapper leftWrapper = (PlainSelectWrapper) this.selectBody2Wrapper.get(left);
 		PlainSelectWrapper rightWrapper = (PlainSelectWrapper) this.selectBody2Wrapper.get(right);
@@ -435,13 +403,12 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		SelectBody sb = selects.pop();
 		PlainSelect toModify = null;
 
-		BiMap<String, String> colstring2var;
-		Map<String, TermMap> colstring2col;
+		Map<String, TermMap> var2termMap;
 		
 		if(sb instanceof SetOperationList){
 			
 		
-			PlainSelectWrapper wrap = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,fopt);
+			PlainSelectWrapper wrap = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,filterUtil, translationContext);
 			
 			wrap.addSubselect(this.selectBody2Wrapper
 					.get(sb), false);
@@ -456,7 +423,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			
 			List<String> projectVars = new ArrayList<String>();
 			
-			for(Var var: qi.getProject()
+			for(Var var: translationContext.getQueryInformation().getProject()
 					.getVars()){
 				projectVars.add(var.getName());
 			}
@@ -479,14 +446,13 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			
 			
 
-			colstring2var = ((PlainSelectWrapper) selectBody2Wrapper.get(sb)).getColstring2Var();
-			colstring2col = ((PlainSelectWrapper) selectBody2Wrapper.get(sb)).getColstring2Col();
+			var2termMap = ((PlainSelectWrapper) selectBody2Wrapper.get(sb)).getVar2TermMap();
 
 
-		if (qi.getOrder() != null && toModify.getOrderByElements() == null) {
+		if (translationContext.getQueryInformation().getOrder() != null && toModify.getOrderByElements() == null) {
 			// if the list is not set, we create a new set
 			List<OrderByElement> obys = exprconv.convert(
-					qi.getOrder(), colstring2var,colstring2col);
+					translationContext.getQueryInformation().getOrder(), var2termMap);
 			int i = 0;
 			for (OrderByElement orderByElement : obys) {
 				
@@ -520,16 +486,16 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			toModify.setOrderByElements(obys);
 		}
 
-		if (qi.getSlice() != null && toModify.getLimit() == null) {
+		if (translationContext.getQueryInformation().getSlice() != null && toModify.getLimit() == null) {
 			
 			
-			toModify = dataTypeHelper.slice(toModify,qi.getSlice());
+			toModify = dataTypeHelper.slice(toModify,translationContext.getQueryInformation().getSlice());
 			
 
 		}
 		
 		
-		if(qi.getDistinct()!=null){
+		if(translationContext.getQueryInformation().getDistinct()!=null){
 			toModify.setDistinct(new Distinct());
 		}
 

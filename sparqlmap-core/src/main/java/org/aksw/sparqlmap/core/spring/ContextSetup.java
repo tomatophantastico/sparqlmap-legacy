@@ -17,6 +17,11 @@ public abstract class ContextSetup {
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ContextSetup.class);
 
+	public static Map<String,ApplicationContext> contextFromFolder(){
+		
+		return null;
+	}
+	
 	
 	
 	public static ApplicationContext contextFromProperties(Map<String,Properties> name2properiesMap){

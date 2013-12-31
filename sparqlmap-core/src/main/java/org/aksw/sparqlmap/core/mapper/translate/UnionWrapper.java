@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.NullValue;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -16,12 +17,18 @@ import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SetOperation;
 import net.sf.jsqlparser.statement.select.SetOperationList;
+import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.UnionOp;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 
 import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Multimap;
 
 public class UnionWrapper implements Wrapper {
 	
@@ -33,18 +40,19 @@ public class UnionWrapper implements Wrapper {
 	private TreeMap<String, SelectExpressionItem> seiTreeMap = new TreeMap<String, SelectExpressionItem>();
 	private SetOperationList union;
 	private Set<String> variablesMentioned = new HashSet<String>();
-	private BiMap<String, String> colstring2var;
-	private Map<String, TermMap> colstring2Col;
+	private BiMap<String, TermMap> var2termMap;
+
+
+	private SubSelect subselect;
 
 	/**
 	 * creates a new sql Union and registers it the the wrapper2body map
 	 * @param selectBody2Wrapper
 	 */
-	public UnionWrapper(Map<SelectBody, Wrapper> selectBody2Wrapper, DataTypeHelper dth) {
+	public UnionWrapper( DataTypeHelper dth) {
 		this.dth = dth;
 		this.union = new SetOperationList();
 		union.setOpsAndSelects(new ArrayList<PlainSelect>(),new ArrayList<SetOperation>());
-		selectBody2Wrapper.put(union, this);
 	}
 
 
@@ -69,7 +77,7 @@ public class UnionWrapper implements Wrapper {
 		uop.setAll(true);
 		union.getOperations().add(uop);
 
-		variablesMentioned.addAll(plainSelect.getColstring2Var().values());
+		variablesMentioned.addAll(plainSelect.getVarsMentioned());
 	}
 
 	public SetOperationList getUnion() {
@@ -131,61 +139,46 @@ public class UnionWrapper implements Wrapper {
 		 }
 	}
 	
-	public Map<String,TermMap> getColString2Col(String subselectName){
-		if(colstring2Col==null){
-			createMappingCols(subselectName);
-		}
-		
-		
-		
-		return colstring2Col;
-	}
+
 	
-	public BiMap<String,String> getColString2Var(String subselectName){
+	public BiMap<String,TermMap> getVar2TermMap(String subselectName){
 		
 		
-		if(colstring2var==null){
+		if(var2termMap==null){
 			createMappingCols(subselectName);
 		}
 
-		return colstring2var;
+		return this.var2termMap;
 		
 	}
 	
 	
 	private void createMappingCols(String subselectName){
 		
-		throw new ImplementationException("Rework to match R2RML Implementation");
+		
+		//bucket the expression by variable
 		
 		
-//		colstring2Col = new HashMap();
-//		colstring2var = HashBiMap.create();
-//		Mapping mapp = new Mapping();
-//	
-//		mapp.setName(subselectName);
-//		
-//		Multimap<String, String> varname2col = LinkedListMultimap.create();
-//		for (String  colname : this.seiTreeMap.keySet()) {
-//			varname2col.put(ColumnHelper.colnameBelongsToVar(colname),colname);
-//		}
-//		
-//		for(String varname: varname2col.keySet()){
-//			//create the expressions backing the column
-//			List<Expression> colExpressions = new ArrayList<Expression>();
-//			for(String colname :varname2col.get(varname)){
-//				colExpressions.add(MappingUtils.createCol(subselectName, colname));
-//			}
-//			MaterializedColumn col = new MaterializedColumn(colExpressions);
-//			col.setSqldataType(1);
-//			col.setMapp(mapp);
-//			colstring2Col.put(col.toString(), col);
-//			colstring2var.put(col.toString(),varname);
-//		}
-//		
 		
+		Multimap<String,Expression> var2siExpression = LinkedHashMultimap.create();
 		
-				
+		for(String colname: seiTreeMap.keySet()){
+			String var = ColumnHelper.colnameBelongsToVar(colname);
+			SelectExpressionItem sei  = seiTreeMap.get(colname);
+			var2siExpression.put(var, ColumnHelper.createColumn(subselectName, sei.getAlias()));
+
+		}
+		this.var2termMap =  HashBiMap.create();
 		
+		this.subselect = new SubSelect();
+		subselect.setAlias(subselectName);
+		subselect.setSelectBody(union);
+		
+		for(String var : var2siExpression.keySet()){
+			TermMap tm = TermMap.createTermMap(dth, var2siExpression.get(var));
+			tm.addFromItem(subselect);
+			this.var2termMap.put(var, tm);
+		}
 	}
 	
 	

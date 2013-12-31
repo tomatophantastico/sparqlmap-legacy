@@ -10,50 +10,49 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.core.db.DBAccess;
-import org.aksw.sparqlmap.core.db.DeUnionResultWrapper;
-import org.aksw.sparqlmap.core.db.SQLResultSetWrapper;
 import org.aksw.sparqlmap.core.mapper.Mapper;
-import org.aksw.sparqlmap.core.mapper.translate.ImplementationException;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.riot.RDFLanguages;
+import org.apache.jena.riot.WebContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.sparql.core.DatasetGraph;
 import com.hp.hpl.jena.sparql.core.DatasetGraphFactory;
 import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
+import com.hp.hpl.jena.sparql.graph.GraphFactory;
+import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
 import com.hp.hpl.jena.sparql.syntax.Template;
-import com.hp.hpl.jena.sparql.util.ModelUtils;
-import com.hp.hpl.jena.xmloutput.impl.Basic;
 
 @Component
 public class SparqlMap {
 	
+	// total queries translated by this instance
+	private int querycount = 0;
+
 	
 	String baseUri;
 	boolean continueWithInvalidUris = true;
@@ -103,12 +102,20 @@ public class SparqlMap {
 
 	private Logger log = LoggerFactory.getLogger(SparqlMap.class);
 
-	public enum ReturnType {JSON,XML}
-	
-	
-	public void  executeSparql(String qstring, ReturnType rt, OutputStream out) throws SQLException{
-		executeSparql(qstring,  rt,  out, null);
+
+	public void  executeSparql(String qstring, String rt, OutputStream out) throws SQLException{
+		executeSparql(qstring,  rt,  out,"Unnamed query "+ this.querycount++);
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	/**
 	 * Takes some of the functionality of QueryExecutionbase
@@ -117,51 +124,45 @@ public class SparqlMap {
 	 * @return the result as a string
 	 * @throws SQLException 
 	 */
-	public void  executeSparql(String qstring, ReturnType rt, OutputStream out, String queryname) throws SQLException{
+	public void  executeSparql(String qstring, String _rt, OutputStream out, String queryname) throws SQLException{
 		
-		Multimap<String, Long> prof = getProfiler(queryname);
-		Stopwatch sw = new Stopwatch();
+		TranslationContext context = new TranslationContext();
+		context.setQueryString(qstring);
+		context.setQueryName(queryname);
 		
-		if(prof!=null){
-			sw= new Stopwatch().start();
-		}
+		
+		context.profileStartPhase("Query Compile");
 			
 		
-		Query query = QueryFactory.create(qstring);
+		context.setQuery(QueryFactory.create(qstring));
 		
-		if(prof!=null){
-			sw.stop();
-			prof.put("0 Parse", sw.elapsedTime(TimeUnit.MICROSECONDS));
-		}
+		context.setTargetContentType(_rt);
 		
-		if(query.isAskType()){
+	
+		
+		if(context.getQuery().isAskType()){
 			throw new ImplementationException("Dont Ask");
 		}
-		if(query.isConstructType()){
-			Model model = com.hp.hpl.jena.sparql.graph.GraphFactory.makeJenaDefaultModel();
-			executeConstruct(rt,  query,model ,queryname);
-			writeModel(rt, out, model);
+		if(context.getQuery().isConstructType()){
+			executeConstruct(context,out);
+			
+			
 			
 			
 		}
-		if(query.isSelectType()){
-			ResultSet rs = executeSparql(query,queryname);
-			switch (rt) {
-			case JSON:
-				ResultSetFormatter.outputAsJSON(out,rs);
-				break;
-
-			default:
-				ResultSetFormatter.outputAsXML(out,rs);
-				break;
-			}
+		if(context.getQuery().isSelectType()){
+			ResultSet rs = rewriteAndExecute(context);
+			
+			ResultSetFormatter.output(out, rs, ResultsFormat.lookup(WebContent.contentTypeToLang(context.getTargetContentType().toString()).getName()));
+			
+			
 			
 		}
-		if(query.isDescribeType()){
+		if(context.getQuery().isDescribeType()){
 			Model model = 	com.hp.hpl.jena.sparql.graph.GraphFactory.makeJenaDefaultModel();
-			List<Node> iris =  query.getResultURIs();
+			List<Node> iris =  context.getQuery().getResultURIs();
 			if((iris == null || iris.isEmpty())){
-				Var var = query.getProjectVars().get(0);
+				Var var = context.getQuery().getProjectVars().get(0);
 				/*
 				// hacky, hacky, hacky
 				String wherePart  = query.getQueryPattern().toString();
@@ -169,7 +170,7 @@ public class SparqlMap {
 				String newwhere =wherePart.replaceAll("\\?"+var.toString()+"(?![a-zA-Z0-9])", "?x_sm");
 				Query con = QueryFactory.create("CONSTRUCT {?s_sm ?p_sm ?o_sm} WHERE {{?s_sm ?p_sm ?x_sm. " +newwhere + "}UNION {?x_sm ?p_sm ?o_sm. "+newwhere+"}}");
 				executeConstruct(rt,con,model,queryname);*/
-				ResultSet rs = executeSparql(query, queryname);
+				ResultSet rs = rewriteAndExecute(context);
 				while(rs.hasNext()){
 					iris.add(rs.next().get(var.getName()).asNode());
 				}
@@ -179,13 +180,25 @@ public class SparqlMap {
 				
 				for (Node node : iris) {
 					String con1 = "CONSTRUCT {?s_sm ?p_sm <"+node.getURI()+"> } WHERE { ?s_sm ?p_sm <"+node.getURI()+"> }";
-					executeConstruct(rt, QueryFactory.create(con1), model,queryname);
+					TranslationContext subCon1 = new TranslationContext();
+					subCon1.setTargetContentType(context.getTargetContentType());
+					subCon1.setQueryString(con1);
+					subCon1.setQueryName("construct incoming query");
+					subCon1.setQuery(QueryFactory.create(con1));
+					
+					executeConstruct(subCon1,out);
 					String con2 = "CONSTRUCT { <"+node.getURI()+"> ?p_sm ?o_sm} WHERE { <"+node.getURI()+"> ?p_sm ?o_sm}";
-					executeConstruct(rt, QueryFactory.create(con2), model,queryname);
+					TranslationContext subCon2 = new TranslationContext();
+					subCon2.setTargetContentType(context.getTargetContentType());
+					subCon2.setQueryString(con2);
+					subCon2.setQuery(QueryFactory.create(con2));
+					subCon2.setQueryName("construct outgoinf query");
+					
+					executeConstruct(subCon2, out);
 
 					}
 			
-			writeModel(rt, out, model);
+//			writeModel(rt, out, model);
 			
 		}
 
@@ -207,44 +220,37 @@ public class SparqlMap {
 	}
 
 
-	private void writeModel(ReturnType rt, OutputStream out, Model model) {
-		switch (rt) {
-		case JSON:
-			
-			
-			RDFDataMgr.write(out, model, RDFFormat.RDFJSON);
 	
-			break;
+	
+	
 
-		default:
-			Basic xmlwriter = new Basic();
-			xmlwriter.write(model, out, null);
-			break;
-		}
-	}
-
-
-	private void executeConstruct(ReturnType rt, Query query, Model model,String queryname)
+	private void executeConstruct(TranslationContext context, OutputStream out)
 			throws SQLException {
 		//take the graph pattern and convert it into a select query.
-		Template template = query.getConstructTemplate();
-		query.setQueryResultStar(true);
+		Template template = context.getQuery().getConstructTemplate();
+		context.getQuery().setQueryResultStar(true);
 		//execute it 
-		ResultSet rs = executeSparql(query,queryname);
+		ResultSet rs = rewriteAndExecute(context);
 		
 		//bind it
-
+		int i = 0;
+		Graph graph = GraphFactory.createDefaultGraph();
 		while (rs.hasNext()) {
 			Set<Triple> set = new HashSet<Triple>();
 			Map<Node, Node> bNodeMap = new HashMap<Node, Node>();
 			Binding binding = rs.nextBinding();
 			template.subst(set, bNodeMap, binding);
+			
 			for (Triple t : set) {
-				Statement stmt = ModelUtils.tripleToStatement(model, t);
-				if (stmt != null)
-					model.add(stmt);
+				graph.add(t);
+				
+			}
+			
+			if(++i%1000!=0){
+				RDFDataMgr.write(out, graph, WebContent.contentTypeToLang(context.getTargetContentType().toString()));
 			}
 		}
+		RDFDataMgr.write(out, graph, WebContent.contentTypeToLang(context.getTargetContentType().toString()));
 
 	}
 	
@@ -254,13 +260,17 @@ public class SparqlMap {
 	 * @throws SQLException 
 	 */
 
-	public void dump(OutputStream out,RDFFormat format) throws SQLException{
+	public void dump(OutputStream out,String format) throws SQLException{
 		PrintStream writer = new PrintStream(out);
 		
 		List<String> queries = mapper.dump();
 		for (String query : queries) {
+			TranslationContext context = new TranslationContext();
+			context.setSqlQuery(query);
+			context.setQueryName("Dump query");
+			
 			log.info("SQL: " + query);
-			com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(query, baseUri);
+			com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(context, baseUri);
 			DatasetGraph graph = DatasetGraphFactory.createMem();
 			boolean usesGraph = false;
 			int i = 0;
@@ -292,81 +302,77 @@ public class SparqlMap {
 				}
 			}
 			if(usesGraph){
-				RDFDataMgr.write(out, graph, RDFFormat.NQUADS);
+				RDFDataMgr.write(out, graph,RDFLanguages.nameToLang(format));
 			}else{
-				RDFDataMgr.write(out, graph.getDefaultGraph(),Lang.NTRIPLES);
+				RDFDataMgr.write(out, graph.getDefaultGraph(), RDFLanguages.nameToLang(format));
 			}
 			
 			writer.flush();
 		}
 	}
 	
+	/**
+	 * dumps into the whole config into the writer.
+	 * @param writer
+	 * @throws SQLException 
+	 */
+
 	public DatasetGraph dump() throws SQLException{
 		
-		DatasetGraph graph = DatasetGraphFactory.createMem();
+		DatasetGraph dataset = DatasetGraphFactory.createMem();
 
-	
 		List<String> queries = mapper.dump();
 		for (String query : queries) {
+			TranslationContext context = new TranslationContext();
+			context.setSqlQuery(query);
+			context.setQueryName("Dump query");
+
 			log.info("SQL: " + query);
-			com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(query,baseUri);
+			com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(context, baseUri);
 			while(rs.hasNext()){
-				Binding bind = rs.nextBinding();
-				Node graphNode = null;
-				if(bind.get(Var.alloc("g"))!=null){
-					graphNode =bind.get(Var.alloc("g"));
-				}else{
-					graphNode = Quad.defaultGraphIRI;
+				Binding bind = rs.nextBinding();	
+				try {
+					Quad toadd = new Quad(bind.get(Var.alloc("g")),bind.get(Var.alloc("s")), bind.get(Var.alloc("p")), bind.get(Var.alloc("o")));
+					dataset.add(toadd)	;
+				} catch (Exception e) {
+					
+					log.error("Error:",e);
+					if(!continueWithInvalidUris){
+						throw new RuntimeException(e);
+					}
 				}
-				graph.add(new Quad(graphNode,bind.get(Var.alloc("s")), bind.get(Var.alloc("p")), bind.get(Var.alloc("o"))))	;
 			}
-
 		}
-		
-		return graph;
-	}
-	
-	int querycount = 0;
-	public ResultSet executeSparql(Query query) throws SQLException{
-		return  executeSparql( query, null);
+		return dataset;
 	}
 	
 	
-	public ResultSet executeSparql(Query query, String queryname) throws SQLException{
-		Multimap<String, Long> prof= getProfiler(queryname);
-		Stopwatch sw = null;
-		if(prof!=null){
-			sw = new Stopwatch().start();
-		}
+	public ResultSet rewriteAndExecute(String query) throws SQLException{
 		
+		TranslationContext context = new TranslationContext();
+		context.setQueryString(query);
+		context.setQuery(QueryFactory.create(query));
 		
+		return rewriteAndExecute(context);
 		
-		String sql = mapper.rewrite(query);
-		
-		
-		if(queryname==null){
-			queryname = "";
-		}
-	
-		LoggerFactory.getLogger("sqllog").info("SQL " + queryname + " " + sql );
-		
-		
-		if(prof!=null){
-			sw.stop();
-			prof.put("1 Rewrite",sw.elapsedTime(TimeUnit.MICROSECONDS));
-		}
-		ResultSet rs = dbConf.executeSQL(sql,baseUri,prof);
-		
-		
-	
-		if(rs instanceof DeUnionResultWrapper){
-			((DeUnionResultWrapper) rs).setProfiler(prof);
-		}
-		if(rs instanceof SQLResultSetWrapper){
-			((SQLResultSetWrapper) rs).setProfiler(prof);
-		}
-		
+	}
 
+	
+	
+	public ResultSet rewriteAndExecute(TranslationContext context) throws SQLException{
+		
+		
+	
+		
+		context.profileStartPhase("Rewriting");	
+		
+		
+		context.setSqlQuery(mapper.rewrite(context));
+		
+		LoggerFactory.getLogger("sqllog").info("SQL " + context.getQueryName() + " " + context.getSqlQuery() );
+		
+			
+		ResultSet rs = dbConf.executeSQL(context,baseUri);
 		
 		return rs;
 		

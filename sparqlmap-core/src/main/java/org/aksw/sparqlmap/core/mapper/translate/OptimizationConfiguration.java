@@ -22,7 +22,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FilterOptimizer {
+public class OptimizationConfiguration {
 	
 	boolean shortcutFilters = true;
 	boolean optimizeSelfJoin = true;
@@ -32,10 +32,10 @@ public class FilterOptimizer {
 
 
 	@Autowired
-	DataTypeHelper dtutil;
+	private DataTypeHelper dtutil;
 	
 	@Autowired
-	Environment env;
+	private Environment env;
 	
 	@PostConstruct
 	public void setOptimize(){
@@ -51,7 +51,7 @@ public class FilterOptimizer {
 		log.info("Project pushing is is: " + (optimizeProjectPush?"on":"off"));
 	}
 	
-	private Logger log = LoggerFactory.getLogger(FilterOptimizer.class);
+	private Logger log = LoggerFactory.getLogger(OptimizationConfiguration.class);
 	
 	
 
@@ -59,7 +59,7 @@ public class FilterOptimizer {
 
 	
 	
-	public Expression shortCut(Expression sqlExpression) {
+	public Expression _shortCut(Expression sqlExpression) {
 		if(!this.shortcutFilters){
 			return sqlExpression;
 		}
@@ -140,7 +140,7 @@ public class FilterOptimizer {
 			}
 			if (func != null && stringOrig != null) {
 				if (func.getName().toLowerCase().equals("concat")) {
-					reduced = shortcutConcatExpressionStringBased(
+					reduced = _shortcutConcatExpressionStringBased(
 							sqlExpression, func, stringOrig, stringNew,
 							compareto);
 				}
@@ -152,9 +152,9 @@ public class FilterOptimizer {
 					
 					//if(bex instanceof EqualsTo){
 						
-					sqlExpression = FilterUtil.createEqualsTo(
-							new ArrayList<Expression>(stringNew),
-							new ArrayList<Expression>(compareto));
+//					sqlExpression = FilterUtil.createEqualsTo(
+//							new ArrayList<Expression>(stringNew),
+//							new ArrayList<Expression>(compareto));
 //					} else if (bex instanceof NotEqualsTo){
 //						sqlExpression = FilterUtil.createNotEqualsTo(
 //								new ArrayList<Expression>(stringNew),
@@ -193,16 +193,13 @@ public class FilterOptimizer {
 			}
 
 		}
-		
-		
-		
 
 		// TODO Auto-generated method stub
 		return sqlExpression;
 	}
 	
 
-	private boolean shortcutConcatExpressionStringBased(
+	private boolean _shortcutConcatExpressionStringBased(
 			Expression sqlExpression, Function func, StringValue stringOrig,
 			List<Expression> stringNew, List<Expression> compareto ) {
 		boolean reduced = false;
