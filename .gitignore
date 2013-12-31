@@ -1,4 +1,5 @@
 .*
 sparqlmap-*/target/*
+sparqlmap-*/build/*
 sparqlmap-core/log/
 *.log
