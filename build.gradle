@@ -1,0 +1,33 @@
+allprojects  {
+  apply plugin: 'maven'
+
+  group = 'org.aksw.sparqlmap'
+version = '0.6.3-snapshot'
+}
+
+subprojects {
+  apply plugin: 'java'
+  sourceCompatibility = 1.7
+  targetCompatibility = 1.7
+
+  
+  repositories {
+    mavenLocal()
+    
+    maven { url "http://repo.maven.apache.org/maven2" }
+    maven { url "http://download.java.net/maven/2/" }
+    maven { url "https://repository.apache.org/content/repositories/releases/" }
+    maven { url "http://maven.aksw.org/archiva/repository/internal" }
+    maven { url "http://maven.aksw.org/archiva/repository/snapshots" }
+  }
+
+  
+  dependencies {
+    compile group: 'junit', name: 'junit', version:'4.11'
+    compile group: 'org.hsqldb', name: 'hsqldb', version:'2.2.9', classifier:'jdk6debug'
+    compile group: 'org.postgresql', name: 'postgresql', version:'9.2-1002-jdbc4'
+    compile group: 'mysql', name: 'mysql-connector-java', version:'5.1.11'
+}
+
+  
+}

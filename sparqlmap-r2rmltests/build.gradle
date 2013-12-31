@@ -1,0 +1,10 @@
+
+description = 'SparqlMap R2RML Test Suite'
+dependencies {
+  compile project(':sparqlmap-core')
+    compile group: 'postgresql', name: 'postgresql', version:'9.1-901-1.jdbc4'
+    compile group: 'org.hsqldb', name: 'sqltool', version:'2.2.9'
+    compile group: 'com.oracle', name: 'ojdbc6', version:'11.2'
+    compile group: 'org.springframework', name: 'spring-jdbc', version:'3.2.4.RELEASE'
+    compile group: 'org.springframework', name: 'spring-test', version:'3.2.4.RELEASE'
+}
