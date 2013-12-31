@@ -9,6 +9,7 @@
 	<packaging>pom</packaging>
 	
 	 <modules>
+		<module>./sparqlmap-cli</module>
 		<module>./sparqlmap-core</module>
 		<module>./sparqlmap-web</module>
 		<module>./sparqlmap-r2rmltests</module>

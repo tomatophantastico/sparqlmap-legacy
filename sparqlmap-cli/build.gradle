@@ -1,0 +1,7 @@
+
+description = 'SparqlMap Command Line Interface'
+dependencies {
+  compile project(':sparqlmap-core')
+  compile project(':sparqlmap-shared')
+    compile group: 'commons-cli', name: 'commons-cli', version:'1.2'
+}
