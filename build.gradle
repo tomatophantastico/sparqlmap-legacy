@@ -1,9 +1,14 @@
+apply plugin: 'distribution'
+
 allprojects  {
   apply plugin: 'maven'
-
+  
   group = 'org.aksw.sparqlmap'
-version = '0.6.3-snapshot'
+  version = '0.6.3-snapshot'
+  buildDir =  "target"
+  
 }
+
 
 subprojects {
   apply plugin: 'java'
@@ -12,8 +17,8 @@ subprojects {
 
   
   repositories {
+  
     mavenLocal()
-    
     maven { url "http://repo.maven.apache.org/maven2" }
     maven { url "http://download.java.net/maven/2/" }
     maven { url "https://repository.apache.org/content/repositories/releases/" }
@@ -24,10 +29,24 @@ subprojects {
   
   dependencies {
     compile group: 'junit', name: 'junit', version:'4.11'
-    compile group: 'org.hsqldb', name: 'hsqldb', version:'2.2.9', classifier:'jdk6debug'
-    compile group: 'org.postgresql', name: 'postgresql', version:'9.2-1002-jdbc4'
-    compile group: 'mysql', name: 'mysql-connector-java', version:'5.1.11'
+
+}
 }
 
-  
+distributions {
+
+	main {
+		baseName = 'sparqlmap-release'
+		contents{
+			from project.file('README.md')
+			into ("bin") { from "${project.projectDir}/sparqlmap-cli/src/assembly/bin/" 
+						 from "${project.projectDir}/sparqlmap-web/src/main/jetty/bin/" }
+			into("lib/core") { from project( 'sparqlmap-core' ).configurations.runtime}
+			into("lib/jetty") { from project( 'sparqlmap-core' ).configurations.runtime}
+			into("lib/db-opt")  { from project( 'sparqlmap-core' ).configurations.runtime}
+		}
+		
+	}
 }
+
+
