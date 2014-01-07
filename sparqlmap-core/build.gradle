@@ -1,22 +1,11 @@
 description = 'SparqlMap core features'
 dependencies {
-   compile project(':sparqlmap-shared')
-
-    compile group: 'org.apache.jena', name: 'jena-arq', version:'2.11.0'
-    compile group: 'org.slf4j', name: 'slf4j-ext', version:'1.7.5'
-    compile group: 'org.ostermiller', name: 'utils', version:'1.07.00'
-    compile group: 'net.sf.jsqlparser', name: 'jsqlparser', version:'0.8.1.SPARQLMAP-SNAPSHOT'
-    compile group: 'commons-io', name: 'commons-io', version:'1.4'
-    compile group: 'org.apache.commons', name: 'commons-lang3', version:'3.1'
-    compile group: 'com.google.guava', name: 'guava', version:'12.0'
-    compile group: 'com.jolbox', name: 'bonecp', version:'0.7.1.RELEASE'
-    compile group: 'joda-time', name: 'joda-time', version:'2.1'
-    compile(group: 'org.springframework', name: 'spring-web', version:'3.2.1.RELEASE') {
-		exclude(module: 'commons-logging')}
-    compile group: 'org.springframework', name: 'spring-jdbc', version:'3.2.4.RELEASE'
-    compile(group: 'org.aksw.commons', name: 'util', version:'0.5-SNAPSHOT') {exclude(module: 'slf4j-ext') }
-    compile group: 'org.aksw.commons', name: 'sparql', version:'0.5-SNAPSHOT'
-    compile group: 'org.apache.commons', name: 'commons-math3', version:'3.2'
-    testCompile group: 'postgresql', name: 'postgresql', version:'9.1-901-1.jdbc4'
-    testCompile group: 'org.hsqldb', name: 'sqltool', version:'2.2.9'
+	compile project(':sparqlmap-shared')
+	compile libraries.jena
+	compile libraries.utils
+	compile libraries.sqlutils
+	compile libraries.provdbs 
+	compile libraries.spring
+	
+	dbs libraries.provdbs
 }

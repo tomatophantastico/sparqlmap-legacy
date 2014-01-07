@@ -1,4 +1,6 @@
 apply plugin: 'distribution'
+apply from: "./libraries.gradle"
+apply plugin: "eclipse"
 
 allprojects  {
   apply plugin: 'maven'
@@ -9,11 +11,18 @@ allprojects  {
   
 }
 
+ext{
+	sourceCompatibility = 1.7
+	targetCompatibility = 1.7
+}
 
-subprojects {
+subprojects { subproject ->
+  if(subproject.name == 'sparqlmap-shared' || subproject.name == 'sparqlmap-webfrontend')
+	return;
   apply plugin: 'java'
-  sourceCompatibility = 1.7
-  targetCompatibility = 1.7
+  apply plugin: 'eclipse'
+
+
 
   
   repositories {
@@ -25,28 +34,71 @@ subprojects {
     maven { url "http://maven.aksw.org/archiva/repository/internal" }
     maven { url "http://maven.aksw.org/archiva/repository/snapshots" }
   }
-
+	configurations{
+		provided {
+			description = "Libraries that are expected to be there"
+		}
+		
+		web{
+			description = "Libs for the webservices"
+		}
+		
+		jetty{
+			description = "Libs that make a jetty run"
+		}
+		
+		dbs{
+			
+		}
+	}
   
   dependencies {
-    compile group: 'junit', name: 'junit', version:'4.11'
-
-}
+    testCompile libraries.junit 
+	}
 }
 
 distributions {
-
 	main {
 		baseName = 'sparqlmap-release'
-		contents{
+		contents {
 			from project.file('README.md')
-			into ("bin") { from "${project.projectDir}/sparqlmap-cli/src/assembly/bin/" 
-						 from "${project.projectDir}/sparqlmap-web/src/main/jetty/bin/" }
-			into("lib/core") { from project( 'sparqlmap-core' ).configurations.runtime}
-			into("lib/jetty") { from project( 'sparqlmap-core' ).configurations.runtime}
-			into("lib/db-opt")  { from project( 'sparqlmap-core' ).configurations.runtime}
+			into ("bin") { 
+				from  "./sparqlmap-shared/src/main/resources/scripts/sparqlmap-web" 
+				filter{	String line -> 
+					line.replaceAll("@@@sparqlmapwar@@@", "${project('sparqlmap-web' ).war.archiveName}").replaceAll("@@@jettyrunner@@@",project( 'sparqlmap-web' ).configurations.jetty.files.iterator().next().name)	
+				}
+				
+			}
+			into("bin") {from  "./sparqlmap-shared/src/main/resources/scripts/sparqlmap"}
+			into("samples/mappings/") {from "./sparqlmap-shared/src/main/resources/mappings/"}
+			
+			into("samples/configs/") {from "./sparqlmap-shared/src/main/resources/samples/"}
+			
+			
+			into("lib/deps") { from project( 'sparqlmap-cli' ).configurations.runtime{dep -> !dep.name.startsWith("sparqlmap")}}
+			into("lib/deps") { from project( 'sparqlmap-web' ).configurations.runtime{dep -> !dep.name.startsWith("sparqlmap")}}
+			into("lib/sparqlmap") {from project('sparqlmap-cli').configurations.archives.allArtifacts.files}
+			into("lib/sparqlmap") {from project('sparqlmap-core').configurations.archives.allArtifacts.files}
+
+			
+			into("lib/war") {    from project( 'sparqlmap-web' ).configurations.archives.allArtifacts.files }
+			
+			into("lib/jetty") { from project( 'sparqlmap-web' ).configurations.jetty }
+			into("lib/db")  { from project( 'sparqlmap-core' ).configurations.dbs}
+			
 		}
 		
 	}
+}
+
+
+task printpath << {
+	println "------------"
+//	println project( 'sparqlmap-web' ).configurations.jetty.metaClass.methods*.name.sort().unique()  
+	println project( 'sparqlmap-web' ).configurations.jetty.files.iterator().next().name
+//	println project( 'sparqlmap-web' ).configurations.jetty.artifacts.dump()
+
+	println "------------"
 }
 
 

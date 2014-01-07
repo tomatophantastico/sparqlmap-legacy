@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.aksw.sparqlmap.core.SystemInitializationError;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.PropertiesPropertySource;
@@ -108,13 +109,9 @@ public abstract class ContextSetup {
 		}
 		
 		
-		} catch (FileNotFoundException e) {
-			log.info("Error:",e);
-			return null;
 		} catch (IOException e) {
-			log.info("Error:",e);
-			return null;
-		}
+			throw new SystemInitializationError("Unable to find file: " + e.getLocalizedMessage()  );
+		} 
 		
 		
 	}

@@ -92,6 +92,9 @@ public class sparqlmap {
 		OptionGroup action = new OptionGroup();
 		action.addOption(OptionBuilder.withDescription("Writes an rdf dump into stdout according to the supplied mapping file").create("dump"));
 		action.addOption(OptionBuilder.withDescription("Creates a mapping file that maps the specified database into R2RML according to the direct mapping specification").create("generateMapping"));
+		action.addOption(OptionBuilder.withDescription("Reads an CSV-file and dumps the contents as rdf according to the mapping filde.").create("dump-csv"));
+		action.addOption(OptionBuilder.withDescription("Creates a mapping file according for a CSV file.").create("generateMapping-csv"));
+		
 		options.addOptionGroup(action);
 		
 		options.addOption(OptionBuilder
@@ -120,6 +123,9 @@ public class sparqlmap {
 				.create("baseiri"));
 		options.addOption(OptionBuilder.withArgName("r2rmlfile").hasArg().withDescription("The R2RML file according which defines the mapping for the dump.").create("r2rmlfile"));		
 		options.addOption(OptionBuilder.withArgName("sparqlmapfile").hasArg().withDescription("A properties file that configures SparqlMap. Usually contains the properties given here as options. Explicit options override the values of the properties file.").create("sparqlmapfile"));
+		options.addOption(OptionBuilder.withArgName("file").withDescription("CSV File name").create("csv-file"));
+		options.addOption(OptionBuilder.withDescription("The first line of the file describes the headers").create("csv-hasHeaders"));
+		options.addOption(OptionBuilder.withArgName("char").withDescription("The column separator character").create("csv-sepchar"));
 		
 		options.addOption(OptionBuilder.withArgName("outputformat").hasArg().withDescription("The output format name. Values are: RDF/XML, Turtle, N-TRiples, N3, RDF/JSON, N-Quads, TriG. Defaults to N-Triples.").create("outputformat"));
 		return options;
@@ -189,7 +195,7 @@ public class sparqlmap {
 				
 				
 				
-			}
+			} 
 
 			
 		} catch (ParseException e) {

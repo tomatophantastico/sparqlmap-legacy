@@ -1,41 +1,43 @@
-ext.libraries{
+ext {
+	
 	jenaVersion = "2.11.0"
 	springVersion = "3.2.4.RELEASE"
-	jettyVersion = "8.1.14.v20131031"
+	jettyVersion = "9.1.0.v20131115"
 	
 	libraries = [
-		jena :   	"org.apache.jena:jena-arq:${jenaVersion}"
-		cli:     	"commons-cli:commons-cli:1.2"
+		jena :   	"org.apache.jena:jena-arq:${jenaVersion}",
+		cli:     	"commons-cli:commons-cli:1.2",
 		utils : [	'commons-io:commons-io:1.4',
 				'org.ostermiller:utils:1.07.00',
-			        'com.google.guava:guava:12.0'
+				'com.google.guava:guava:12.0',
 				'joda-time:joda-time:2.1',
 				dependencies.create('org.aksw.commons:util:0.5-SNAPSHOT') {exclude(module: 'slf4j-ext') },
 				'org.aksw.commons:sparql:0.5-SNAPSHOT',
 				'org.apache.commons:commons-math3:3.2'
-		]
-		sql-utils : [
+		],
+		sqlutils : [
 				'net.sf.jsqlparser:jsqlparser:0.8.1.SPARQLMAP-SNAPSHOT',
 				'com.jolbox:bonecp:0.7.1.RELEASE'
-		]
-		spring: [	dependencies.create('org.springframework:spring-web:${springVersion}') {exclude(module: 'commons-logging')},
-				'org.springframework:spring-jdbc:${springVersion}'	]
+		],
+		spring: [	dependencies.create("org.springframework:spring-web:${springVersion}") {exclude(module: 'commons-logging')},
+				"org.springframework:spring-jdbc:${springVersion}"
+		],
 		
-		spring-webmvc: "org.springframework:spring-webmvc:${springVersion}''	
+		springwebmvc: "org.springframework:spring-webmvc:${springVersion}",
 		
-		servlet-apis: 
+		servletapis: [ 'javax.servlet:servlet-api:2.4'],
 		
-		jetty:  [ 	'org.eclipse.jetty:jetty-start:${jettyVersion}',
-				'org.mortbay.jetty:jetty:${jettyVersion}']
+		jetty:  [ 	dependencies.create("org.eclipse.jetty:jetty-runner:${jettyVersion}"){transitive = false}],
 		
-		prov-dbs: ['org.hsqldb:hsqldb:2.2.9:jdk6debug',
+		provdbs: ['org.hsqldb:hsqldb:2.2.9:jdk6debug',
 				'org.postgresql:postgresql:9.2-1002-jdbc4',
-				'mysql:mysql-connector-java:5.1.11' ]
+				'mysql:mysql-connector-java:5.1.11' ],
 		
-		other-dbs: []
+		otherdbs: [],
+		
+		junit: "junit:junit:4.11"
 	
 	]
-	
 
 
 

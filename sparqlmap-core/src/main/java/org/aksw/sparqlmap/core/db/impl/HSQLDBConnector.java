@@ -13,8 +13,6 @@ public class HSQLDBConnector extends Connector {
 	public static final String HSQLDB_NAME = null;
 
 
-
-
 	private static Logger log = LoggerFactory.getLogger(HSQLDBConnector.class);
 	
 	

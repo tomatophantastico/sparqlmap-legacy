@@ -15,5 +15,6 @@ if [ -n  ${SPARQLMAP_HOME}]; then
  SPARQLMAP_HOME="${SCRIPTPATHPARENT}/map-conf"
 fi 
 
-echo "Starting RDF dump...." >&2
-java  -classpath "lib/*:lib-jdbc/*" sparqlmap -dump -dbfile ./map-conf/db.properties -r2rmlfile ./map-conf/mapping.ttl
+echo "Using SparqlMap configuration in ${SPARQLMAP_HOME}"
+
+java  -Xms128m -Xmx512m -DSPARQLMAP_HOME=${SPARQLMAP_HOME} -jar ./lib/jetty/@@@jettyrunner@@@ --path /sparqlmap ./lib/war/@@@sparqlmapwar@@@
