@@ -1,2 +1,23 @@
 
 description = 'SparqlMap Shared Resources'
+
+sourceSets {
+	sampleDb {
+
+		java {
+			exclude '**/*'
+		}
+	
+		resources {
+			srcDir "src/main/resources/sample-data/db"
+			include 'bsbm.*' 
+			exclude '*'
+		}
+	}
+}
+
+jar {
+	baseName "sampledb"
+
+	from  sourceSets.sampleDb.resources
+}
