@@ -144,42 +144,42 @@ public class R2RMLModel {
 					}
 					tables.add((Table) ((PlainSelect) sb).getFromItem());
 					
-					
-					for(Join join : ((PlainSelect) sb).getJoins()){
-						if((join.isSimple() )|| join.isFull() || join.isLeft()||
-									!(join.getRightItem() instanceof Table)){
-							log.warn("Only simple joins can be opzimized");
-							continue TERMMAPLOOP;
+					if (((PlainSelect) sb).getJoins() != null) {
+						for (Join join : ((PlainSelect) sb).getJoins()) {
+							if ((join.isSimple()) || join.isFull()
+									|| join.isLeft()
+									|| !(join.getRightItem() instanceof Table)) {
+								log.warn("Only simple joins can be opzimized");
+								continue TERMMAPLOOP;
+							}
+
+							Table tab = (Table) join.getRightItem();
+							if (tab.getAlias() == null) {
+								log.warn("Table: "
+										+ tab.getName()
+										+ " needs an alias in order to be optimized");
+								continue TERMMAPLOOP;
+							}
+
+							tables.add(tab);
+
+							// check if we can make use of the on condition.
+
+							Expression onExpr = join.getOnExpression();
+
+							// shaving of parenthesis
+							if (onExpr instanceof Parenthesis) {
+								onExpr = ((Parenthesis) onExpr).getExpression();
+							}
+
+							if (!(onExpr instanceof EqualsTo)) {
+								log.warn("only simple equals statements can be processed, aborting optimization ");
+								continue TERMMAPLOOP;
+							}
+
+							joinConds.add((EqualsTo) onExpr);
+
 						}
-						
-						Table tab  = (Table) join.getRightItem();
-						if(tab.getAlias()==null){
-							log.warn("Table: " + tab.getName() + " needs an alias in order to be optimized");
-							continue TERMMAPLOOP;
-						}
-						
-						tables.add(tab);
-						
-						//check if we can make use of the on condition.
-						
-						
-							
-						Expression onExpr = join.getOnExpression();
-						
-						//shaving of parenthesis
-						if(onExpr instanceof Parenthesis){
-							onExpr = ((Parenthesis) onExpr).getExpression();
-						}
-						
-						if(!(onExpr instanceof EqualsTo)){
-							log.warn("only simple equals statements can be processed, aborting optimization ");
-							continue TERMMAPLOOP;
-						}
-						
-						
-						
-						joinConds.add((EqualsTo) onExpr);
-						
 					}
 					// create a projection map
 					Map<String,Column> projections = new HashMap<String,Column>();

@@ -1,36 +1,43 @@
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.nio.file.FileSystem;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.SparqlMap;
 import org.aksw.sparqlmap.core.automapper.AutomapperWrapper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLValidationException;
+import org.aksw.sparqlmap.core.db.CSVHelper;
+import org.aksw.sparqlmap.core.db.CSVHelper.CSVColumnConfig;
+import org.aksw.sparqlmap.core.db.CSVHelper.CSVTableConfig;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.MissingOptionException;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RDFFormat;
-import org.apache.jena.riot.RDFFormatVariant;
 import org.apache.jena.riot.RDFLanguages;
 import org.apache.jena.riot.WebContent;
 import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.PropertiesPropertySource;
-
-import com.hp.hpl.jena.rdf.model.Model;
+import org.springframework.core.io.ClassPathResource;
 
 public class sparqlmap {
 
@@ -92,8 +99,7 @@ public class sparqlmap {
 		OptionGroup action = new OptionGroup();
 		action.addOption(OptionBuilder.withDescription("Writes an rdf dump into stdout according to the supplied mapping file").create("dump"));
 		action.addOption(OptionBuilder.withDescription("Creates a mapping file that maps the specified database into R2RML according to the direct mapping specification").create("generateMapping"));
-		action.addOption(OptionBuilder.withDescription("Reads an CSV-file and dumps the contents as rdf according to the mapping filde.").create("dump-csv"));
-		action.addOption(OptionBuilder.withDescription("Creates a mapping file according for a CSV file.").create("generateMapping-csv"));
+
 		
 		options.addOptionGroup(action);
 		
@@ -123,9 +129,13 @@ public class sparqlmap {
 				.create("baseiri"));
 		options.addOption(OptionBuilder.withArgName("r2rmlfile").hasArg().withDescription("The R2RML file according which defines the mapping for the dump.").create("r2rmlfile"));		
 		options.addOption(OptionBuilder.withArgName("sparqlmapfile").hasArg().withDescription("A properties file that configures SparqlMap. Usually contains the properties given here as options. Explicit options override the values of the properties file.").create("sparqlmapfile"));
-		options.addOption(OptionBuilder.withArgName("file").withDescription("CSV File name").create("csv-file"));
-		options.addOption(OptionBuilder.withDescription("The first line of the file describes the headers").create("csv-hasHeaders"));
-		options.addOption(OptionBuilder.withArgName("char").withDescription("The column separator character").create("csv-sepchar"));
+		
+		options.addOption(OptionBuilder.withArgName("file").hasArg().withDescription("CSV File name").create("csvfile"));
+		options.addOption(OptionBuilder.withDescription("The first line of the file describes the headers. For details check: http://hsqldb.org/doc/guide/texttables-chapt.html").create("csvhasheader"));
+		options.addOption(OptionBuilder.withDescription("The file as rows with a varying count of columns").create("varyingcolcount"));
+		options.addOption(OptionBuilder.withArgName("char").hasArg().withDescription("The char separator character. Defaults to ','.  For greater detail check: http://hsqldb.org/doc/guide/texttables-chapt.html").create("csvsepchar"));
+		options.addOption(OptionBuilder.withArgName("char").hasArg().withDescription("The varcharchar separator character.Defaults to ','. For greater detail check: http://hsqldb.org/doc/guide/texttables-chapt.html").create("csvsepvarchar"));
+		options.addOption(OptionBuilder.withArgName("encoding").hasArg().withDescription("The encoding of the csv file.").create("csvencoding"));
 		
 		options.addOption(OptionBuilder.withArgName("outputformat").hasArg().withDescription("The output format name. Values are: RDF/XML, Turtle, N-TRiples, N3, RDF/JSON, N-Quads, TriG. Defaults to N-Triples.").create("outputformat"));
 		return options;
@@ -144,6 +154,13 @@ public class sparqlmap {
 
 			// process the basic options
 			Properties props = new Properties();
+			
+			//load sparqlmap properties from the classpath
+			
+			props.load(new ClassPathResource("sparqlmap.properties").getInputStream());
+			
+			
+			
 			if (cl.hasOption("baseiri")) {
 				props.setProperty("sm.baseuri", cl.getOptionValue("baseiri"));
 			} else {
@@ -163,8 +180,18 @@ public class sparqlmap {
 				props.setProperty("sm.mappingfile", cl.getOptionValue("r2rmlfile"));
 			}
 			
+			
+			
+			
 
-			//setupt the context
+			//setup the context
+			this.ctxt = setupSparqlMap(props);
+			
+			cl.getOptions();
+
+			
+			
+			
 			
 			
 			// perform the specified action
@@ -173,7 +200,6 @@ public class sparqlmap {
 				//validate conf
 				if(cl.hasOption("r2rmlfile")){
 					System.err.println("Creating an RDF dump.");
-					this.ctxt = setupSparqlMap(props);
 					dump(outputlang);
 				}else{
 					error("For -dump, please provide an R2RML file.");
@@ -186,8 +212,6 @@ public class sparqlmap {
 				//check if there is no mapping file given
 				if(!cl.hasOption("r2rmlfile")){
 					System.err.println("Creating R2RML based on Direct Mapping");
-					this.ctxt = setupSparqlMap(props);
-
 					generateMapping(outputlang);
 				}else{
 					error("for generateMapping do not use the -r2rmlfile option.");
@@ -233,13 +257,107 @@ public class sparqlmap {
 			props.setProperty("jdbc.url", cl.getOptionValue("dburi"));
 			props.setProperty("jdbc.username", cl.getOptionValue("dbuser"));
 			props.setProperty("jdbc.password", cl.getOptionValue("dbpass"));
+		} else if(cl.hasOption("csvfile")){
+			String dbfilename = new File(cl.getOptionValue("csvfile")).getParent() + "/.hsql/" +new File(cl.getOptionValue("csvfile")).getName() + "";
+			String jdbcstring = "jdbc:hsqldb:file:"+dbfilename;
+			if(!new File(dbfilename + ".log").exists()){
+				createCsvDatabase(cl,jdbcstring);
+			}		
+			props.setProperty("jdbc.url", jdbcstring);
+			props.setProperty("jdbc.username", "SA");
+			props.setProperty("jdbc.password", "");
+		
+			
 		} else {
 			throw new MissingOptionException(
-					"Supply the db connection information by either supplying a file or the db options");
+					"Define either a database connection or a CSV file. Supply the db connection information by either supplying a file or the db options");
 		}
 
-		props.setProperty("jdbc.poolminconnections", "5");
+		props.setProperty("jdbc.poolminconnections", "1");
 		props.setProperty("jdbc.poolmaxconnections", "10");
+	}
+
+	private void createCsvDatabase(CommandLine cl, String jdbcstring) {
+
+		CSVTableConfig table = new CSVTableConfig();
+		table.name = "csv_import";
+		table.file = new File(cl.getOptionValue("csvfile"));
+		table.fs = cl.getOptionValue("csvsepchar", ",");
+		
+		table.consistentcolcount = !cl.hasOption("varyingcolcount");
+		
+		if(table.fs.length()>1){
+			if(table.fs.equals("\\t")){
+				table.fs_interpreted = '\t';
+				
+			}else{
+				throw new ImplementationException("Implement separating character: " + table.fs);
+			}
+		}else{
+			table.fs_interpreted = table.fs.charAt(0);
+		}
+		
+		table.hasHeaderRow = cl.hasOption("csvhasheader");
+		table.encoding = cl.getOptionValue("csvencoding", "UTF-8");
+		
+		
+		
+		String colstring =null;
+		
+		try{
+			List<CSVColumnConfig> cccs = CSVHelper.getColumns(table);
+			StringBuffer sb = new StringBuffer();
+			
+			for(CSVColumnConfig ccc: cccs){
+				sb.append(String.format("\"%s\" %s ,", ccc.name , ccc.datatype));
+			}
+			colstring = sb.toString().substring(0, sb.toString().length()-1);
+			
+			
+			
+		
+			
+			
+			
+		}catch(IOException e){
+			
+			log.error("Error reading the csv file",e);
+			throw new RuntimeException( e);
+		}
+		
+		
+			
+		try {
+			
+			Connection c = DriverManager.getConnection(jdbcstring, "SA", "");
+
+			c.createStatement().execute(
+					String.format("CREATE TEXT TABLE \"%s\"(%s)",table.name,colstring));
+
+			String options = String
+					.format("%s;encoding=%s;fs=%s;ignore_first=%s;all_quoted=%s;cache_rows=%s;cache_size=%s",
+							table.file.getAbsolutePath(), table.encoding, table.fs, table.hasHeaderRow, table.allQuoted,
+							table.cacheRows, table.cacheSize);
+
+			c.createStatement()
+					.execute(
+							"SET TABLE \"" + table.name + "\" SOURCE '"
+									+ options + "'");
+
+						
+			
+		} catch (SQLException e) {
+			log.error("Error setting up the csv database wrapper", e);
+		}	
+//		finally{
+//			try {
+//				Connection c = DriverManager.getConnection(jdbcstring
+//						+ ";shutdown=true", "SA", "");
+//			} catch (SQLException e) {
+//				log.error("Error closing the database");
+//			}
+//		}
+		
 	}
 
 	public void error(String message) {

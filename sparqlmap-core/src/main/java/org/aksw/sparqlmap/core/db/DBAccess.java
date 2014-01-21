@@ -1,5 +1,6 @@
 package org.aksw.sparqlmap.core.db;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,6 +26,7 @@ import net.sf.jsqlparser.util.deparser.SelectDeParser;
 import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLValidationException;
+import org.aksw.sparqlmap.core.db.CSVHelper.CSVTableConfig;
 import org.aksw.sparqlmap.core.db.impl.HSQLDBConnector;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.apache.commons.lang3.StringUtils;
@@ -305,43 +307,10 @@ public class DBAccess {
 		return alias_col2precision.get(alias).get(colname);
 	}
 
-	public void loadCsv(CSVTable td){
-		//check if we got a hsql connection
-		if(!(this.dbConnector instanceof HSQLDBConnector)){
-			throw new UnsupportedOperationException("Text tables can only be created with HSQL databases.");
-		}
-		String cols = null;
-		
-		if(!td.columnlabels.isEmpty()){
-			cols = StringUtils.join(td.columnlabels, " VARCHAR,");
-			dbConnector.getTemplate().execute(String.format("CREATE TEXT TABLE \"" +td.name + "\" (" + cols + ")"));
-		}else{
-			dbConnector.getTemplate().execute(String.format("CREATE TEXT TABLE \"" + td.name + "\""));
-		}
-		
-		
-		String options =String.format("%s;fs=%s;vs=%s;ignore_first=%s;all_quoted=%s;cache_rows=%s;cache_size=%s",td.fs,td.vs,td.file,td.ignoreFirst,td.allQuoted,td.cacheRows,td.cacheSize);
-		
-		
-		dbConnector.getTemplate().execute("SET TABLE \"" +td.name + "\" SOURCE '" +options+"'");
-		
-	}
 	
 	
-	public static class CSVTable{
-		Character fs = ',';
-		Character vs = ',';	
-		String name;
-		String file;
-		List<String> columnlabels = new ArrayList<String>();
-		Boolean ignoreFirst = false;
-		Boolean quoted = true;
-		Boolean allQuoted = false;
-		Integer cacheRows = 1000;
-		Integer cacheSize = 100;
-		
-		
-	}
+	
+	
 	
 	
 	

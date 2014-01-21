@@ -80,7 +80,7 @@ public class AlgebraBasedMapper implements Mapper {
 
 
 
-	public String rewrite(TranslationContext context) {
+	public void rewrite(TranslationContext context) {
 		
 		Query origQuery = context.getQuery();
 		if(log.isDebugEnabled()){
@@ -153,11 +153,8 @@ public class AlgebraBasedMapper implements Mapper {
 		}
 		select.getSelectBody().accept(selectDeParser);
 		
+		context.setSqlQuery( out.toString());
 		
-		
-		String sqlResult = out.toString();
-	
-		return sqlResult;
 	}
 
 
@@ -217,38 +214,40 @@ public class AlgebraBasedMapper implements Mapper {
 	
 	
 	@Override
-	public List<String> dump() {
+	public List<TranslationContext> dump() {
 		
-		List<String> queries = new ArrayList<String>();
+		List<TranslationContext> contexts = new ArrayList<TranslationContext>();
 		
-		Query spo = QueryFactory.create("SELECT ?g ?s ?p ?o {GRAPH ?g {?s ?p ?o}}");
+		Query spo = QueryFactory.create("SELECT ?s ?p ?o {{?s ?p ?o}}");
+//		Query spo = QueryFactory.create("SELECT ?g ?s ?p ?o {GRAPH ?g {?s ?p ?o}}");
 		
 		AlgebraGenerator gen = new AlgebraGenerator();
 		Op qop = gen.compile(spo);
 		
-		Triple triple = ((OpBGP)((OpGraph)((OpProject)qop).getSubOp()).getSubOp()).getPattern().get(0);
-		
+		//Triple triple = ((OpBGP)((OpGraph)((OpProject)qop).getSubOp()).getSubOp()).getPattern().get(0);
+		Triple triple = ((OpBGP)(((OpProject)qop)).getSubOp()).getPattern().get(0);
 		
 		
 		
 		
 		
 		for(TripleMap trm: mappingConf.getTripleMaps()){
+			TranslationContext context = new TranslationContext();
+			context.setQuery(spo);
+			context.setQueryName("dump query");
+
 			Map<Triple,Collection<TripleMap>> bindingMap = new HashMap<Triple, Collection<TripleMap>>();
 			bindingMap.put(triple, Arrays.asList(trm));
 			
 			
 			MappingBinding qbind = new MappingBinding(bindingMap);
-			
-			
-			QueryInformation mff = FilterFinder.getQueryInformation(qop);
-			mff.setProject((OpProject)qop);
-			
-			TranslationContext context = new TranslationContext();
-			context.setQuery(spo);
-			context.setQueryName("dump query");
-			context.setQueryInformation(mff);
 			context.setQueryBinding(qbind);
+
+			
+			QueryInformation qi = FilterFinder.getQueryInformation(qop);
+			qi.setProject((OpProject)qop);
+
+			context.setQueryInformation(qi);
 			
 			QueryBuilderVisitor qbv = new QueryBuilderVisitor(context,dth,exprconv,filterUtil);
 			
@@ -277,14 +276,15 @@ public class AlgebraBasedMapper implements Mapper {
 			
 			
 			
-			queries.add( sbsql.toString());
+			context.setSqlQuery(sbsql.toString());
+			contexts.add(context);
 			
 			
 		}
 		
 		
 		
-		return queries;
+		return contexts;
 	}
 
 

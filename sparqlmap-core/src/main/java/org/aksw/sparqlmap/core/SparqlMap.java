@@ -263,13 +263,10 @@ public class SparqlMap {
 	public void dump(OutputStream out,String format) throws SQLException{
 		PrintStream writer = new PrintStream(out);
 		
-		List<String> queries = mapper.dump();
-		for (String query : queries) {
-			TranslationContext context = new TranslationContext();
-			context.setSqlQuery(query);
-			context.setQueryName("Dump query");
+		List<TranslationContext> contexts = mapper.dump();
+		for (TranslationContext context : contexts) {
 			
-			log.info("SQL: " + query);
+			log.info("SQL: " + context.getSqlQuery());
 			com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(context, baseUri);
 			DatasetGraph graph = DatasetGraphFactory.createMem();
 			boolean usesGraph = false;
@@ -321,13 +318,9 @@ public class SparqlMap {
 		
 		DatasetGraph dataset = DatasetGraphFactory.createMem();
 
-		List<String> queries = mapper.dump();
-		for (String query : queries) {
-			TranslationContext context = new TranslationContext();
-			context.setSqlQuery(query);
-			context.setQueryName("Dump query");
-
-			log.info("SQL: " + query);
+		List<TranslationContext> contexts = mapper.dump();
+		for (TranslationContext context : contexts) {
+			log.info("SQL: " + context.getSqlQuery());
 			com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(context, baseUri);
 			while(rs.hasNext()){
 				Binding bind = rs.nextBinding();	
@@ -367,7 +360,7 @@ public class SparqlMap {
 		context.profileStartPhase("Rewriting");	
 		
 		
-		context.setSqlQuery(mapper.rewrite(context));
+		mapper.rewrite(context);
 		
 		LoggerFactory.getLogger("sqllog").info("SQL " + context.getQueryName() + " " + context.getSqlQuery() );
 		

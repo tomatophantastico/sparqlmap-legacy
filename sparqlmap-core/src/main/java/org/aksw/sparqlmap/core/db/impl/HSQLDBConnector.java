@@ -10,7 +10,7 @@ import com.jolbox.bonecp.BoneCPDataSource;
 public class HSQLDBConnector extends Connector {
 	
 
-	public static final String HSQLDB_NAME = null;
+	public static final String HSQLDB_NAME = "HSQL Database Engine";
 
 
 	private static Logger log = LoggerFactory.getLogger(HSQLDBConnector.class);

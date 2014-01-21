@@ -15,10 +15,10 @@ public interface Mapper {
 	 * @param Sparql
 	 * @return
 	 */
-	public abstract String rewrite(TranslationContext context);
+	public abstract void rewrite(TranslationContext context);
 	
 
 
-	public abstract List<String> dump();
+	public abstract List<TranslationContext> dump();
 
 }
