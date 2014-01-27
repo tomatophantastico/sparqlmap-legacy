@@ -26,7 +26,7 @@ function Snorql() {
         this.setBrowserBase(document.location.href.replace(/\?.*/, ''));
         this._displayEndpointURL();
         this._displayPoweredBy();
-        this.setNamespaces(D2R_namespacePrefixes);
+        this.setNamespaces(SNORQL_namespacePrefixes);
         this.updateOutputMode();
         var match = document.location.href.match(/\?(.*)/);
         var queryString = match ? match[1] : '';
