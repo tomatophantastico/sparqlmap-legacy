@@ -104,7 +104,7 @@ public class SparqlMap {
 	private Logger log = LoggerFactory.getLogger(SparqlMap.class);
 
 
-	public void  executeSparql(String qstring, String rt, OutputStream out) throws SQLException{
+	public void  executeSparql(String qstring, Object rt, OutputStream out) throws SQLException{
 		executeSparql(qstring,  rt,  out,"Unnamed query "+ this.querycount++);
 	}
 	
@@ -125,7 +125,7 @@ public class SparqlMap {
 	 * @return the result as a string
 	 * @throws SQLException 
 	 */
-	public void  executeSparql(String qstring, String _rt, OutputStream out, String queryname) throws SQLException{
+	public void  executeSparql(String qstring, Object rf, OutputStream out, String queryname) throws SQLException{
 		
 		TranslationContext context = new TranslationContext();
 		context.setQueryString(qstring);
@@ -137,15 +137,33 @@ public class SparqlMap {
 		
 		context.setQuery(QueryFactory.create(qstring));
 		
-		context.setTargetContentType(_rt);
+		context.setTargetContentType(rf);
 		
 	
 		
 		if(context.getQuery().isAskType()){
-			throw new ImplementationException("Dont Ask");
+			
+			context.getQuery().setLimit(1);
+			ResultSet rs =  rewriteAndExecute(context);
+			if(rs.hasNext()){
+				ResultSetFormatter.out(out, true);
+			}else{
+				ResultSetFormatter.out(out, false);
+			}	
+				
 		}
 		if(context.getQuery().isConstructType()){
-			streamConstruct(context,out);
+			
+			
+			if(context.getTargetContentType()!=null && context.getTargetContentType().equals(Lang.NTRIPLES)){
+				streamConstruct(context,out);
+			}else{
+				Model model = ModelFactory.createDefaultModel();
+				addConstructToModel(context, model);
+				RDFDataMgr.write(out, model, (Lang)context.getTargetContentType());
+				
+			}
+			
 			
 			
 			
@@ -154,12 +172,21 @@ public class SparqlMap {
 		if(context.getQuery().isSelectType()){
 			ResultSet rs = rewriteAndExecute(context);
 			
-			ResultSetFormatter.output(out, rs, ResultsFormat.lookup(context.getTargetContentType()));
+			if(context.getTargetContentType()==null){
+				context.setTargetContentType(ResultsFormat.FMT_RDF_XML);
+			}
+			
+			ResultSetFormatter.output(out, rs,(ResultsFormat)context.getTargetContentType());
 			
 			
 			
 		}
 		if(context.getQuery().isDescribeType()){
+			
+			if(context.getTargetContentType()==null){
+				context.setTargetContentType(Lang.TURTLE);
+			}
+			
 			Model model = 	ModelFactory.createDefaultModel();
 			List<Node> iris =  context.getQuery().getResultURIs();
 			if((iris == null || iris.isEmpty())){
@@ -198,8 +225,9 @@ public class SparqlMap {
 					addConstructToModel(subCon2, model);
 
 					}
+				
 			
-			RDFDataMgr.write(out, model, WebContent.contentTypeToLang(context.getTargetContentType().toString()));
+			RDFDataMgr.write(out, model, (Lang) context.getTargetContentType());
 			
 		}
 
@@ -263,6 +291,7 @@ public class SparqlMap {
 		context.getQuery().setQueryResultStar(true);
 		//execute it 
 		ResultSet rs = rewriteAndExecute(context);
+		
 		
 		//bind it
 		int i = 0;

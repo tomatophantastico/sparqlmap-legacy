@@ -3,6 +3,9 @@ package org.aksw.sparqlmap.web;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
@@ -10,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.aksw.sparqlmap.core.SparqlMap;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFLanguages;
 import org.apache.jena.riot.WebContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +35,7 @@ import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.DatasetGraph;
 import com.hp.hpl.jena.sparql.core.DatasetImpl;
+import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
 
 @Controller
 @RequestMapping("/")
@@ -69,22 +74,43 @@ public class SparqlMapWeb {
 			
 			String query = req.getParameter("query");
 			String outputformat = req.getParameter("output");
-			String[] acceptHeaders = req.getHeaderValues("accept");
-			log.debug("Receveived query: " + query);
-			try {
-
-				if(outputformat!=null && outputformat.contains("json")){
-					resp.setContentType( WebContent.contentTypeResultsJSON);
-					ByteArrayOutputStream bio = new ByteArrayOutputStream();
-					
-					smManager.getSparqlMap(context).executeSparql(query, "json",bio);
-					resp.getWriter().append(bio.toString());
-					
-				}else{
-					resp.setContentType(WebContent.contentTypeRDFXML);
-					smManager.getSparqlMap(context).executeSparql(query,"xml", resp.getOutputStream());
+			List<String> acceptHeaders = Arrays.asList(req.getHeaderValues("accept"));
+			
+			
+			//determine the return type of the application
+			Object resultsFormat = null;
+			if(!acceptHeaders.isEmpty()){
+				for(String acceptHeader: acceptHeaders){
+					Lang rdflang =  RDFLanguages.nameToLang(acceptHeader);
+					if(rdflang!=null){
+						resultsFormat = rdflang;
+						break;
+					}else if(acceptHeader.contains("+")){
+						
+						String lookupString = acceptHeader.substring(acceptHeader.indexOf("+")+1);
+						if(lookupString.contains(",")){
+							lookupString = lookupString.substring(0,lookupString.indexOf(","));
+						}
+						
+						ResultsFormat rs =  ResultsFormat.lookup(lookupString);
+						if(rs!=null&&!ResultsFormat.isRDFGraphSyntax(rs)){
+							resultsFormat = rs;
+							break;
+						}
+					}
 					
 				}
+			} 
+			// reutrn type might still be null, but is determined according to the query type later on.
+			
+			
+			log.debug("Receveived query: " + query);
+			try {
+				
+				
+					resp.setContentType(WebContent.contentTypeRDFXML);
+					smManager.getSparqlMap(context).executeSparql(query,resultsFormat, resp.getOutputStream());
+					
 			} catch (SQLException e) {
 				
 				resp.getOutputStream().write(e.getMessage().getBytes());

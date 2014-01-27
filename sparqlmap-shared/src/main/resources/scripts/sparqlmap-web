@@ -16,5 +16,5 @@ if [ -n  ${SPARQLMAP_HOME}]; then
 fi 
 
 echo "Using SparqlMap configuration in ${SPARQLMAP_HOME}"
-
-java  -Xms128m -Xmx512m -DSPARQLMAP_HOME=${SPARQLMAP_HOME} -jar ./lib/jetty/@@@jettyrunner@@@ --path /sparqlmap ./lib/war/@@@sparqlmapwar@@@
+shift
+java $@ -Xms128m -Xmx512m -DSPARQLMAP_HOME=${SPARQLMAP_HOME} -jar ./lib/jetty/@@@jettyrunner@@@ --path /sparqlmap ./lib/war/@@@sparqlmapwar@@@

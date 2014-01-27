@@ -12,6 +12,7 @@ import org.apache.jena.riot.WebContent;
 import com.google.common.base.Stopwatch;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.sparql.algebra.Op;
+import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
 
 /**
  * This class holds all information needed for a specific translation.
@@ -41,7 +42,7 @@ public class TranslationContext {
 	/*
 	 * define if the result should be json/rdf, RDF/XML, turtle or else
 	 */
-	private String target = null;
+	private Object target = null;
 	
 	private Throwable problem;
 	
@@ -61,12 +62,12 @@ public class TranslationContext {
 		this.queryBinding = queryBinding;
 	}
 	
-	public String getTargetContentType() {
+	public Object getTargetContentType() {
 		return target;
 	}
 	
-	public void setTargetContentType(String target) {
-		this.target = target;
+	public void setTargetContentType(Object rf) {
+		this.target = rf;
 	}
 	
 	public String getQueryString() {
