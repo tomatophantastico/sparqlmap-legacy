@@ -77,12 +77,12 @@ public class SparqlMapWeb {
 					resp.setContentType( WebContent.contentTypeResultsJSON);
 					ByteArrayOutputStream bio = new ByteArrayOutputStream();
 					
-					smManager.getSparqlMap(context).executeSparql(query, WebContent.contentTypeResultsJSON,bio);
+					smManager.getSparqlMap(context).executeSparql(query, "json",bio);
 					resp.getWriter().append(bio.toString());
 					
 				}else{
 					resp.setContentType(WebContent.contentTypeRDFXML);
-					smManager.getSparqlMap(context).executeSparql(query,WebContent.contentTypeRDFXML, resp.getOutputStream());
+					smManager.getSparqlMap(context).executeSparql(query,"xml", resp.getOutputStream());
 					
 				}
 			} catch (SQLException e) {

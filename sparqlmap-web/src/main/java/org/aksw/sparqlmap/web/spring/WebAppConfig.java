@@ -14,7 +14,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 @Configuration
 @EnableWebMvc
@@ -48,8 +50,11 @@ public class WebAppConfig extends WebMvcConfigurerAdapter {
 
 	    registry.addResourceHandler("/*.html").addResourceLocations("/");
 	    registry.addResourceHandler("/*.jsp").addResourceLocations("/");
+	    registry.setOrder(0);
 	}
 	  
+
+
 	
 
 }

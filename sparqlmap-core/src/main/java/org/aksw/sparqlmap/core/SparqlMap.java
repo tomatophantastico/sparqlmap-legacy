@@ -38,6 +38,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.sparql.core.DatasetGraph;
 import com.hp.hpl.jena.sparql.core.DatasetGraphFactory;
 import com.hp.hpl.jena.sparql.core.Quad;
@@ -144,7 +145,7 @@ public class SparqlMap {
 			throw new ImplementationException("Dont Ask");
 		}
 		if(context.getQuery().isConstructType()){
-			executeConstruct(context,out);
+			streamConstruct(context,out);
 			
 			
 			
@@ -153,13 +154,13 @@ public class SparqlMap {
 		if(context.getQuery().isSelectType()){
 			ResultSet rs = rewriteAndExecute(context);
 			
-			ResultSetFormatter.output(out, rs, ResultsFormat.lookup(WebContent.contentTypeToLang(context.getTargetContentType().toString()).getName()));
+			ResultSetFormatter.output(out, rs, ResultsFormat.lookup(context.getTargetContentType()));
 			
 			
 			
 		}
 		if(context.getQuery().isDescribeType()){
-			Model model = 	com.hp.hpl.jena.sparql.graph.GraphFactory.makeJenaDefaultModel();
+			Model model = 	ModelFactory.createDefaultModel();
 			List<Node> iris =  context.getQuery().getResultURIs();
 			if((iris == null || iris.isEmpty())){
 				Var var = context.getQuery().getProjectVars().get(0);
@@ -186,19 +187,19 @@ public class SparqlMap {
 					subCon1.setQueryName("construct incoming query");
 					subCon1.setQuery(QueryFactory.create(con1));
 					
-					executeConstruct(subCon1,out);
+					addConstructToModel(subCon1,model);
 					String con2 = "CONSTRUCT { <"+node.getURI()+"> ?p_sm ?o_sm} WHERE { <"+node.getURI()+"> ?p_sm ?o_sm}";
 					TranslationContext subCon2 = new TranslationContext();
 					subCon2.setTargetContentType(context.getTargetContentType());
 					subCon2.setQueryString(con2);
 					subCon2.setQuery(QueryFactory.create(con2));
-					subCon2.setQueryName("construct outgoinf query");
+					subCon2.setQueryName("construct outgoing query");
 					
-					executeConstruct(subCon2, out);
+					addConstructToModel(subCon2, model);
 
 					}
 			
-//			writeModel(rt, out, model);
+			RDFDataMgr.write(out, model, WebContent.contentTypeToLang(context.getTargetContentType().toString()));
 			
 		}
 
@@ -221,10 +222,41 @@ public class SparqlMap {
 
 
 	
-	
-	
+	private void addConstructToModel(TranslationContext context, Model model) throws SQLException{
+		Template template = context.getQuery().getConstructTemplate();
+		context.getQuery().setQueryResultStar(true);
+		//execute it 
+		ResultSet rs = rewriteAndExecute(context);
+		
+		//bind it
+		int i = 0;
+		Graph graph = GraphFactory.createDefaultGraph();
+		while (rs.hasNext()) {
+			Set<Triple> generatedTriples = new HashSet<Triple>();
+			Map<Node, Node> bNodeMap = new HashMap<Node, Node>();
+			Binding binding = rs.nextBinding();
+			template.subst(generatedTriples, bNodeMap, binding);
+			
+			for(Triple generatedTriple: generatedTriples){
+				
+				model.getGraph().add(generatedTriple);
+			}
+			
+			
+		}
+		
 
-	private void executeConstruct(TranslationContext context, OutputStream out)
+	}
+	
+	/* performing an construct like this does build up an in-memory representation of the data and streams it right to the client.
+	 * 
+	 * Use only with ntriples.
+	 * 
+	 * @param context
+	 * @param out
+	 * @throws SQLException
+	 */
+	private void streamConstruct(TranslationContext context, OutputStream out)
 			throws SQLException {
 		//take the graph pattern and convert it into a select query.
 		Template template = context.getQuery().getConstructTemplate();
