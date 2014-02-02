@@ -46,6 +46,8 @@ import org.aksw.sparqlmap.core.mapper.compatibility.CompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.compatibility.SimpleCompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
@@ -67,7 +69,25 @@ import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
 public class R2RMLModel {
+	
+	static org.slf4j.Logger log = org.slf4j.LoggerFactory
+			.getLogger(R2RMLModel.class);
+	
+	
+	@Autowired
+	private TermMapFactory tfac;
 
+	private DBAccess dbconf;
+	private DataTypeHelper dth;
+	Model mapping = null;
+	Model r2rmlSchema = null;
+	Model reasoningModel = null;
+	Map<String, TripleMap> tripleMaps = null;
+	
+	private int queryCount = 1;
+	private int tableCount = 1;
+
+	
 	public R2RMLModel(DBAccess dbconf,
 			DataTypeHelper dth, Model mapping, Model r2rmlSchema) {
 		super();
@@ -78,24 +98,6 @@ public class R2RMLModel {
 		this.r2rmlSchema = r2rmlSchema;
 	}
 	
-	@Autowired
-	private TermMapFactory tfac;
-
-	
-	private DBAccess dbconf;
-	private DataTypeHelper dth;
-	Model mapping = null;
-	Model r2rmlSchema = null;
-	
-
-	
-
-	static org.slf4j.Logger log = org.slf4j.LoggerFactory
-			.getLogger(R2RMLModel.class);
-
-	Model reasoningModel = null;
-	Map<String, TripleMap> tripleMaps = null;
-
 	@PostConstruct
 	public void setup() throws R2RMLValidationException, JSQLParserException,
 			SQLException {
@@ -104,6 +106,7 @@ public class R2RMLModel {
 		resolveR2RMLShortcuts();
 		resolveMultipleGraphs();
 		validate();
+		RDFDataMgr.write(System.out, reasoningModel, Lang.TTL);
 		
 		loadTripleMaps();
 		loadParentTripleStatements();
@@ -113,6 +116,10 @@ public class R2RMLModel {
 		loadCompatibilityChecker();
 		validatepost();
 	}
+	
+
+
+	
 
 	/**
 	 * if a triple map s based on a query, we attempt to decompose it.
@@ -441,6 +448,7 @@ public class R2RMLModel {
 		UpdateExecutionFactory.create(UpdateFactory.create(query),
 				GraphStoreFactory.create(reasoningModel)).execute();
 		reasoningModel.size();
+		
 
 	}
 
@@ -448,9 +456,7 @@ public class R2RMLModel {
 
 	
 
-	private int queryCount = 1;
-	private int tableCount = 1;
-
+	
 	public Set<TripleMap> getTripleMaps() {
 
 		return new HashSet(tripleMaps.values());
@@ -513,13 +519,10 @@ public class R2RMLModel {
 
 			TripleMap triplemap = new TripleMap(tmUri.getURI(), fromItem);
 
-			// get the s-term
+			// fetch the subject and validate it
 			String squery = "PREFIX rr: <http://www.w3.org/ns/r2rml#> SELECT"
 					+ " * {" + " <" + tmUri.getURI() + "> rr:subjectMap ?sm  "
 					+ getTermMapQuery("s") + "}";
-
-			// "{?sm rr:column ?column} UNION {?sm rr:constant ?constant} UNION {?sm rr:template ?template} OPTIONAL {?sm rr:class ?class} OPTIONAL {?sm rr:termType ?termtype}}"
-			// ;
 			ResultSet srs = QueryExecutionFactory.create(
 					QueryFactory.create(squery), this.mapping).execSelect();
 			// there should only be one
@@ -530,49 +533,13 @@ public class R2RMLModel {
 			QuerySolution sSoltution = srs.next();
 			TermMapQueryResult sres = new TermMapQueryResult(sSoltution, "s",
 					fromItem);
-
 			if (srs.hasNext() == true) {
 				throw new R2RMLValidationException("Triple map " + tmUri
 						+ " has more than one subject term map, fix this");
 			}
-
-			// get the s-graph
-			String sgraphquery = "PREFIX rr: <http://www.w3.org/ns/r2rml#> SELECT  * {"
-					+ " <"
-					+ tmUri.getURI()
-					+ "> rr:subjectMap ?sm. "
-					+ "?sm rr:graphMap ?gm. "
-					+ "OPTIONAL { ?gm rr:template ?template } "
-					+ "OPTIONAL { ?gm rr:column ?column } "
-					+ "OPTIONAL { ?gm rr:constant ?constant } }";
-
-			ResultSet sgraphrs = QueryExecutionFactory.create(
-					QueryFactory.create(sgraphquery), this.mapping)
-					.execSelect();
-			List<Expression> graph = null;
-			while (sgraphrs.hasNext()) {
-				QuerySolution graphqs = sgraphrs.next();
-				if (graphqs.get("?template") != null) {
-					String template = graphqs.get("?template").asLiteral()
-							.toString();
-					graph = templateToResourceExpression(
-							cleanTemplate(template, fromItem), fromItem, dth);
-				} else if (graphqs.get("?column") != null) {
-					String template = "\"{"
-							+ getRealColumnName(graphqs.get("?column")
-									.asLiteral().toString(), fromItem) + "\"}";
-					graph = templateToResourceExpression(
-							cleanTemplate(template, fromItem), fromItem, dth);
-				} else if (graphqs.get("?constant") != null) {
-					RDFNode constant = graphqs.get("?constant");
-					graph = Arrays.asList( resourceToExpression(constant.asResource()));
-
-				}
-			}
 			
-			if(graph==null){
-				graph = Arrays.asList( resourceToExpression(R2RML.defaultGraph));
-			}
+			
+			//create the subject term map
 			
 			TermMap stm = null;
 
@@ -595,14 +562,45 @@ public class R2RMLModel {
 			stm.trm = triplemap;
 			triplemap.setSubject(stm);
 			
-			//set the graph
 			
+			//getting the graph information from the subject map
+			Resource subjectRes = reasoningModel.getProperty(tmUri, R2RML.subjectMap).getResource();
+			
+			Statement graphMapStmt =  reasoningModel.getProperty(subjectRes, R2RML.graphMap);
+			List<Expression> graph;
+
+			if(graphMapStmt!=null){
+				Resource graphMap =  graphMapStmt.getResource();
+				if(reasoningModel.contains(graphMap, R2RML.template)){
+					String template  = reasoningModel.getProperty(graphMap, R2RML.template).getString();
+					graph = templateToResourceExpression(
+							cleanTemplate(template, fromItem), fromItem, dth);
+				}else if(reasoningModel.contains(graphMap, R2RML.column)){
+					String column = reasoningModel.getProperty(graphMap, R2RML.column).getString();
+					String template = "\"{"
+							+ getRealColumnName(column, fromItem) + "\"}";
+					graph = templateToResourceExpression(
+							cleanTemplate(template, fromItem), fromItem, dth);
+				}else if(reasoningModel.contains(graphMap, R2RML.constant)){
+					Resource resource = reasoningModel.getProperty(graphMap, R2RML.constant).getResource();
+					graph = Arrays.asList( resourceToExpression(resource));
+				}else{
+					throw new R2RMLValidationException("Graphmap without valid value found for " + tmUri.getURI());
+				}
+			}else{
+				graph = Arrays.asList( resourceToExpression(R2RML.defaultGraph));
+			}
+		
+			//set the graph
 			TermMap gtm = new TermMap(dth);
 			gtm.setTermTyp(R2RML.IRI);
 			gtm.getResourceColSeg().addAll(graph);
+			triplemap.setGraph(gtm);
 			
-			// get the POsa
-
+			
+			
+			
+			// get the PO
 			String poQuery = "PREFIX rr: <http://www.w3.org/ns/r2rml#> "
 					+ "SELECT * {"
 					+ // ?ptemplate ?pcolumn ?pconstant ?ptermtype ?otemplate

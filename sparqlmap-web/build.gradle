@@ -1,32 +1,4 @@
 
-buildscript {
-	repositories {
-		mavenLocal()
-		mavenCentral()
-		jcenter()
-		maven { url = 'http://dl.bintray.com/khoulaiz/gradle-plugins' }
-   }
-   
-   dependencies {
-	   classpath (group: 'com.sahlbach.gradle', name: 'gradle-jetty-eclipse-plugin', version: '1.9.+')
-   }
-}
-
-apply plugin: 'jettyEclipse'
-
-jettyEclipse {
-	// Defaults
-	// httpPort = 8080
-	// stopPort = 8090
-	// stopKey = "stop"
-	// contextPath = '/'
-	// scanIntervalInSeconds = 5
-	automaticReload = true
-	// rebuildIntervalInSeconds = 10
-
-}
-
-
 
 
 apply plugin: "war"
@@ -41,4 +13,12 @@ dependencies {
   
   jetty libraries.jetty
 
+}
+
+
+task runJetty(type: JavaExec) {
+	println "Starting jetty with ${[war.archivePath]}"
+	main = "org.eclipse.jetty.runner.Runner"
+	args = [war.archivePath]
+	classpath configurations.jetty
 }

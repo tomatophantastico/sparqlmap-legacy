@@ -1,6 +1,7 @@
 package org.aksw.sparqlmap.core.beautifier;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,6 +14,7 @@ import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.sparql.algebra.AlgebraGenerator;
+import com.hp.hpl.jena.sparql.algebra.AlgebraQuad;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.OpVars;
 import com.hp.hpl.jena.sparql.algebra.TransformCopy;
@@ -20,7 +22,12 @@ import com.hp.hpl.jena.sparql.algebra.Transformer;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
 import com.hp.hpl.jena.sparql.algebra.op.OpProject;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuad;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadBlock;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadPattern;
 import com.hp.hpl.jena.sparql.core.BasicPattern;
+import com.hp.hpl.jena.sparql.core.Quad;
+import com.hp.hpl.jena.sparql.core.QuadPattern;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.E_Datatype;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
@@ -45,24 +52,25 @@ public class SparqlBeautifier extends TransformCopy {
 
 	Map<String,Node> termToVariable = new HashMap<String, Node>();
 	@Override
-	public Op transform(OpBGP opBGP) {
-		List<Triple> patterns = opBGP.getPattern().getList();
-		List<Triple> newPatterns = new ArrayList<Triple>();
+	public Op transform(OpQuadPattern quadBlock) {
+		List<Quad> patterns = quadBlock.getPattern().getList();
+		OpQuadBlock newOp = new OpQuadBlock();
 		
 		Map<String,String> var2Value = new HashMap<String, String>();
 		ExprList exprList = new ExprList();
 
-		for (Triple triple : patterns) {
-			triple = uniquefyTriple(triple, exprList); 
+		for (Quad quad : patterns) {
+			quad = uniquefyTriple(quad, exprList); 
 			
 
-			newPatterns.add(new Triple(
-					rewriteNode(triple.getSubject(), exprList, termToVariable, var2Value), 
-					rewriteNode(triple.getPredicate(), exprList, termToVariable, var2Value),
-					rewriteNode(triple.getObject(), exprList, termToVariable, var2Value)));
+			newOp.getPattern().add(new Quad(
+					rewriteNode(quad.getGraph(), exprList, termToVariable, var2Value),
+					rewriteNode(quad.getSubject(), exprList, termToVariable, var2Value), 
+					rewriteNode(quad.getPredicate(), exprList, termToVariable, var2Value),
+					rewriteNode(quad.getObject(), exprList, termToVariable, var2Value)));
 		}
 
-		OpBGP newOp = new OpBGP(BasicPattern.wrap(newPatterns));
+		
 		
 		Op op = OpFilter.filter(exprList, newOp);
 
@@ -77,32 +85,33 @@ public class SparqlBeautifier extends TransformCopy {
 
 	
 	/**
-	 * guarantees that every variable is used only once in the pattern.
-	 * @param triple
-	 * @param exprList
-	 * @return
+	 * Creates a new quad out of the old one, such that
+	 * every variable is used only once in the pattern.
+	 * 
+	 * for example {?x ?x ?y} -> {?x ?genvar_1 ?y. FILTER (?x = ?genvar_1)}
+	 * 
+	 * @param quad
+	 * @param exprList the list with the equals conditions
+	 * @return the rewritten Quad
 	 */
-	private Triple uniquefyTriple(Triple triple, ExprList exprList) {
-		Node s = triple.getSubject();
-		Node p = triple.getPredicate();
-		Node o = triple.getObject();
+	private Quad uniquefyTriple(Quad quad, ExprList exprList) {
 		
-		if(p.isVariable() && p.equals(s)){
-			p = Var.alloc(i++ + org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper.COL_NAME_INTERNAL);
-			exprList.add(new E_Equals(new ExprVar(s),new ExprVar(p)));
+		List<Node> quadNodes = Arrays.asList(quad.getGraph(),quad.getSubject(),quad.getPredicate(),quad.getObject());
+		
+		List<Node> uniqeNodes = new ArrayList<Node>();
+		
+		for(Node quadNode: quadNodes){
+			if(quadNode.isVariable()&&uniqeNodes.contains(quadNode)){
+				Var var_new = Var.alloc(i++ + ColumnHelper.COL_NAME_INTERNAL);
+				uniqeNodes.add(var_new);
+				exprList.add(new E_Equals(new ExprVar(quadNode),new ExprVar(var_new)));
+
+			}else{
+				uniqeNodes.add(quadNode);
+			}
 		}
-		if (o.isVariable() && o.equals(s)) {
-			o = Var.alloc(i++ + ColumnHelper.COL_NAME_INTERNAL);
-			exprList.add(new E_Equals(new ExprVar(s),new ExprVar(o)));
-		}
-		if (o.isVariable() && o.equals(p)) {
-			o = Var.alloc(i++ + ColumnHelper.COL_NAME_INTERNAL);
-			exprList.add(new E_Equals(new ExprVar(p),new ExprVar(o)));
-		}
 		
-		
-		
-		return new Triple(s, p, o);
+		return new Quad(uniqeNodes.remove(0), uniqeNodes.remove(0),uniqeNodes.remove(0),uniqeNodes.remove(0));
 	}
 
 
@@ -169,12 +178,21 @@ public class SparqlBeautifier extends TransformCopy {
 	}
 	
 	
+	
+	/**
+	 * Transforms the query into the form required for sparqlmap.
+	 * Includes filter extraction and rewriting some patterns. 
+	 * 
+	 * @param sparql
+	 * @return
+	 */
+	
 	public Op compileToBeauty(Query sparql){
 		
 		Op query  = agen.compile(sparql);
 		
 		
-		
+		// this odd construct is neccessary as there seems to be no convenient way of extracting the vars of a query from the non-algebra-version.
 		if(sparql.getProject().isEmpty()){
 		
 			sparql.setQueryResultStar(false);
@@ -186,52 +204,14 @@ public class SparqlBeautifier extends TransformCopy {
 			query  = agen.compile(sparql);
 		}
 		
-		
-		
-		
-		return compileToBeauty(query);
-	}
-	
-	
-	
-	public Op compileToBeauty(Op query){
-		
-				
-		
+		query = AlgebraQuad.quadize(query);		
 		Op newOp = Transformer.transform(this, query);
 		
-	
-				
+		
+		
+		
 		return newOp;
 	}
-	
-	
-	
-//	public static Query transform(Query sparql){
-//		
-//		Op op = new AlgebraGenerator().compile(sparql);
-//
-//		SparqlBeautifier qbeautify = new SparqlBeautifier();
-//		
-//		
-//		Op newOp = Transformer.transform(qbeautify, op);
-//		
-//
-//		
-//		Query newSparql = OpAsQuery.asQuery(newOp);
-//		
-//		//we replace the * in the projection with all variables, that were not introduced by the rewriting 
-//		
-//		
-//		
-//		return QueryFactory.create(newSparql.toString());
-//	}
-	
-	
-	
-	
-	
-	
 	
 	
 	

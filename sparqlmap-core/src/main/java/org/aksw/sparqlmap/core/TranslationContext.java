@@ -11,6 +11,7 @@ import org.apache.jena.riot.WebContent;
 
 import com.google.common.base.Stopwatch;
 import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
 
@@ -154,6 +155,31 @@ public class TranslationContext {
 		sw.stop();
 		phaseDurations.put(currentPhase, sw.elapsed(TimeUnit.MICROSECONDS));
 
+	}
+	
+	
+	
+	@Override
+	public String toString() {
+		
+		StringBuffer sb = new StringBuffer();
+		sb.append("Translation Context for: \n");
+		
+		if(queryName!=null){
+			sb.append("\nQueryname: " + queryName);
+		}
+		sb.append("\nSPARQL Query: " );
+		if(queryString!=null){
+			sb.append(queryString);
+		}else{
+			sb.append(query.toString(Syntax.defaultQuerySyntax));
+		}
+		
+		if(problem!=null){
+			sb.append("\nProblem: " + problem.getLocalizedMessage());
+		}
+		
+		return sb.toString();
 	}
 
 	

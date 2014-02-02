@@ -25,7 +25,8 @@ ext {
 				
 		],
 		spring: [	dependencies.create("org.springframework:spring-web:${springVersion}") {exclude(module: 'commons-logging')},
-				"org.springframework:spring-jdbc:${springVersion}"
+				"org.springframework:spring-jdbc:${springVersion}",
+				"org.springframework:spring-test:${springVersion}"
 		],
 		
 		springwebmvc: "org.springframework:spring-webmvc:${springVersion}",

@@ -9,6 +9,7 @@ import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap.PO;
 
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.sparql.core.Quad;
 
 /**
  * this class cis a wrapper around the triple bindings
@@ -18,10 +19,10 @@ import com.hp.hpl.jena.graph.Triple;
  */
 public class MappingBinding {
 
-	private Map<Triple, Collection<TripleMap>> bindingMap = new HashMap<Triple, Collection<TripleMap>>();
+	private Map<Quad, Collection<TripleMap>> bindingMap = new HashMap<Quad, Collection<TripleMap>>();
 
 
-	public MappingBinding(Map<Triple, Collection<TripleMap>> bindingMap) {
+	public MappingBinding(Map<Quad, Collection<TripleMap>> bindingMap) {
 		this.bindingMap = bindingMap;
 	}
 
@@ -30,10 +31,10 @@ public class MappingBinding {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Triple Bindings are: \n");
-		Set<Triple> triples = this.bindingMap.keySet();
-		for (Triple triple : triples) {
-			sb.append("* " + triple.toString() + "\n");
-			for (TripleMap tm : this.bindingMap.get(triple)) {
+		Set<Quad> quads = this.bindingMap.keySet();
+		for (Quad quad: quads) {
+			sb.append("* " + quad.toString() + "\n");
+			for (TripleMap tm : this.bindingMap.get(quad)) {
 				sb.append("    Triplemap: " + tm + "\n");
 				for (PO po : tm.getPos()) {
 					sb.append("     PO:" + po.getPredicate().toString() + " "
@@ -45,7 +46,7 @@ public class MappingBinding {
 	}
 	
 	
-	public Map<Triple, Collection<TripleMap>> getBindingMap() {
+	public Map<Quad, Collection<TripleMap>> getBindingMap() {
 		return bindingMap;
 	}
 }

@@ -51,11 +51,15 @@ import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
 import com.hp.hpl.jena.sparql.algebra.op.OpGraph;
 import com.hp.hpl.jena.sparql.algebra.op.OpJoin;
 import com.hp.hpl.jena.sparql.algebra.op.OpLeftJoin;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuad;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadBlock;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadPattern;
 import com.hp.hpl.jena.sparql.algebra.op.OpTable;
 import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
+import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
-public class QueryBuilderVisitor extends OpVisitorBase {
+public class QueryBuilderVisitor extends QuadVisitorBase {
 	
 	
 	private DataTypeHelper dataTypeHelper;
@@ -127,6 +131,7 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		}
 		
 	}
+	
 	
 	
 	@Override
@@ -278,9 +283,11 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		return unpushable;
 	}
 	
+	
+	
 
 	@Override
-	public void visit(OpBGP opBGP) {
+	public void visit(OpQuadPattern opQuad) {
 
 		PlainSelectWrapper bgpSelect = new PlainSelectWrapper(selectBody2Wrapper,dataTypeHelper,exprconv,filterUtil, translationContext);
 
@@ -291,21 +298,21 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		// of a table or a subselect if more than one column of a table were
 		// applicable or we add the col directly to the bgpSelect
 
-		for (Triple triple : opBGP.getPattern().getList()) {
-			addTripleBindings(bgpSelect,triple,false);
+		for (Quad quad : opQuad.getPattern().getList()) {
+			addTripleBindings(bgpSelect,quad,false);
 		}
 
 		this.selects.push(bgpSelect.getSelectBody());
 
 		// TODO Auto-generated method stub
-		super.visit(opBGP);
+		super.visit(opQuad);
 	}
 	
-	private void addTripleBindings( PlainSelectWrapper psw, Triple triple, boolean isOptional) {
+	private void addTripleBindings( PlainSelectWrapper psw, Quad quad, boolean isOptional) {
 
 		
 		
-		Collection<TripleMap> trms = translationContext.getQueryBinding().getBindingMap().get(triple);
+		Collection<TripleMap> trms = translationContext.getQueryBinding().getBindingMap().get(quad);
 		
 
 		// do we need to create a union?
@@ -313,9 +320,9 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 			TripleMap trm = trms.iterator().next();
 			PO po = trm.getPos().iterator().next();
 			//no we do not need
-			psw.addTripleQuery(trm.getSubject(), triple
-					.getSubject().getName(), po.getPredicate(),triple
-					.getPredicate().getName(),po.getObject(),triple.getObject().getName(), isOptional);
+			psw.addTripleQuery(trm.getSubject(), quad
+					.getSubject().getName(), po.getPredicate(),quad
+					.getPredicate().getName(),po.getObject(),quad.getObject().getName(), isOptional);
 			if(translationContext.getQueryInformation().isProjectionPush()){
 				//psw.setDistinct(true);
 				psw.setLimit(1);
@@ -325,9 +332,9 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 		}else if(trms.size()==0){
 			// no triple maps found.
 			//bind to null values instead.
-			psw.addTripleQuery(TermMap.createNullTermMap(dataTypeHelper), triple
-					.getSubject().getName(), TermMap.createNullTermMap(dataTypeHelper),triple
-					.getPredicate().getName(),TermMap.createNullTermMap(dataTypeHelper),triple.getObject().getName(), isOptional);
+			psw.addTripleQuery(TermMap.createNullTermMap(dataTypeHelper), quad
+					.getSubject().getName(), TermMap.createNullTermMap(dataTypeHelper),quad
+					.getPredicate().getName(),TermMap.createNullTermMap(dataTypeHelper),quad.getObject().getName(), isOptional);
 			
 			
 		}else{
@@ -341,9 +348,9 @@ public class QueryBuilderVisitor extends OpVisitorBase {
 
 					PlainSelectWrapper innerPlainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,filterUtil, translationContext);
 					//build a new sql select query for this pattern
-					innerPlainSelect.addTripleQuery(trm.getSubject(), triple
-							.getSubject().getName(), po.getPredicate(),triple
-							.getPredicate().getName(),po.getObject(),triple.getObject().getName(), isOptional);
+					innerPlainSelect.addTripleQuery(trm.getSubject(), quad
+							.getSubject().getName(), po.getPredicate(),quad
+							.getPredicate().getName(),po.getObject(),quad.getObject().getName(), isOptional);
 					if(translationContext.getQueryInformation().isProjectionPush()){
 						//innerPlainSelect.setDistinct(true);
 						innerPlainSelect.setLimit(1);

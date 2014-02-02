@@ -40,12 +40,15 @@ import com.hp.hpl.jena.sparql.algebra.OpWalker;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpGraph;
 import com.hp.hpl.jena.sparql.algebra.op.OpProject;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadBlock;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadPattern;
+import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.core.Var;
 
 @Service
-public class AlgebraBasedMapper implements Mapper {
+public class AlgebraMapper implements Mapper {
 	
-	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AlgebraBasedMapper.class);
+	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AlgebraMapper.class);
 
 	@Autowired
 	private R2RMLModel mappingConf;
@@ -173,19 +176,28 @@ public class AlgebraBasedMapper implements Mapper {
 			List<Var> pvars = origQuery.getProjectVars();
 
 			for (Var pvar : pvars) {
-				for (Triple triple : queryBinding.getBindingMap().keySet()) {
-					if (triple.getSubject().equals(pvar)) {
+				for (Quad quad : queryBinding.getBindingMap().keySet()) {
+					if (quad.getSubject().equals(pvar)) {
 						// now check all bindings
 						for (TripleMap tripleMap : queryBinding.getBindingMap()
-								.get(triple)) {
+								.get(quad)) {
 							if (!tripleMap.getSubject().isConstant()) {
 								return false;
 							}
 						}
 					}
-					if (triple.getPredicate().equals(pvar)) {
+					if (quad.getGraph().equals(pvar)) {
+						// now check all bindings
 						for (TripleMap tripleMap : queryBinding.getBindingMap()
-								.get(triple)) {
+								.get(quad)) {
+							if (!tripleMap.getGraph().isConstant()) {
+								return false;
+							}
+						}
+					}
+					if (quad.getPredicate().equals(pvar)) {
+						for (TripleMap tripleMap : queryBinding.getBindingMap()
+								.get(quad)) {
 							for (PO po : tripleMap.getPos()) {
 								if (!po.getPredicate().isConstant()) {
 									return false;
@@ -194,9 +206,9 @@ public class AlgebraBasedMapper implements Mapper {
 
 						}
 					}
-					if (triple.getObject().equals(pvar)) {
+					if (quad.getObject().equals(pvar)) {
 						for (TripleMap tripleMap : queryBinding.getBindingMap()
-								.get(triple)) {
+								.get(quad)) {
 							for (PO po : tripleMap.getPos()) {
 								if (!po.getObject().isConstant()) {
 									return false;
@@ -225,7 +237,7 @@ public class AlgebraBasedMapper implements Mapper {
 		Op qop = gen.compile(spo);
 		
 		//Triple triple = ((OpBGP)((OpGraph)((OpProject)qop).getSubOp()).getSubOp()).getPattern().get(0);
-		Triple triple = ((OpBGP)(((OpProject)qop)).getSubOp()).getPattern().get(0);
+		Quad triple = ((OpQuadPattern)(((OpProject)qop)).getSubOp()).getPattern().get(0);
 		
 		
 		
@@ -236,7 +248,7 @@ public class AlgebraBasedMapper implements Mapper {
 			context.setQuery(spo);
 			context.setQueryName("dump query");
 
-			Map<Triple,Collection<TripleMap>> bindingMap = new HashMap<Triple, Collection<TripleMap>>();
+			Map<Quad,Collection<TripleMap>> bindingMap = new HashMap<Quad, Collection<TripleMap>>();
 			bindingMap.put(triple, Arrays.asList(trm));
 			
 			

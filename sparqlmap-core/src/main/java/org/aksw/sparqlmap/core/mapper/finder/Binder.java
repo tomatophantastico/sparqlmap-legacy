@@ -7,16 +7,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap.PO;
+import org.aksw.sparqlmap.core.mapper.translate.QuadVisitorBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.graph.Triple.Field;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.OpVisitorByTypeBase;
 import com.hp.hpl.jena.sparql.algebra.OpWalker;
@@ -24,9 +24,13 @@ import com.hp.hpl.jena.sparql.algebra.Table;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpJoin;
 import com.hp.hpl.jena.sparql.algebra.op.OpLeftJoin;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadBlock;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadPattern;
 import com.hp.hpl.jena.sparql.algebra.op.OpTable;
 import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
 import com.hp.hpl.jena.sparql.algebra.table.TableUnit;
+import com.hp.hpl.jena.sparql.core.Quad;
+import com.hp.hpl.jena.sparql.core.QuadPattern;
 import com.hp.hpl.jena.sparql.expr.Expr;
 
 
@@ -50,7 +54,7 @@ public class Binder {
 
 	public MappingBinding bind(Op op){
 		
-		Map<Triple, Collection<TripleMap>> bindingMap = new HashMap<Triple, Collection<TripleMap>>();
+		Map<Quad, Collection<TripleMap>> bindingMap = new HashMap<Quad, Collection<TripleMap>>();
 		
 		OpWalker.walk(op, new BinderVisitor(qi.getFiltersforvariables(), bindingMap));
 		
@@ -61,32 +65,34 @@ public class Binder {
 	
 	
 	
-	private class BinderVisitor extends OpVisitorByTypeBase{
-		Map<Triple, Map<String,Collection<Expr>>> triples2variables2expressions;
-		Map<Triple, Collection<TripleMap>> binding;
+	private class BinderVisitor extends QuadVisitorBase{
+		
+		
+		Map<Quad, Map<String,Collection<Expr>>> quads2variables2expressions;
+		Map<Quad, Collection<TripleMap>> binding;
 		
 		
 		
 		
 		public BinderVisitor(
-				Map<Triple, Map<String, Collection<Expr>>> triples2variables2expressions,
-				Map<Triple, Collection<TripleMap>> binding) {
+				Map<Quad, Map<String, Collection<Expr>>> quads2variables2expressions,
+				Map<Quad, Collection<TripleMap>> binding) {
 			super();
-			this.triples2variables2expressions = triples2variables2expressions;
+			this.quads2variables2expressions = quads2variables2expressions;
 			this.binding = binding;
 		}
 
 
 		// we use this stack to track track which what to merge on unions, joins and left joins
-		Stack<Collection<Triple>> triples = new Stack<Collection<Triple>>();
+		Stack<Collection<Quad>> quads = new Stack<Collection<Quad>>();
 		
 		
 		@Override
 		public void visit(OpJoin opJoin) {
 			log.debug("Visiting opJoin " + opJoin);
-			Collection<Triple> rightSideTriples = triples.pop();
+			Collection<Quad> rightSideTriples = quads.pop();
 
-			Collection<Triple> leftSideTriples = triples.pop();
+			Collection<Quad> leftSideTriples = quads.pop();
 			
 			
 			//we now merge the bindings for each and every triple we got here.
@@ -111,8 +117,8 @@ public class Binder {
 				//leftjoin without triples. do nothing
 				
 			}else{
-				Collection<Triple> rightSideTriples = triples.pop();
-				Collection<Triple> leftSideTriples = triples.pop();
+				Collection<Quad> rightSideTriples = quads.pop();
+				Collection<Quad> leftSideTriples = quads.pop();
 				//we now merge the bindings for each and every triple we got here.
 				
 				boolean changed =  mergeBinding(partitionBindings(rightSideTriples), partitionBindings(leftSideTriples));
@@ -132,40 +138,40 @@ public class Binder {
 		public void visit(OpUnion opUnion) {
 			log.debug("Visiting opUnion" + opUnion);
 			//just popping the triples, so they are not used later on 
-			Collection<Triple> rightSideTriples = triples.pop();
-			Collection<Triple> leftSideTriples = triples.pop();
+			Collection<Quad> rightSideTriples = quads.pop();
+			Collection<Quad> leftSideTriples = quads.pop();
 			
 			mergeAndPutOnStack(leftSideTriples, rightSideTriples);
 			
 			
 		}
 
-		private void mergeAndPutOnStack(Collection<Triple> leftSideTriples,
-				Collection<Triple> rightSideTriples) {
+		private void mergeAndPutOnStack(Collection<Quad> leftSideTriples,
+				Collection<Quad> rightSideTriples) {
 			//do not nothing to the triples but put them together, so they can be merged by a later join
-			Collection<Triple> combined = new HashSet<Triple>();
+			Collection<Quad> combined = new HashSet<Quad>();
 			combined.addAll(leftSideTriples);
 			combined.addAll(rightSideTriples);
-			triples.add(combined);
+			quads.add(combined);
 		}
 		
 		
 		
 		
 		@Override
-		public void visit(OpBGP opBGP) {
-			triples.add(opBGP.getPattern().getList());
+		public void visit(OpQuadPattern opQuadBlock) {
+			quads.add(opQuadBlock.getPattern().getList());
 			
-			for(Triple triple: opBGP.getPattern().getList()){
-				if(!binding.containsKey(triple)){
-					initialBinding(triple);
+			for(Quad quad: opQuadBlock.getPattern().getList()){
+				if(!binding.containsKey(quad)){
+					initialBinding(quad);
 				}
 			}
 			
 			// now merge them
 			boolean hasMerged = false;
 			do{
-				hasMerged = mergeBinding(partitionBindings(opBGP.getPattern().getList()), partitionBindings(opBGP.getPattern().getList()));
+				hasMerged = mergeBinding(partitionBindings(opQuadBlock.getPattern().getList()), partitionBindings(opQuadBlock.getPattern().getList()));
 			}while(hasMerged);
 			
 		}
@@ -175,17 +181,17 @@ public class Binder {
 		 * 
 		 * @return
 		 */
-		private Map<Triple,Collection<TripleMap>> partitionBindings(Collection<Triple> triples){
-			Map<Triple,Collection<TripleMap>> subset = new HashMap<Triple, Collection<TripleMap>>();
-			for(Triple triple : triples){
-				subset.put(triple, binding.get(triple));
+		private Map<Quad,Collection<TripleMap>> partitionBindings(Collection<Quad> quads){
+			Map<Quad,Collection<TripleMap>> subset = new HashMap<Quad, Collection<TripleMap>>();
+			for(Quad quad : quads){
+				subset.put(quad, binding.get(quad));
 			}
 			
 			return subset;
 		}
 
 
-		private void initialBinding(Triple triple) {
+		private void initialBinding(Quad quad) {
 			
 			// first bind all triple maps to the triple
 			Collection<TripleMap> trms = new HashSet<TripleMap>();
@@ -193,22 +199,28 @@ public class Binder {
 			for (TripleMap tripleMap : mapconf.getTripleMaps()) {
 				trms.add(tripleMap.getShallowCopy());
 			}
-			binding.put(triple, trms);
+			binding.put(quad, trms);
 			
 		
 			//then check them for compatibility
-			Map<String,Collection<Expr>> var2exps = triples2variables2expressions.get(triple);
-			String sname = triple.getSubject().getName();
-			String pname =  triple.getPredicate().getName();
-			String oname =  triple.getObject().getName();
+			Map<String,Collection<Expr>> var2exps = quads2variables2expressions.get(quad);
+			String gname = quad.getGraph().getName();
+			String sname = quad.getSubject().getName();
+			String pname =  quad.getPredicate().getName();
+			String oname =  quad.getObject().getName();
 			Collection<Expr> sxprs =  var2exps.get(sname);
 			Collection<Expr> pxprs = var2exps.get(pname);
 			Collection<Expr> oxprs = var2exps.get(oname);
+			Collection<Expr> gxprs = var2exps.get(gname);
 		
 			// iterate over the subjects and remove them if they are not
 			// compatible
 			for (TripleMap tripleMap : new HashSet<TripleMap>(trms)) {
-				if (!tripleMap.getSubject().getCompChecker().isCompatible(sname,sxprs)) {
+				
+				if(!tripleMap.getGraph().getCompChecker().isCompatible(gname,gxprs)){
+					trms.remove(tripleMap);
+					
+				}else if (!tripleMap.getSubject().getCompChecker().isCompatible(sname,sxprs)) {
 					trms.remove(tripleMap);
 //					if (log.isDebugEnabled()) {
 //						log.debug("Removing triple map because of subject compatibility:"
@@ -243,8 +255,8 @@ public class Binder {
 				
 			}
 			if(log.isDebugEnabled()){
-				log.debug("Initial binding for triple " +triple   );
-				log.debug("" + binding.get(triple));
+				log.debug("Initial binding for triple " +quad   );
+				log.debug("" + binding.get(quad));
 			}
 		
 
@@ -256,13 +268,31 @@ public class Binder {
 	}
 	
 	
+	enum Field {graph,subject,predicate,object};
+	
+	private Node getField(Quad quad, Field field){
+		switch (field) {
+		case graph:
+			return quad.getGraph();
+		case subject:
+			return quad.getSubject();
+		case predicate:
+			return quad.getPredicate();
+		case object:
+			return quad.getObject();
+		default:
+			return null;
+		}
+		
+	}
+	
+	
 	/**
 	 * merges the bindings. performs the join 
 	 */
-	private boolean mergeBinding(Map<Triple, Collection<TripleMap>> binding1,
-			Map<Triple, Collection<TripleMap>> binding2) {
-		Triple.Field[] fields = { Triple.Field.fieldSubject,
-				Triple.Field.fieldPredicate, Triple.Field.fieldObject };
+	private boolean mergeBinding(Map<Quad, Collection<TripleMap>> binding1,
+			Map<Quad, Collection<TripleMap>> binding2) {
+		
 
 		boolean wasmerged = false;
 
@@ -270,25 +300,25 @@ public class Binder {
 		boolean wasmergedthisrun = false;
 		do {
 			wasmergedthisrun = false;
-			for (Triple t1 : new HashSet<Triple>(binding1.keySet())) {
-				for (Triple t2 : binding2.keySet()) {
-					if (!(t1 == t2)) {
-						for (Triple.Field f1 : fields) {
-							for (Triple.Field f2 : fields) {
+			for (Quad quad1 : new HashSet<Quad>(binding1.keySet())) {
+				for (Quad quad2 : binding2.keySet()) {
+					if (!(quad1 == quad2)) {
+						for (Field f1 : Field.values()) {
+							for (Field f2 : Field.values()) {
 					
-								Node n1 = f1.getField(t1);
-								Node n2 = f2.getField(t2);
+								Node n1 = getField(quad1, f1);
+								Node n2 = getField(quad2, f2);
 								Collection<TripleMap> triplemaps1 = binding1
-										.get(t1);
+										.get(quad1);
 								Collection<TripleMap> triplemaps1_copy= null;
 								if(log.isDebugEnabled()){
 									triplemaps1_copy = new HashSet<TripleMap>(binding1
-											.get(t1));
+											.get(quad1));
 								}
 										
 								
 								Collection<TripleMap> triplemaps2 = binding2
-										.get(t2);
+										.get(quad2);
 								if (matches(n1, n2)) {
 									wasmergedthisrun = mergeTripleMaps(f1, f2,
 											triplemaps1, triplemaps2);
@@ -297,7 +327,7 @@ public class Binder {
 									}
 									if(log.isDebugEnabled()){
 										if(wasmergedthisrun){
-											log.debug("Merged on t1: " + t1.toString() + " x t2:" + t2.toString());
+											log.debug("Merged on t1: " + quad1.toString() + " x t2:" + quad2.toString());
 											log.debug("Removed the following triple maps:");
 											
 											triplemaps1_copy.removeAll(triplemaps1);
@@ -305,7 +335,7 @@ public class Binder {
 												log.debug("" +  tripleMap);
 											}
 										}else{
-											log.debug("All compatible on t1: " + t1.toString() + " x t2:" + t2.toString());
+											log.debug("All compatible on t1: " + quad1.toString() + " x t2:" + quad2.toString());
 
 										}
 										
@@ -374,15 +404,14 @@ public class Binder {
 	
 	private TermMap getTermMap(PO po, Field field) {
 		TermMap result = null;
-		if (field == Triple.Field.fieldSubject) {
+		if (field == Field.subject) {
 			result = po.getTripleMap().getSubject();
-		}
-		if (field == Triple.Field.fieldPredicate) {
+		} else	if (field == Field.predicate) {
 			result = po.getPredicate();
-		}
-		if (field == Triple.Field.fieldObject) {
+		} else 	if (field == Field.object) {
 			result = po.getObject();
-
+		}else if(field == Field.graph){
+			result = po.getTripleMap().getGraph();
 		}
 
 		return result;

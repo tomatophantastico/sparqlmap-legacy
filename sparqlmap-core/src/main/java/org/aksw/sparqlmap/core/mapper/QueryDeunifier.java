@@ -22,20 +22,21 @@ import org.aksw.sparqlmap.core.mapper.translate.OptimizationConfiguration;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.OpVisitorBase;
 import com.hp.hpl.jena.sparql.algebra.OpWalker;
 import com.hp.hpl.jena.sparql.algebra.TransformBase;
 import com.hp.hpl.jena.sparql.algebra.TransformCopy;
 import com.hp.hpl.jena.sparql.algebra.Transformer;
-import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
 import com.hp.hpl.jena.sparql.algebra.op.OpJoin;
 import com.hp.hpl.jena.sparql.algebra.op.OpLeftJoin;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadBlock;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadPattern;
 import com.hp.hpl.jena.sparql.algebra.op.OpTable;
 import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
 import com.hp.hpl.jena.sparql.core.BasicPattern;
+import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprList;
@@ -51,7 +52,7 @@ public class QueryDeunifier extends TransformCopy{
 	ExpressionConverter exprconv;
 	ColumnHelper colhelp;
 	OptimizationConfiguration fopt;
-	Map<Triple, Collection<TripleMap>> newbindingMap = new HashMap<Triple, Collection<TripleMap>>();
+	Map<Quad, Collection<TripleMap>> newbindingMap = new HashMap<Quad, Collection<TripleMap>>();
 	Op query;
 	public QueryDeunifier(QueryInformation qi,
 			MappingBinding queryBinding, DataTypeHelper dth,
@@ -85,7 +86,7 @@ public class QueryDeunifier extends TransformCopy{
 	
 	
 	@Override
-	public Op transform(OpBGP opBGP) {
+	public Op transform(OpQuadPattern opBGP) {
 		//only applicable if the triple patterns have multiple bindings.
 		
 		
@@ -93,7 +94,7 @@ public class QueryDeunifier extends TransformCopy{
 		
 		boolean merge = false;
 		if( opBGP.getPattern().getList().size()==1){
-			Triple triple = opBGP.getPattern().getList().iterator().next();
+			Quad triple = opBGP.getPattern().getList().iterator().next();
 			for(TripleMap tm : queryBinding.getBindingMap().get(triple)){
 					if(tm.getPos().size()>1){
 						//yes we can merge them
@@ -105,12 +106,12 @@ public class QueryDeunifier extends TransformCopy{
 		
 		//as we can, we do it now
 		if(merge){
-			Triple triple = opBGP.getPattern().getList().iterator().next();
+			Quad triple = opBGP.getPattern().getList().iterator().next();
 			Set<Op> unionops = new HashSet<Op>(); 
 			
 			
 			for(TripleMap tm : queryBinding.getBindingMap().get(triple)){
-				Set<Triple>  lefjointriples = new HashSet<Triple>();
+				Set<Quad>  lefjointriples = new HashSet<Quad>();
 				int i = 0;
 				for(PO po: tm.getPos()){
 					String s = triple.getSubject().getName();
@@ -119,7 +120,7 @@ public class QueryDeunifier extends TransformCopy{
 					String o = triple.getObject().getName()+"-du" + String.format("%02d", i);  
 					var2varname.put(triple.getObject().getName(), o);
 					
-					Triple newTriple = new Triple(triple.getSubject(),Var.alloc(p),Var.alloc(o));
+					Quad newTriple = new Quad(triple.getGraph(), triple.getSubject(),Var.alloc(p),Var.alloc(o));
 					
 					TripleMap newTripleMap = tm.getShallowCopy();
 					newTripleMap.getPos().retainAll(Arrays.asList(po));
@@ -136,19 +137,21 @@ public class QueryDeunifier extends TransformCopy{
 //					unionops.add(bgp);
 //				}else{
 				
-				Iterator<Triple> itrip = lefjointriples.iterator();
-				BasicPattern bp = new BasicPattern();
-				bp.add(itrip.next());
-				OpBGP bgp = new OpBGP(bp);
+				Iterator<Quad> itrip = lefjointriples.iterator();
+				
+				OpQuadBlock oqb = new OpQuadBlock();
+				
+				oqb.getPattern().add(itrip.next());
+				
 
-				OpLeftJoin oplj = (OpLeftJoin) OpLeftJoin.create(OpTable.unit(),bgp
+				OpLeftJoin oplj = (OpLeftJoin) OpLeftJoin.create(OpTable.unit(),oqb
 						, (Expr) null);
 
 				while (itrip.hasNext()) {
-					BasicPattern bp2 = new BasicPattern();
-					bp2.add(itrip.next());
-					OpBGP bgp2 = new OpBGP(bp2);
-					oplj = (OpLeftJoin) OpLeftJoin.create( oplj,bgp2, (Expr) null);
+					
+					OpQuadBlock oqb2 = new OpQuadBlock();
+					oqb2.getPattern().add(itrip.next());
+					oplj = (OpLeftJoin) OpLeftJoin.create( oplj,oqb2, (Expr) null);
 					
 
 				}

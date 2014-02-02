@@ -3,12 +3,11 @@ package org.aksw.sparqlmap.mapper.subquerymapper.algebra;
 import java.io.ByteArrayOutputStream;
 import java.sql.SQLException;
 
-import org.aksw.sparqlmap.BSBMBaseTest;
 import org.apache.jena.riot.WebContent;
 import org.junit.Test;
 
 
-public class AlgebraTranslateTest extends BSBMBaseTest{
+public abstract class AlgebraTranslateTest {
 	
 	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AlgebraTranslateTest.class);
 	
@@ -243,18 +242,17 @@ public class AlgebraTranslateTest extends BSBMBaseTest{
 	
 	
 
-	@Override
 	public String processQuery(String shortname, String query) {
 		
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		
-		try {
-			r2r.executeSparql(query,WebContent.contentTypeRDFXML, bos,null);
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			log.error("Error:",e);
-		}
-		log.info(bos.toString());
+//		try {
+//			r2r.executeSparql(query,WebContent.contentTypeRDFXML, bos,null);
+//		} catch (SQLException e) {
+//			// TODO Auto-generated catch block
+//			log.error("Error:",e);
+//		}
+//		log.info(bos.toString());
 		
 		return bos.toString();
 		

@@ -35,7 +35,11 @@ public class TermMapFactory {
 	}
 
 	
-	
+	/**
+	 * create a TermMap for a static node.
+	 * @param node
+	 * @return
+	 */
 	public TermMap createTermMap(Node node){
 		
 		TermMap tm = new TermMap(dth);
@@ -98,10 +102,6 @@ public class TermMapFactory {
 		return tm;
 	}
 	
-	public TermMap createTermMap(Resource tm, Model r2rml){
-		
-		return null;
-	}
 	
 	
 	public TermMap createBoolTermMap(Expression bool){

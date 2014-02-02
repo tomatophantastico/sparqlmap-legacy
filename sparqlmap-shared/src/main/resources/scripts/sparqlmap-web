@@ -11,10 +11,16 @@ cd $SCRIPTPATH/..
 
 SCRIPTPATHPARENT=$PWD
 
-if [ -n  ${SPARQLMAP_HOME}]; then
+if [ -n  ${SPARQLMAP_HOME} ]; then
  SPARQLMAP_HOME="${SCRIPTPATHPARENT}/map-conf"
 fi 
 
+JAVAOPTS+= " -Xms128m -Xmx512m" 
+
+if [ "$1" ==  "-debug" ]; then
+  JAVAOPTS+= " -Xdebug -Xrunjdwp:transport='dt_socket,address=8765,server=y,suspend=n'"
+fi
+
 echo "Using SparqlMap configuration in ${SPARQLMAP_HOME}"
-shift
-java $@ -Xms128m -Xmx512m -DSPARQLMAP_HOME=${SPARQLMAP_HOME} -jar ./lib/jetty/@@@jettyrunner@@@ --path /sparqlmap ./lib/war/@@@sparqlmapwar@@@
+
+java $JAVAOPTS -DSPARQLMAP_HOME=${SPARQLMAP_HOME} -jar ./lib/jetty/@@@jettyrunner@@@ --path /sparqlmap ./lib/war/@@@sparqlmapwar@@@

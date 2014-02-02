@@ -55,7 +55,7 @@ public class BSBMComparingPostgresBaseTest {
 			
 		if (queryObject.isSelectType()) {
 			
-			ResultSetRewindable rsSparqlMap = new ResultSetMem(sparqlMap.rewriteAndExecute(query));
+			ResultSetRewindable rsSparqlMap = new ResultSetMem(sparqlMap.executeSelect(query));
 
 			ResultSetRewindable rsVirt = new ResultSetMem(qe.execSelect());
 
@@ -70,28 +70,7 @@ public class BSBMComparingPostgresBaseTest {
 						+ ResultSetFormatter.asText(rsVirt));
 				assertTrue(false);
 			}
-			
-
-//			List<String> vars = rsSparqlMap.getResultVars();
-//
-//			Multimap<String, RDFNode> smResults = HashMultimap.create();
-//			Multimap<String, RDFNode> virtResults = HashMultimap.create();
-//
-//			while (rsSparqlMap.hasNext()) {
-//				assertTrue("SparqlMap has too many results", rsVirt.hasNext());
-//				QuerySolution solSm = rsSparqlMap.next();
-//				QuerySolution solVirt = rsVirt.next();
-//
-//				for (String var : vars) {
-//					smResults.put(var, solSm.get(var));
-//					virtResults.put(var, solVirt.get(var));
-//				}
-//
-//			}
-//			assertFalse("Virtuoso had more results", rsVirt.hasNext());
-//
-//			compareMaps(vars, smResults, virtResults);
-//			compareMaps(vars, virtResults,smResults);
+	
 		} else if (queryObject.isConstructType()) {
 			
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -126,51 +105,6 @@ public class BSBMComparingPostgresBaseTest {
 
 	}
 
-	public void compareMaps(List<String> vars, Multimap<String, RDFNode> map1,
-			Multimap<String, RDFNode> map2) {
-		for (String var : vars) {
-			Collection<RDFNode> map1Nodes = map1.get(var);
-
-			for (RDFNode map1Node : map1Nodes) {
-				if (map1Node != null) {
-					boolean contains = false;
-					for (RDFNode map2Node : map2.get(var)) {
-						if (map2Node != null) {
-							if (map1Node.isLiteral() && map2Node.isLiteral()) {
-								if (map1Node
-										.asLiteral()
-										.getValue()
-										.equals(map2Node.asLiteral().getValue())
-										&& (map1Node.asLiteral().getDatatype() == null
-												&& map2Node.asLiteral()
-														.getDatatype() == null || (map1Node
-												.asLiteral().getDatatype() != null
-												&& map2Node.asLiteral()
-														.getDatatype() != null && map1Node
-												.asLiteral()
-												.getDatatype()
-												.equals(map2Node.asLiteral()
-														.getDatatype())))) {
-									contains = true;
-									break;
-
-								}
-							} else {
-
-								contains = map1Node.equals(map2Node);
-								if (contains) {
-									break;
-								}
-
-							}
-						}
-					}
-					assertTrue(
-							"Virtuso result did not contain: "
-									+ map1Node.toString(), contains);
-				}
-			}
-		}
-	}
+	
 
 }

@@ -11,6 +11,7 @@ import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
 import com.hp.hpl.jena.sparql.algebra.op.OpProject;
 import com.hp.hpl.jena.sparql.algebra.op.OpReduced;
 import com.hp.hpl.jena.sparql.algebra.op.OpSlice;
+import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.expr.Expr;
 
 
@@ -32,7 +33,7 @@ public class QueryInformation {
 	private OpDistinct distinct;
 	private OpReduced reduced;
 	
-	private Map<Triple, Map<String,Collection<Expr>>> filtersforvariables = new HashMap<Triple, Map<String,Collection<Expr>>>();
+	private Map<Quad, Map<String,Collection<Expr>>> filtersforvariables = new HashMap<Quad, Map<String,Collection<Expr>>>();
 
 	private boolean projectionPush ;
 
@@ -84,12 +85,12 @@ public class QueryInformation {
 		this.reduced = reduced;
 	}
 
-	public Map<Triple, Map<String, Collection<Expr>>> getFiltersforvariables() {
+	public Map<Quad, Map<String, Collection<Expr>>> getFiltersforvariables() {
 		return filtersforvariables;
 	}
 
 	public void setFiltersforvariables(
-			Map<Triple, Map<String, Collection<Expr>>> filtersforvariables) {
+			Map<Quad, Map<String, Collection<Expr>>> filtersforvariables) {
 		this.filtersforvariables = filtersforvariables;
 	}
 

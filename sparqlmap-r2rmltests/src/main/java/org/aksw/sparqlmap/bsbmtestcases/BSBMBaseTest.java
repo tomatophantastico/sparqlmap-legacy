@@ -34,7 +34,7 @@ public abstract class BSBMBaseTest {
 		context.setQuery(QueryFactory.create(query));
 		context.setTargetContentType(WebContent.contentTypeRDFXML);
 		
-		ResultSet rsw = getSparqlMap().rewriteAndExecute(context);
+		ResultSet rsw = getSparqlMap().executeSelect(context);
 		
 		return rsw;
 

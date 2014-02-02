@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.aksw.sparqlmap.core.mapper.translate.QuadVisitorBase;
+
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.hp.hpl.jena.graph.Triple;
@@ -16,8 +18,11 @@ import com.hp.hpl.jena.sparql.algebra.op.OpDistinct;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
 import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
 import com.hp.hpl.jena.sparql.algebra.op.OpProject;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadBlock;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadPattern;
 import com.hp.hpl.jena.sparql.algebra.op.OpReduced;
 import com.hp.hpl.jena.sparql.algebra.op.OpSlice;
+import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
 
@@ -50,7 +55,7 @@ public class FilterFinder{
 	 * @author joerg
 	 *
 	 */
-	private static class Pusher extends OpVisitorBase{
+	private static class Pusher extends QuadVisitorBase{
 		Multiset<Expr> filterStack;
 		public Pusher(Multiset<Expr> filterStack) {
 			this.filterStack = filterStack;
@@ -69,7 +74,7 @@ public class FilterFinder{
 	 * @author joerg
 	 *
 	 */
-	private static class Popper extends OpVisitorBase{
+	private static class Popper extends QuadVisitorBase{
 		
 		private Multiset<Expr> filterStack;
 
@@ -90,7 +95,7 @@ public class FilterFinder{
 	 * @author joerg
 	 *
 	 */
-	private static class Putter extends OpVisitorBase{
+	private static class Putter extends QuadVisitorBase{
 		
 		private Multiset<Expr> filterStack;
 		private QueryInformation qi;
@@ -133,32 +138,37 @@ public class FilterFinder{
 		
 
 		@Override
-		public void visit(OpBGP opBGP) {
+		public void visit(OpQuadPattern opQuadPattern) {
 			
-			for(Triple triple: opBGP.getPattern().getList()){
+			for(Quad quad: opQuadPattern.getPattern().getList()){
 				
 				Map<String,Collection<Expr>> var2expr = new HashMap<String, Collection<Expr>>();	
 				Collection<Expr> sExprs = new HashSet<Expr>();
 				Collection<Expr> pExprs = new HashSet<Expr>();
 				Collection<Expr> oExprs = new HashSet<Expr>(); 
+				Collection<Expr> gExprs = new HashSet<Expr>();
 				
 				for(Expr expr: filterStack){
-					if(expr.getVarsMentioned().contains(Var.alloc(triple.getSubject().getName()))){
+					if(expr.getVarsMentioned().contains(Var.alloc(quad.getSubject().getName()))){
 						sExprs.add(expr);
 					}
-					if(expr.getVarsMentioned().contains(Var.alloc(triple.getPredicate().getName()))){
+					if(expr.getVarsMentioned().contains(Var.alloc(quad.getPredicate().getName()))){
 						pExprs.add(expr);
 					}
-					if(expr.getVarsMentioned().contains(Var.alloc(triple.getObject().getName()))){
+					if(expr.getVarsMentioned().contains(Var.alloc(quad.getObject().getName()))){
 						oExprs.add(expr);
+					}
+					if(expr.getVarsMentioned().contains(Var.alloc(quad.getGraph().getName()))){
+						gExprs.add(expr);
 					}
 				}
 				
-				var2expr.put(triple.getSubject().getName(), sExprs);
-				var2expr.put(triple.getPredicate().getName(), pExprs);
-				var2expr.put(triple.getObject().getName(), oExprs);
+				var2expr.put(quad.getSubject().getName(), sExprs);
+				var2expr.put(quad.getPredicate().getName(), pExprs);
+				var2expr.put(quad.getObject().getName(), oExprs);
+				var2expr.put(quad.getGraph().getName(), gExprs);
 				
-				qi.getFiltersforvariables().put(triple, var2expr);
+				qi.getFiltersforvariables().put(quad, var2expr);
 				
 				
 			}

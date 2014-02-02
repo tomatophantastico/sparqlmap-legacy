@@ -1,5 +1,6 @@
 package org.aksw.sparqlmap.core;
 
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.sql.SQLException;
@@ -59,7 +60,7 @@ public class SparqlMap {
 	boolean continueWithInvalidUris = true;
 	
 	@PostConstruct
-	public void loadBaseUri(){
+	public void init(){
 		baseUri = env.getProperty("sm.baseuri");
 		continueWithInvalidUris = new Boolean(env.getProperty("sm.continuewithinvaliduris","true"));
 	}
@@ -78,183 +79,176 @@ public class SparqlMap {
 	@Autowired
 	private DBAccess dbConf;
 	
-	@PreDestroy
-	public void profile(){
-		Logger perfLog = LoggerFactory.getLogger("performance");
-		List<String> queries =new ArrayList<String>(profReg.keySet());
-		Collections.sort(queries);
-		for(String query : queries){
-			perfLog.debug("for query: " + query);
-			List<String> execparts =new ArrayList<String>(profReg.get(query).keySet());
-			Collections.sort(execparts);
-			for(String execpart: execparts){
-				List<Long> intDurations = new ArrayList<Long>(profReg.get(query).get(execpart));
-				double[] dura = new double[intDurations.size()];
-				for (int i = 0; i<intDurations.size();i++) {
-					dura[i] = intDurations.get(i);
-				}	
-				perfLog.debug(String.format("%-20s :", execpart)+  StatUtils.geometricMean(dura));
-				
-			}
-		}
-	}
-	
-	private Map<String,Multimap<String, Long>> profReg = new HashMap<String, Multimap<String,Long>>();
+		
+	//private Map<String,Multimap<String, Long>> profReg = new HashMap<String, Multimap<String,Long>>();
 
 	private Logger log = LoggerFactory.getLogger(SparqlMap.class);
 
-
+	/**
+	 * Returns the result of a SPARQL query as a String
+	 * 
+	 * @param qstring
+	 * @param rt
+	 * @return
+	 * @throws SQLException
+	 */
+	public String executeSparql(String qstring, Object rt) throws SQLException{
+		ByteArrayOutputStream resBos = new ByteArrayOutputStream();
+		executeSparql(qstring, rt, resBos);
+		return resBos.toString();
+	}
+	
+	/**
+	 * Executes a SPARQL query and writes its result into the Outputstream
+	 * 
+	 * @param qstring
+	 * @param rt the Return type, either as Lang  or as ResultsFormat. 
+	 * @param out
+	 * @throws SQLException
+	 */
 	public void  executeSparql(String qstring, Object rt, OutputStream out) throws SQLException{
 		executeSparql(qstring,  rt,  out,"Unnamed query "+ this.querycount++);
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
 	
 	/**
 	 * Takes some of the functionality of QueryExecutionbase
-	 * @param queryname 
-	 * @param query this gets executed
-	 * @return the result as a string
+	 * @param queryname an queryname, just for the log.
+	 * @param query the SPARQL query that should be executed
+	 * @param out the result gets printed into this stream.
 	 * @throws SQLException 
 	 */
-	public void  executeSparql(String qstring, Object rf, OutputStream out, String queryname) throws SQLException{
+	protected void  executeSparql(String qstring, Object rf, OutputStream out, String queryname) throws SQLException{
 		
 		TranslationContext context = new TranslationContext();
 		context.setQueryString(qstring);
 		context.setQueryName(queryname);
-		
-		
 		context.profileStartPhase("Query Compile");
-			
-		
 		context.setQuery(QueryFactory.create(qstring));
-		
 		context.setTargetContentType(rf);
 		
-	
-		
-		if(context.getQuery().isAskType()){
-			
-			context.getQuery().setLimit(1);
-			ResultSet rs =  rewriteAndExecute(context);
-			if(rs.hasNext()){
-				ResultSetFormatter.out(out, true);
-			}else{
-				ResultSetFormatter.out(out, false);
-			}	
+		try{
+			if(context.getQuery().isAskType()){
 				
-		}
-		if(context.getQuery().isConstructType()){
-			
-			
-			if(context.getTargetContentType()!=null && context.getTargetContentType().equals(Lang.NTRIPLES)){
-				streamConstruct(context,out);
-			}else{
-				Model model = ModelFactory.createDefaultModel();
-				addConstructToModel(context, model);
-				RDFDataMgr.write(out, model, (Lang)context.getTargetContentType());
+				context.getQuery().setLimit(1);
+				ResultSet rs =  executeSelect(context);
+				if(rs.hasNext()){
+					ResultSetFormatter.out(out, true);
+				}else{
+					ResultSetFormatter.out(out, false);
+				}	
+					
+			}
+			if(context.getQuery().isConstructType()){
 				
-			}
-			
-			
-			
-			
-			
-		}
-		if(context.getQuery().isSelectType()){
-			ResultSet rs = rewriteAndExecute(context);
-			
-			if(context.getTargetContentType()==null){
-				context.setTargetContentType(ResultsFormat.FMT_RDF_XML);
-			}
-			
-			ResultSetFormatter.output(out, rs,(ResultsFormat)context.getTargetContentType());
-			
-			
-			
-		}
-		if(context.getQuery().isDescribeType()){
-			
-			if(context.getTargetContentType()==null){
-				context.setTargetContentType(Lang.TURTLE);
-			}
-			
-			Model model = 	ModelFactory.createDefaultModel();
-			List<Node> iris =  context.getQuery().getResultURIs();
-			if((iris == null || iris.isEmpty())){
-				Var var = context.getQuery().getProjectVars().get(0);
-				/*
-				// hacky, hacky, hacky
-				String wherePart  = query.getQueryPattern().toString();
 				
-				String newwhere =wherePart.replaceAll("\\?"+var.toString()+"(?![a-zA-Z0-9])", "?x_sm");
-				Query con = QueryFactory.create("CONSTRUCT {?s_sm ?p_sm ?o_sm} WHERE {{?s_sm ?p_sm ?x_sm. " +newwhere + "}UNION {?x_sm ?p_sm ?o_sm. "+newwhere+"}}");
-				executeConstruct(rt,con,model,queryname);*/
-				ResultSet rs = rewriteAndExecute(context);
-				while(rs.hasNext()){
-					iris.add(rs.next().get(var.getName()).asNode());
+				if(context.getTargetContentType()!=null && context.getTargetContentType().equals(Lang.NTRIPLES)){
+					executeConstruct(context,out);
+				}else{
+					Model model = executeConstruct(context);
+					RDFDataMgr.write(out, model, (Lang)context.getTargetContentType());
+					
 				}
 				
 				
-			}
 				
-				for (Node node : iris) {
-					String con1 = "CONSTRUCT {?s_sm ?p_sm <"+node.getURI()+"> } WHERE { ?s_sm ?p_sm <"+node.getURI()+"> }";
-					TranslationContext subCon1 = new TranslationContext();
-					subCon1.setTargetContentType(context.getTargetContentType());
-					subCon1.setQueryString(con1);
-					subCon1.setQueryName("construct incoming query");
-					subCon1.setQuery(QueryFactory.create(con1));
+				
+				
+			}
+			if(context.getQuery().isSelectType()){
+				ResultSet rs = executeSelect(context);
+				
+				if(context.getTargetContentType()==null){
+					context.setTargetContentType(ResultsFormat.FMT_RDF_XML);
+				}
+				
+				ResultSetFormatter.output(out, rs,(ResultsFormat)context.getTargetContentType());
+				
+				
+				
+			}
+			if(context.getQuery().isDescribeType()){
+				
+				if(context.getTargetContentType()==null){
+					context.setTargetContentType(Lang.TURTLE);
+				}
+				
+				Model model = 	ModelFactory.createDefaultModel();
+				List<Node> iris =  context.getQuery().getResultURIs();
+				if((iris == null || iris.isEmpty())){
+					Var var = context.getQuery().getProjectVars().get(0);
+					/*
+					// hacky, hacky, hacky
+					String wherePart  = query.getQueryPattern().toString();
 					
-					addConstructToModel(subCon1,model);
-					String con2 = "CONSTRUCT { <"+node.getURI()+"> ?p_sm ?o_sm} WHERE { <"+node.getURI()+"> ?p_sm ?o_sm}";
-					TranslationContext subCon2 = new TranslationContext();
-					subCon2.setTargetContentType(context.getTargetContentType());
-					subCon2.setQueryString(con2);
-					subCon2.setQuery(QueryFactory.create(con2));
-					subCon2.setQueryName("construct outgoing query");
-					
-					addConstructToModel(subCon2, model);
-
+					String newwhere =wherePart.replaceAll("\\?"+var.toString()+"(?![a-zA-Z0-9])", "?x_sm");
+					Query con = QueryFactory.create("CONSTRUCT {?s_sm ?p_sm ?o_sm} WHERE {{?s_sm ?p_sm ?x_sm. " +newwhere + "}UNION {?x_sm ?p_sm ?o_sm. "+newwhere+"}}");
+					executeConstruct(rt,con,model,queryname);*/
+					ResultSet rs = executeSelect(context);
+					while(rs.hasNext()){
+						iris.add(rs.next().get(var.getName()).asNode());
 					}
+					
+					
+				}
+					
+					for (Node node : iris) {
+						String con1 = "CONSTRUCT {?s_sm ?p_sm <"+node.getURI()+"> } WHERE { ?s_sm ?p_sm <"+node.getURI()+"> }";
+						TranslationContext subCon1 = new TranslationContext();
+						subCon1.setTargetContentType(context.getTargetContentType());
+						subCon1.setQueryString(con1);
+						subCon1.setQueryName("construct incoming query");
+						subCon1.setQuery(QueryFactory.create(con1));
+						
+						model.add(executeConstruct(subCon1));
+						String con2 = "CONSTRUCT { <"+node.getURI()+"> ?p_sm ?o_sm} WHERE { <"+node.getURI()+"> ?p_sm ?o_sm}";
+						TranslationContext subCon2 = new TranslationContext();
+						subCon2.setTargetContentType(context.getTargetContentType());
+						subCon2.setQueryString(con2);
+						subCon2.setQuery(QueryFactory.create(con2));
+						subCon2.setQueryName("construct outgoing query");
+						
+						model.add(executeConstruct(subCon2));
+	
+						}
+					
 				
-			
-			RDFDataMgr.write(out, model, (Lang) context.getTargetContentType());
-			
-		}
-
-		
-
-	}
-
-
-	private Multimap<String, Long> getProfiler(String queryname) {
-		Multimap<String, Long> prof = null;
-		if(queryname!=null&&!queryname.isEmpty()){
-			prof = profReg.get(queryname);
-			if(prof==null){
-				prof = HashMultimap.create();
-				profReg.put(queryname,prof);
+				RDFDataMgr.write(out, model, (Lang) context.getTargetContentType());
+				
 			}
+
+		} catch(Throwable e){
+			log.error("An error occured while translating\n\n " + context.toString() , e );
+			throw e;
 		}
-		return prof;
+
 	}
 
+
+
+	public Model executeConstruct(String query) throws SQLException{
+		TranslationContext context = new TranslationContext();
+		context.setQueryString(query);
+		try{
+			
+			context.setQuery(QueryFactory.create(query));
+			return executeConstruct(context);
+		}catch (Exception e){
+			context.setProblem(e);
+			log.error(context.toString());
+			throw e;
+		}
+		
+	}
 
 	
-	private void addConstructToModel(TranslationContext context, Model model) throws SQLException{
+	public Model executeConstruct(TranslationContext context) throws SQLException{
+		Model model  = ModelFactory.createDefaultModel();
 		Template template = context.getQuery().getConstructTemplate();
 		context.getQuery().setQueryResultStar(true);
 		//execute it 
-		ResultSet rs = rewriteAndExecute(context);
+		
+		ResultSet rs = executeSelect(context);
 		
 		//bind it
 		int i = 0;
@@ -273,10 +267,12 @@ public class SparqlMap {
 			
 		}
 		
+		return model;
+		
 
 	}
 	
-	/* performing an construct like this does build up an in-memory representation of the data and streams it right to the client.
+	/** performing an construct like this does build up an in-memory representation of the data and streams it right to the client.
 	 * 
 	 * Use only with ntriples.
 	 * 
@@ -284,13 +280,13 @@ public class SparqlMap {
 	 * @param out
 	 * @throws SQLException
 	 */
-	private void streamConstruct(TranslationContext context, OutputStream out)
+	public void executeConstruct(TranslationContext context, OutputStream out)
 			throws SQLException {
 		//take the graph pattern and convert it into a select query.
 		Template template = context.getQuery().getConstructTemplate();
 		context.getQuery().setQueryResultStar(true);
 		//execute it 
-		ResultSet rs = rewriteAndExecute(context);
+		ResultSet rs = executeSelect(context);
 		
 		
 		//bind it
@@ -401,23 +397,23 @@ public class SparqlMap {
 	}
 	
 	
-	public ResultSet rewriteAndExecute(String query) throws SQLException{
+	public ResultSet executeSelect(String query) throws SQLException{
 		
 		TranslationContext context = new TranslationContext();
 		context.setQueryString(query);
 		context.setQuery(QueryFactory.create(query));
 		
-		return rewriteAndExecute(context);
+		return executeSelect(context);
 		
 	}
 
 	
 	
-	public ResultSet rewriteAndExecute(TranslationContext context) throws SQLException{
+	protected ResultSet executeSelect(TranslationContext context) throws SQLException{
 		
 		
 	
-		
+		try{
 		context.profileStartPhase("Rewriting");	
 		
 		
@@ -425,14 +421,24 @@ public class SparqlMap {
 		
 		LoggerFactory.getLogger("sqllog").info("SQL " + context.getQueryName() + " " + context.getSqlQuery() );
 		
-			
+		
 		ResultSet rs = dbConf.executeSQL(context,baseUri);
 		
 		return rs;
 		
+		}catch (Throwable e){
+			context.setProblem(e);
+			
+			log.error(context.toString());
+			
+			
+			
+			throw e;
+		}
+		
 	}
 
-	public Mapper getMapper() {
+	protected Mapper getMapper() {
 		return mapper;
 	}
 }
