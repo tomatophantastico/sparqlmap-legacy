@@ -135,12 +135,11 @@ public class TranslationContext {
 	public void profileStartPhase(String phase) {
 		if(sw == null){
 			currentPhase = phase;
-			sw = new Stopwatch();
-			sw.start();
+			sw = Stopwatch.createStarted();
 			
 		}else{
 			sw.stop();
-			phaseDurations.put(currentPhase, sw.elapsedTime(TimeUnit.MICROSECONDS));
+			phaseDurations.put(currentPhase, sw.elapsed(TimeUnit.MICROSECONDS));
 			currentPhase = phase;
 			sw.reset();
 			sw.start();
@@ -153,7 +152,7 @@ public class TranslationContext {
 			throw new UnsupportedOperationException("Has first to be started");
 		}
 		sw.stop();
-		phaseDurations.put(currentPhase, sw.elapsedTime(TimeUnit.MICROSECONDS));
+		phaseDurations.put(currentPhase, sw.elapsed(TimeUnit.MICROSECONDS));
 
 	}
 
