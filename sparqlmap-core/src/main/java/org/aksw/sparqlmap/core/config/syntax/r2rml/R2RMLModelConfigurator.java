@@ -1,5 +1,6 @@
 package org.aksw.sparqlmap.core.config.syntax.r2rml;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -10,6 +11,8 @@ import net.sf.jsqlparser.JSQLParserException;
 import org.aksw.sparqlmap.core.automapper.AutomapperWrapper;
 import org.aksw.sparqlmap.core.db.DBAccess;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
@@ -73,7 +76,10 @@ public class R2RMLModelConfigurator {
 
 		if(mappingfile!=null){
 			log.info("Loading mapping " + mappingfile);
-			mapping = FileManager.get().readModel(mapping, mappingfile);
+			
+			RDFDataMgr.read(mapping, new FileInputStream(mappingfile),Lang.TURTLE);
+					
+					
 		}else{
 			log.info("Using direct mapping");
 			mapping = automapper.automap();

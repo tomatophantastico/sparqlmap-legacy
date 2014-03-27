@@ -19,7 +19,7 @@ import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
  * This class holds all information needed for a specific translation.
  * 
  * @author joerg
- *
+ * 
  */
 public class TranslationContext {
 	

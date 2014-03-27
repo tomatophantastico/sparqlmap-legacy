@@ -1,6 +1,5 @@
 package org.aksw.sparqlmap.core.automapper;
 
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.sql.Connection;
@@ -15,6 +14,7 @@ import javax.print.URIException;
 
 import org.aksw.commons.util.jdbc.ForeignKey;
 import org.aksw.commons.util.jdbc.Schema;
+import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RML;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.google.common.collect.Multimap;
@@ -24,364 +24,354 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
-public class Automapper
-{
-	private Model r2rmlGraph = ModelFactory.createDefaultModel();
-	private Resource tripleMap ;
-	private static final String RR = "http://www.w3.org/ns/r2rml#";
-	private String dbUri, dataUri, vocUri, compPkSep;
-	//private Properties dbProps;
-	private Connection dbConnction;
-	private DatabaseMetaData md;
-	private Schema dbSchema;
-	static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Automapper.class);
+/**
+ * This class generates an R2RML mapping based on the direct mapping specification out of a database.
+ * 
+ * @author joerg
+ * @author sherif
+ *
+ */
+
+public class Automapper {
+
+  static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Automapper.class);
+
+  
+  private Model r2rmlGraph = ModelFactory.createDefaultModel();
+
+  private Resource tripleMap;
+
+  private String dbUri, dataUri, vocUri, compPkSep;
+
+  // private Properties dbProps;
+  private Connection dbConnction;
+
+  private DatabaseMetaData md;
+
+  private Schema dbSchema;
 
 
+  public Automapper(Connection conn, String mappedDbUri, String userDataUri, String userVocUri, String userCompPkSep)
+    throws SQLException {
+    this.dbConnction = conn;
+    this.md = dbConnction.getMetaData();
+    this.dbUri = mappedDbUri != null ? mappedDbUri : "http://example.com/mapping/";
+    this.dataUri = userDataUri != null ? userDataUri : "http://example.com/data/";
+    this.vocUri = userVocUri != null ? userVocUri : "http://example.com/vocabulary/";
+    this.compPkSep = userCompPkSep != null ? userCompPkSep : ";";
+    this.dbSchema = Schema.create(dbConnction);
 
-	public Automapper(Connection conn,  String mappedDbUri, String userDataUri, String userVocUri, String userCompPkSep) throws SQLException {
-		this.dbConnction = conn;
-		this.md =  dbConnction.getMetaData();
-		this.dbUri = mappedDbUri != null ? mappedDbUri : "http://example.com/mapping/" ;
-		this.dataUri= userDataUri != null ? userDataUri : "http://example.com/data/";
-		this.vocUri= userVocUri != null ? userVocUri : "http://example.com/vocabulary/";
-		this.compPkSep  = userCompPkSep !=null? userCompPkSep:";";
-		this.dbSchema =Schema.create(dbConnction);
+  }
 
+  public Model getMydbData() throws SQLException {
 
-	}
+    try {
 
+      java.sql.ResultSet catalogs = null;
+      catalogs = md.getCatalogs();
+      java.sql.ResultSet primaryKeyRecordSet = null;
+      String[] TABLE_TYPES = { "TABLE" };
+      catalogs = md.getTables(null, null, "%", TABLE_TYPES);
 
+      catalogs.beforeFirst();
+      while (catalogs.next()) {
+        String tableName = catalogs.getString(3); // "TABLE_CATALOG"
+        mapTable(tableName);
+        // PK fields
+        primaryKeyRecordSet = md.getPrimaryKeys(null, null, tableName);
 
-	public Model getMydbData() throws SQLException
-	{
+        // Map PKs
+        mapPrimaryKey(primaryKeyRecordSet, tableName);
 
-		try {
+        // FK Fields
+        mapForeignKeys(tableName);
 
-			java.sql.ResultSet catalogs = null;
-			catalogs = md.getCatalogs();
-			java.sql.ResultSet  primaryKeyRecordSet=null;
-			String[] TABLE_TYPES = {"TABLE"};
-			catalogs = md.getTables(null, null, "%", TABLE_TYPES);
+        // Normal fields
+        mapAllKeys(tableName);
 
-			catalogs.beforeFirst();
-			while (catalogs.next()) {
-				String tableName = catalogs.getString(3);  //"TABLE_CATALOG" 	
-				mapTable(tableName);
-				// PK fields         
-				primaryKeyRecordSet = md.getPrimaryKeys(null, null, tableName);
+      }
 
-				//Map PKs
-				 mapPrimaryKey( primaryKeyRecordSet, tableName);
-				
-				// FK Fields
-				mapForeignKeys(tableName);
+      r2rmlGraph.setNsPrefix("rr", R2RML.R2RML_STRING);
+      r2rmlGraph.setNsPrefix("vocab", vocUri);
+      r2rmlGraph.setNsPrefix("mapping", dbUri);
+      r2rmlGraph.setNsPrefix("data", dataUri);
+      // r2rmlGraph.write(System.out,"N-TRIPLE");
+      // return r2rmlGraph;
+    } catch (UnsupportedEncodingException e) {
+      log.error("Error:", e);
+    }
+    return r2rmlGraph;
+  }
 
-				// Normal fields
-				mapAllKeys(tableName);
+  private String urlEncode(String tableName) throws UnsupportedEncodingException {
 
-			}
+    return UriComponentsBuilder.newInstance().path(tableName).build().encode().toString();
+    // URLEncoder.encode(tableName, "UTF-8").replaceAll("\\+", "%20");
+  }
 
-			r2rmlGraph.setNsPrefix("rr",RR);
-			r2rmlGraph.setNsPrefix("vocab",vocUri);
-			r2rmlGraph.setNsPrefix("mapping",dbUri);
-			r2rmlGraph.setNsPrefix("data",dataUri);
-			// r2rmlGraph.write(System.out,"N-TRIPLE");
-			//return r2rmlGraph; 
-		} catch (UnsupportedEncodingException e) {
-			log.error("Error:",e);
-		}
-		return r2rmlGraph;          
-	}
+  String getParentTable(ArrayList<String> tableNamesList, String fkName) {
+    String tableName = null;
+    for (int i = 0; i < tableNamesList.size(); i++) {
+      tableName = tableNamesList.get(i);
+      if (fkName.contains(tableName)) {
+        return tableName;
+      }
+    }
+    return fkName;
+  }
 
-	private String urlEncode(String tableName)
-			throws UnsupportedEncodingException {
-		
-		
-		
-		return UriComponentsBuilder.newInstance().path(tableName).build().encode().toString();
-				//URLEncoder.encode(tableName, "UTF-8").replaceAll("\\+", "%20");
-	}
-	
-	String getParentTable(ArrayList<String> tableNamesList, String fkName){
-		String tableName=null;
-		for(int i=0; i<tableNamesList.size();i++) {
-			tableName = tableNamesList.get(i);
-			if(fkName.contains(tableName)){
-				return tableName;
-			}
-		}
-		return fkName;
-	}
-	
-	/**
-	 * mapTable maps the rr:logicalTabel property and table name.
-	 * @param tableName
-	 * @param tableNameEncoded
-	 * @author Sherif
-	 * @throws UnsupportedEncodingException 
-	 */
-	void mapTable(String tableName) throws UnsupportedEncodingException{
-		String tableNameEncoded="";
-		tableNameEncoded = urlEncode(tableName);
-		
-		tripleMap =r2rmlGraph.createResource(dbUri + tableNameEncoded);
-		Property logicalTableProperty = ResourceFactory.createProperty(RR + "logicalTable");
-		Property tableNameProperty    = ResourceFactory.createProperty(RR + "tableName");
-		
-		Resource tabelNameResource=r2rmlGraph.createResource()
-				.addProperty(tableNameProperty, '\"' + tableName + '\"');
-		
-		tripleMap.addProperty(logicalTableProperty,tabelNameResource);	
-	}
-	
-	/**
-	 * getPrimaryKeyCount tack DatabaseMetaData and a pacific table name as parameters and returns the number of primary keys in this table
-	 * @param DatabaseMetaData
-	 * @param tableName
-	 * @return Primary Keys Count
-	 * @author Sherif
-	 * @throws SQLException 
-	 */
-	int getPrimaryKeyCount(String tableName) throws SQLException{
-		java.sql.ResultSet  primaryKeyRecordSet=null;
-		int rowcount = 0;
-		primaryKeyRecordSet = md.getPrimaryKeys(null, null, tableName);
-		if (primaryKeyRecordSet.last()) {
-			rowcount = primaryKeyRecordSet.getRow();
-			primaryKeyRecordSet.beforeFirst(); // not primaryKeyRecordSet.first() because the primaryKeyRecordSet.next() below will move on, missing the first element
-		}
-		return rowcount;
-	}
-	
-	/**
-	 * mapPrimaryKey maps rr:subjectMap, rr:class and rr:template properties for Primary Key Table
-	 * @param primaryKeyRecordSet
-	 * @param pKcolumnName
-	 * @param tableNameEncoded
-	 * @author Sherif
-	 * @throws SQLException 
-	 * @throws UnsupportedEncodingException 
-	 */
-	void mapPrimaryKey(java.sql.ResultSet  primaryKeyRecordSet, String tableName ) throws UnsupportedEncodingException, SQLException{
-		// Count PKs
-		int primaryKeysCount = getPrimaryKeyCount(tableName);
-		String tableNameEncoded = urlEncode(tableName);
+  /**
+   * mapTable maps the rr:logicalTabel property and table name.
+   * 
+   * @param tableName
+   * @param tableNameEncoded
+   * @author Sherif
+   * @throws UnsupportedEncodingException
+   */
+  void mapTable(String tableName) throws UnsupportedEncodingException {
+    String tableNameEncoded = "";
+    tableNameEncoded = urlEncode(tableName);
+    tripleMap = r2rmlGraph.createResource(dbUri + tableNameEncoded);
+    Resource tabelNameResource = r2rmlGraph.createResource().addProperty(R2RML.tableName, '\"' + tableName + '\"');
+    tripleMap.addProperty(R2RML.logicalTable, tabelNameResource);
+  }
 
-		if (primaryKeysCount > 1) {			// case composite PKs
-			mapCompositePrimaryKey(primaryKeyRecordSet, tableNameEncoded);
-		}
-		else if (primaryKeysCount == 1) {	// case 1 PK
-			mapSinglePrimaryKey(primaryKeyRecordSet, tableNameEncoded);
-		} 
-		else{								// case No PK
-			mapNoPrimaryKey(tableName);
-		}
-	}
-	
-	/**
-	 * mapCompositePrimaryKey maps rr:subjectMap, rr:class and rr:template properties for Composite Primary Key Table
-	 * @param primaryKeyRecordSet
-	 * @param pKcolumnName
-	 * @param tableNameEncoded
-	 * @author Sherif
-	 * @throws SQLException 
-	 * @throws UnsupportedEncodingException 
-	 */
-	void mapCompositePrimaryKey(java.sql.ResultSet  primaryKeyRecordSet, String tableNameEncoded ) throws UnsupportedEncodingException, SQLException{
-		String compositePrimaryKeyString="";
-		
-		
-		
-		while (primaryKeyRecordSet.next()) {
-			String pKcolumnName = primaryKeyRecordSet.getString("COLUMN_NAME");
-			String pKcolumnNameEncoded = urlEncode(pKcolumnName);
-			compositePrimaryKeyString += pKcolumnNameEncoded + "={\"" +pKcolumnName  + "\"}"; 
-			compositePrimaryKeyString += primaryKeyRecordSet.isLast()?"":compPkSep;       
-		}
+  /**
+   * getPrimaryKeyCount tack DatabaseMetaData and a pacific table name as parameters and returns the number of primary
+   * keys in this table
+   * 
+   * @param DatabaseMetaData
+   * @param tableName
+   * @return Primary Keys Count
+   * @author Sherif
+   * @throws SQLException
+   */
+  int getPrimaryKeyCount(String tableName) throws SQLException {
+    java.sql.ResultSet primaryKeyRecordSet = null;
+    int rowcount = 0;
+    primaryKeyRecordSet = md.getPrimaryKeys(null, null, tableName);
+    if (primaryKeyRecordSet.last()) {
+      rowcount = primaryKeyRecordSet.getRow();
+      primaryKeyRecordSet.beforeFirst(); // not primaryKeyRecordSet.first() because the primaryKeyRecordSet.next() below
+                                         // will move on, missing the first element
+    }
+    return rowcount;
+  }
 
-		Property subjectMapProperty = ResourceFactory.createProperty(RR + "subjectMap");
-		Property templateProperty 	= ResourceFactory.createProperty(RR + "template");
-		Property classProperty 		= ResourceFactory.createProperty(RR + "class");
-		Property VocUriProperty 	= ResourceFactory.createProperty(vocUri + tableNameEncoded);
+  /**
+   * mapPrimaryKey maps rr:subjectMap, rr:class and rr:template properties for Primary Key Table
+   * 
+   * @param primaryKeyRecordSet
+   * @param pKcolumnName
+   * @param tableNameEncoded
+   * @author Sherif
+   * @throws SQLException
+   * @throws UnsupportedEncodingException
+   */
+  void mapPrimaryKey(java.sql.ResultSet primaryKeyRecordSet, String tableName) throws UnsupportedEncodingException,
+    SQLException {
+    // Count PKs
+    int primaryKeysCount = getPrimaryKeyCount(tableName);
+    String tableNameEncoded = urlEncode(tableName);
 
-		Resource dataVocUriResource	= r2rmlGraph.createResource()
-				.addProperty(templateProperty, dataUri+tableNameEncoded + "/"+compositePrimaryKeyString)
-				.addProperty(classProperty,VocUriProperty);
+    if (primaryKeysCount > 1) { // case composite PKs
+      mapCompositePrimaryKey(primaryKeyRecordSet, tableNameEncoded);
+    } else if (primaryKeysCount == 1) { // case 1 PK
+      mapSinglePrimaryKey(primaryKeyRecordSet, tableNameEncoded);
+    } else { // case No PK
+      mapNoPrimaryKey(tableName);
+    }
+  }
 
-		tripleMap.addProperty(subjectMapProperty,dataVocUriResource);
-	}
-	
-	/**
-	 * mapSinglePrimaryKey maps rr:subjectMap, rr:class and rr:template properties for Single PrimaryKey Table
-	 * @param primaryKeyRecordSet
-	 * @param pKcolumnName
-	 * @param tableNameEncoded
-	 * @author Sherif
-	 * @throws SQLException 
-	 * @throws UnsupportedEncodingException 
-	 */
-	void mapSinglePrimaryKey(java.sql.ResultSet  primaryKeyRecordSet, String tableNameEncoded ) throws SQLException, UnsupportedEncodingException{	
-		String pKcolumnName="" ;
-		String pKcolumnNameEncoded="";
+  /**
+   * mapCompositePrimaryKey maps rr:subjectMap, rr:class and rr:template properties for Composite Primary Key Table
+   * 
+   * @param primaryKeyRecordSet
+   * @param pKcolumnName
+   * @param tableNameEncoded
+   * @author Sherif
+   * @throws SQLException
+   * @throws UnsupportedEncodingException
+   */
+  void mapCompositePrimaryKey(java.sql.ResultSet primaryKeyRecordSet, String tableNameEncoded)
+    throws UnsupportedEncodingException, SQLException {
+    String compositePrimaryKeyString = "";
 
-		primaryKeyRecordSet.first();
-		pKcolumnName  = primaryKeyRecordSet.getString("COLUMN_NAME");
-		pKcolumnNameEncoded = urlEncode(pKcolumnName);
+    while (primaryKeyRecordSet.next()) {
+      String pKcolumnName = primaryKeyRecordSet.getString("COLUMN_NAME");
+      String pKcolumnNameEncoded = urlEncode(pKcolumnName);
+      compositePrimaryKeyString += pKcolumnNameEncoded + "={\"" + pKcolumnName + "\"}";
+      compositePrimaryKeyString += primaryKeyRecordSet.isLast() ? "" : compPkSep;
+    }
 
-		Property subjectMapProperty = ResourceFactory.createProperty(RR + "subjectMap");
-		Property templateProperty 	= ResourceFactory.createProperty(RR + "template");
-		Property classProperty 		= ResourceFactory.createProperty(RR + "class");
-		Property VocUriProperty 	= ResourceFactory.createProperty(vocUri + tableNameEncoded);
+    Property VocUriProperty = ResourceFactory.createProperty(vocUri + tableNameEncoded);
 
-		Resource dataVocUriResource	= r2rmlGraph.createResource()
-			.addProperty(templateProperty, dataUri+ tableNameEncoded +'/'+ pKcolumnNameEncoded +"={\"" + pKcolumnName + "\"}")
-			.addProperty(classProperty,VocUriProperty);
+    Resource dataVocUriResource =
+      r2rmlGraph.createResource()
+        .addProperty(R2RML.template, dataUri + tableNameEncoded + "/" + compositePrimaryKeyString)
+        .addProperty(R2RML.hasClass, VocUriProperty);
 
-		tripleMap.addProperty(subjectMapProperty,dataVocUriResource);
-	}
-	
-	/**
-	 * mapNoPrimaryKey maps rr:subjectMap, rr:class rr:BlankNode and rr:template properties for no PrimaryKey Table
-	 * @param primaryKeyRecordSet
-	 * @param pKcolumnName
-	 * @param tableNameEncoded
-	 * @author Sherif
-	 * @throws SQLException 
-	 * @throws UnsupportedEncodingException 
-	 */
-	void mapNoPrimaryKey(String tableName) throws SQLException, UnsupportedEncodingException{
-		/**
-		 * If no PK then make a PK as a composition of all keys
-		 */
-		String compositePrimaryKeyString="";
-		java.sql.ResultSet r;
-		String tableNameEncoded="";
-		r = md.getColumns(null,null, tableName, "%");
-		tableNameEncoded = urlEncode(tableName);
-		
-		while(r.next()){
-			String columnName=r.getString(4);
-//			String columnNameEncoded = urlEncode(columnName);
-			compositePrimaryKeyString += tableNameEncoded + "={\"" + columnName + "\"}"; 
-			compositePrimaryKeyString += r.isLast()?"":compPkSep;
-		}
+    tripleMap.addProperty(R2RML.subjectMap, dataVocUriResource);
+  }
 
-		Property blankNodeProperty 	= ResourceFactory.createProperty(RR + "BlankNode");
-		Property classProperty 		= ResourceFactory.createProperty(RR + "class");
-		Property subjectMapProperty = ResourceFactory.createProperty(RR + "subjectMap");
-		Property templateProperty 	= ResourceFactory.createProperty(RR + "template");
-		Property termTypeProperty 	= ResourceFactory.createProperty(RR + "termType");
-		Property VocUriProperty 	= ResourceFactory.createProperty(vocUri + tableNameEncoded);
+  /**
+   * mapSinglePrimaryKey maps rr:subjectMap, rr:class and rr:template properties for Single PrimaryKey Table
+   * 
+   * @param primaryKeyRecordSet
+   * @param pKcolumnName
+   * @param tableNameEncoded
+   * @author Sherif
+   * @throws SQLException
+   * @throws UnsupportedEncodingException
+   */
+  void mapSinglePrimaryKey(java.sql.ResultSet primaryKeyRecordSet, String tableNameEncoded) throws SQLException,
+    UnsupportedEncodingException {
+    String pKcolumnName = "";
+    String pKcolumnNameEncoded = "";
 
-		Resource dataVocUriBnodeResource=r2rmlGraph.createResource();
-		dataVocUriBnodeResource
-			.addProperty(templateProperty, dataUri+ compositePrimaryKeyString )
-			.addProperty(classProperty,VocUriProperty)
-			.addProperty(termTypeProperty, blankNodeProperty);
+    primaryKeyRecordSet.first();
+    pKcolumnName = primaryKeyRecordSet.getString("COLUMN_NAME");
+    pKcolumnNameEncoded = urlEncode(pKcolumnName);
+    Property VocUriProperty = ResourceFactory.createProperty(vocUri + tableNameEncoded);
 
-		tripleMap.addProperty(subjectMapProperty,dataVocUriBnodeResource);
-	}
-	
-	/**
-	 * mapAllKeys maps rr:predicateObjectMap, rr:predicate rr:objectMap and rr:column properties for all keys of each Table
-	 * @param primaryKeyRecordSet
-	 * @param pKcolumnName
-	 * @param tableNameEncoded
-	 * @author Sherif
-	 * @throws SQLException 
-	 * @throws UnsupportedEncodingException 
-	 */
-	void mapAllKeys(String tableName) throws SQLException, UnsupportedEncodingException{
+    Resource dataVocUriResource =
+      r2rmlGraph
+        .createResource()
+        .addProperty(R2RML.template,
+          dataUri + tableNameEncoded + '/' + pKcolumnNameEncoded + "={\"" + pKcolumnName + "\"}")
+        .addProperty(R2RML.hasClass, VocUriProperty);
 
-		java.sql.ResultSet allKeysRecordSet = md.getColumns(null, null, tableName, "%");
+    tripleMap.addProperty(R2RML.subjectMap, dataVocUriResource);
+  }
 
-		while (allKeysRecordSet.next()){
-			String colName=allKeysRecordSet.getString(4);
-			String colNameEncoded = urlEncode(colName);
-			String tableNameEncoded = urlEncode(tableName);
+  /**
+   * mapNoPrimaryKey maps rr:subjectMap, rr:class rr:BlankNode and rr:template properties for no PrimaryKey Table
+   * 
+   * @param primaryKeyRecordSet
+   * @param pKcolumnName
+   * @param tableNameEncoded
+   * @author Sherif
+   * @throws SQLException
+   * @throws UnsupportedEncodingException
+   */
+  void mapNoPrimaryKey(String tableName) throws SQLException, UnsupportedEncodingException {
+    /**
+     * If no PK then make a PK as a composition of all keys
+     */
+    String compositePrimaryKeyString = "";
+    java.sql.ResultSet r;
+    String tableNameEncoded = "";
+    r = md.getColumns(null, null, tableName, "%");
+    tableNameEncoded = urlEncode(tableName);
 
-			Property predicateObjectMapProperty = ResourceFactory.createProperty(RR + "predicateObjectMap");
-			Property predicateMapProperty 		= ResourceFactory.createProperty(RR + "predicate");
-			Property VocUriProperty				= ResourceFactory.createProperty(vocUri + tableNameEncoded + '#' + colNameEncoded);
-			Property objectMapProperty 			= ResourceFactory.createProperty(RR + "objectMap");
-			Property columnProperty 			= ResourceFactory.createProperty(RR + "column");
+    while (r.next()) {
+      String columnName = r.getString(4);
+      compositePrimaryKeyString += tableNameEncoded + "={\"" + columnName + "\"}";
+      compositePrimaryKeyString += r.isLast() ? "" : compPkSep;
+    }
 
-			Resource columnNameResource=r2rmlGraph.createResource();
-			columnNameResource.addProperty(columnProperty,'\"' + colName + '\"');
+    
+    Property VocUriProperty = ResourceFactory.createProperty(vocUri + tableNameEncoded);
 
-			Resource VocUriColResource=r2rmlGraph.createResource();
-			VocUriColResource
-				.addProperty(predicateMapProperty,VocUriProperty)
-				.addProperty(objectMapProperty,columnNameResource);
+    Resource dataVocUriBnodeResource = r2rmlGraph.createResource();
+    dataVocUriBnodeResource.addProperty(R2RML.template, dataUri + compositePrimaryKeyString)
+      .addProperty(R2RML.hasClass, VocUriProperty).addProperty(R2RML.termType, R2RML.BlankNode);
 
-			tripleMap.addProperty(predicateObjectMapProperty, VocUriColResource);
-		}
-	}
+    tripleMap.addProperty(R2RML.subjectMap, dataVocUriBnodeResource);
+  }
 
+  /**
+   * mapAllKeys maps rr:predicateObjectMap, rr:predicate rr:objectMap and rr:column properties for all keys of each
+   * Table
+   * 
+   * @param primaryKeyRecordSet
+   * @param pKcolumnName
+   * @param tableNameEncoded
+   * @author Sherif
+   * @throws SQLException
+   * @throws UnsupportedEncodingException
+   */
+  void mapAllKeys(String tableName) throws SQLException, UnsupportedEncodingException {
 
-	
-	/**
-	 * mapForeignKeys maps rr:predicateObjectMap, rr:predicate rr:objectMap, rr:parentTriplesMap, rr:joinCondition, rr:child and rr:parent properties foreign keys of each Table
-	 * @param tableName
-	 * @author sherif
-	 * @throws UnsupportedEncodingException 
-	 * @throws SQLException 
-	 */
-	void mapForeignKeys(String tableName) throws UnsupportedEncodingException, SQLException{
-		String tableNameEncoded = urlEncode(tableName);
+    java.sql.ResultSet allKeysRecordSet = md.getColumns(null, null, tableName, "%");
 
-		Multimap<String, ForeignKey> foreinKeysMultimap = dbSchema.getForeignKeys();	
-		Collection<ForeignKey> foreinKeysCollection= foreinKeysMultimap.get(tableName);
+    while (allKeysRecordSet.next()) {
+      String colName = allKeysRecordSet.getString(4);
+      String colNameEncoded = urlEncode(colName);
+      String tableNameEncoded = urlEncode(tableName);
 
-		// Parent = Source
-		// Child  = Target
+      //Property predicateObjectMapProperty = ResourceFactory.createProperty(RR + "predicateObjectMap");
+      //Property predicateMapProperty = ResourceFactory.createProperty(RR + "predicate");
+      Property vocUriProperty = ResourceFactory.createProperty(vocUri + tableNameEncoded + '#' + colNameEncoded);
+      //Property objectMapProperty = ResourceFactory.createProperty(RR + "objectMap");
+      //Property columnProperty = ResourceFactory.createProperty(RR + "column");
 
-		for (ForeignKey fk : foreinKeysCollection){// if the mapping related to the current table do	
+      Resource columnNameResource = r2rmlGraph.createResource();
+      columnNameResource.addProperty(R2RML.column, '\"' + colName + '\"');
 
-			Property predicateObjectMapProperty = ResourceFactory.createProperty(RR + "predicateObjectMap");
-			Property predicateProperty 			= ResourceFactory.createProperty(RR + "predicate");
-			Property objectMapProperty 			= ResourceFactory.createProperty(RR + "objectMap");
-			Property parentTriplesMapProperty 	= ResourceFactory.createProperty(RR + "parentTriplesMap");
-			Property joinConditionProperty 		= ResourceFactory.createProperty(RR + "joinCondition");
-			Property childProperty 				= ResourceFactory.createProperty(RR + "child");
-			Property parentProperty 			= ResourceFactory.createProperty(RR + "parent");
-			Property dbUriProperty				= ResourceFactory.createProperty(dbUri + urlEncode(fk.getTarget().getTableName()));
+      Resource VocUriColResource = r2rmlGraph.createResource();
+      VocUriColResource.addProperty(R2RML.predicate, vocUriProperty).addProperty(R2RML.objectMap,
+        columnNameResource);
 
-			// get the composite Keys String
-			String compositFkString="";
-			for(int compFkIndex=0;compFkIndex<fk.getSource().getColumnNames().size();compFkIndex++){
-				String fkSubStringEncoded=urlEncode(fk.getSource().getColumnNames().get(compFkIndex));
-				compositFkString += fkSubStringEncoded + ";";
-			}
-			compositFkString = compositFkString.substring(0, compositFkString.length()-1); // remove the last ";"
-			Property vocUriProperty				= ResourceFactory.createProperty(vocUri + tableNameEncoded + "#ref-" + compositFkString);
-					
-			Resource [] childParentResource=new Resource[fk.getSource().getColumnNames().size()] ;
-			Resource parentTriplesMapjoinConditionResource=null;
-			Resource predicateobjectMapResource=null;
+      tripleMap.addProperty(R2RML.predicateObjectMap, VocUriColResource);
+    }
+  }
 
-			for(int childParentResourceIndex=0;childParentResourceIndex<fk.getSource().getColumnNames().size();childParentResourceIndex++){
-				childParentResource[childParentResourceIndex] = r2rmlGraph.createResource()
-						.addProperty(childProperty, '\"' + fk.getSource().getColumnNames().get(childParentResourceIndex) + '\"')
-						.addProperty(parentProperty, '\"' +  fk.getTarget().getColumnNames().get(childParentResourceIndex)+ '\"');
-			}
-			
+  /**
+   * mapForeignKeys maps rr:predicateObjectMap, rr:predicate rr:objectMap, rr:parentTriplesMap, rr:joinCondition,
+   * rr:child and rr:parent properties foreign keys of each Table
+   * 
+   * @param tableName
+   * @author sherif
+   * @throws UnsupportedEncodingException
+   * @throws SQLException
+   */
+  void mapForeignKeys(String tableName) throws UnsupportedEncodingException, SQLException {
+    String tableNameEncoded = urlEncode(tableName);
 
-			parentTriplesMapjoinConditionResource =r2rmlGraph.createResource();
-			parentTriplesMapjoinConditionResource.addProperty(parentTriplesMapProperty, dbUriProperty);
-			for(int childParentResourceIndex=0;childParentResourceIndex<fk.getSource().getColumnNames().size();childParentResourceIndex++){
-				parentTriplesMapjoinConditionResource.addProperty(joinConditionProperty, childParentResource[childParentResourceIndex]);
-			}
-
-			predicateobjectMapResource =r2rmlGraph.createResource()
-					.addProperty(predicateProperty, vocUriProperty)
-					.addProperty(objectMapProperty, parentTriplesMapjoinConditionResource);
-
-			tripleMap.addProperty(predicateObjectMapProperty, predicateobjectMapResource); 
-
-		}
-	}
+    Multimap<String, ForeignKey> foreinKeysMultimap = dbSchema.getForeignKeys();
+    Collection<ForeignKey> foreinKeysCollection = foreinKeysMultimap.get(tableName);
 
 
+    for (ForeignKey fk : foreinKeysCollection) {// if the mapping related to the current table do
+
+     
+      Property dbUriProperty = ResourceFactory.createProperty(dbUri + urlEncode(fk.getTarget().getTableName()));
+
+      // get the composite Keys String
+      String compositFkString = "";
+      for (int compFkIndex = 0; compFkIndex < fk.getSource().getColumnNames().size(); compFkIndex++) {
+        String fkSubStringEncoded = urlEncode(fk.getSource().getColumnNames().get(compFkIndex));
+        compositFkString += fkSubStringEncoded + ";";
+      }
+      compositFkString = compositFkString.substring(0, compositFkString.length() - 1); // remove the last ";"
+      Property vocUriProperty = ResourceFactory.createProperty(vocUri + tableNameEncoded + "#ref-" + compositFkString);
+
+      Resource[] childParentResource = new Resource[fk.getSource().getColumnNames().size()];
+      Resource parentTriplesMapjoinConditionResource = null;
+      Resource predicateobjectMapResource = null;
+
+      for (int childParentResourceIndex = 0; childParentResourceIndex < fk.getSource().getColumnNames().size(); childParentResourceIndex++) {
+        childParentResource[childParentResourceIndex] =
+          r2rmlGraph.createResource()
+            .addProperty(R2RML.child, '\"' + fk.getSource().getColumnNames().get(childParentResourceIndex) + '\"')
+            .addProperty(R2RML.parent, '\"' + fk.getTarget().getColumnNames().get(childParentResourceIndex) + '\"');
+      }
+
+      parentTriplesMapjoinConditionResource = r2rmlGraph.createResource();
+      parentTriplesMapjoinConditionResource.addProperty(R2RML.parentTriplesMap, dbUriProperty);
+      for (int childParentResourceIndex = 0; childParentResourceIndex < fk.getSource().getColumnNames().size(); childParentResourceIndex++) {
+        parentTriplesMapjoinConditionResource.addProperty(R2RML.joinCondition,
+          childParentResource[childParentResourceIndex]);
+      }
+
+      predicateobjectMapResource =
+        r2rmlGraph.createResource().addProperty(R2RML.predicate, vocUriProperty)
+          .addProperty(R2RML.objectMap, parentTriplesMapjoinConditionResource);
+
+      tripleMap.addProperty(R2RML.predicateObjectMap, predicateobjectMapResource);
+
+    }
+  }
 
 }

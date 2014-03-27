@@ -320,7 +320,7 @@ public class QueryBuilderVisitor extends QuadVisitorBase {
 			TripleMap trm = trms.iterator().next();
 			PO po = trm.getPos().iterator().next();
 			//no we do not need
-			psw.addTripleQuery(trm.getSubject(), quad
+			psw.addTripleQuery(trm.getGraph(),quad.getGraph().getName(), trm.getSubject(), quad
 					.getSubject().getName(), po.getPredicate(),quad
 					.getPredicate().getName(),po.getObject(),quad.getObject().getName(), isOptional);
 			if(translationContext.getQueryInformation().isProjectionPush()){
@@ -332,7 +332,7 @@ public class QueryBuilderVisitor extends QuadVisitorBase {
 		}else if(trms.size()==0){
 			// no triple maps found.
 			//bind to null values instead.
-			psw.addTripleQuery(TermMap.createNullTermMap(dataTypeHelper), quad
+			psw.addTripleQuery(TermMap.createNullTermMap(dataTypeHelper),quad.getGraph().getName(),TermMap.createNullTermMap(dataTypeHelper), quad
 					.getSubject().getName(), TermMap.createNullTermMap(dataTypeHelper),quad
 					.getPredicate().getName(),TermMap.createNullTermMap(dataTypeHelper),quad.getObject().getName(), isOptional);
 			
@@ -348,7 +348,7 @@ public class QueryBuilderVisitor extends QuadVisitorBase {
 
 					PlainSelectWrapper innerPlainSelect = new PlainSelectWrapper(this.selectBody2Wrapper,dataTypeHelper,exprconv,filterUtil, translationContext);
 					//build a new sql select query for this pattern
-					innerPlainSelect.addTripleQuery(trm.getSubject(), quad
+					innerPlainSelect.addTripleQuery(trm.getGraph(),quad.getGraph().getName(),trm.getSubject(), quad
 							.getSubject().getName(), po.getPredicate(),quad
 							.getPredicate().getName(),po.getObject(),quad.getObject().getName(), isOptional);
 					if(translationContext.getQueryInformation().isProjectionPush()){

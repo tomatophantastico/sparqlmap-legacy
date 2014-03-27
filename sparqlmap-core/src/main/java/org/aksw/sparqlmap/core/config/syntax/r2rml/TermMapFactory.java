@@ -135,6 +135,8 @@ public class TermMapFactory {
 	
 	private Expression resourceToExpression(String uri){
 		return dth.cast(new StringValue("\"" + uri + "\""), dth.getStringCastType());	
-}
+	}
+	
+
 
 }

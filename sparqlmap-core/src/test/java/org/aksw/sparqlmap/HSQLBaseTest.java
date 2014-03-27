@@ -30,6 +30,7 @@ import com.hp.hpl.jena.query.ResultSetFactory;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.sparql.resultset.ResultSetCompare;
+import com.hp.hpl.jena.sparql.util.ModelUtils;
 
 public abstract class HSQLBaseTest {
 	
@@ -124,6 +125,9 @@ public abstract class HSQLBaseTest {
 		RDFDataMgr.write(expectedResBos, expectedresult,Lang.TURTLE);
 		models.append(expectedResBos);
 		models.append("=============================");
+		
+		
+		
 		
 		assertTrue(models.toString(), result.isIsomorphicWith(expectedresult));
 	

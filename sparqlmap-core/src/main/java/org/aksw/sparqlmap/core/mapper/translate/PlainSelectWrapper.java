@@ -399,7 +399,7 @@ public class PlainSelectWrapper implements Wrapper{
 	
 	
 
-	public void addTripleQuery(TermMap origSubject, String subjectAlias,
+	public void addTripleQuery(TermMap origGraph, String graphAlias, TermMap origSubject, String subjectAlias,
 			TermMap origPredicate, String predicateAlias, TermMap origObject,
 			String objectAlias, boolean isOptional) {
 
@@ -408,18 +408,21 @@ public class PlainSelectWrapper implements Wrapper{
 		TermMap subject = origSubject.clone(suffix);	
 		TermMap object = origObject.clone(suffix);
 		TermMap predicate = origPredicate.clone(suffix);
+		TermMap graph = origGraph.clone(suffix);
 		
-		if(needsDuplication(subject, subjectAlias) || needsDuplication(object, objectAlias)||needsDuplication(predicate, predicateAlias)){
+		if(needsDuplication(subject, subjectAlias) || needsDuplication(object, objectAlias)||needsDuplication(predicate, predicateAlias)||needsDuplication(graph, graphAlias)){
 			
-			String cloneSuffix = "_dup" + translationContext.duplicatecounter++;
+			String cloneSuffix = "_dup" + translationContext.getAndIncrementDuplicateCounter();
 			subject  = subject.clone(cloneSuffix);
 			object = object.clone(cloneSuffix);
 			predicate = predicate.clone(cloneSuffix);
+			graph  = graph.clone(cloneSuffix);
 		}
 		
 		putTermMap(subject, subjectAlias, isOptional);
 		putTermMap(object, objectAlias, isOptional);
 		putTermMap(predicate, predicateAlias, isOptional);
+		putTermMap(graph, graphAlias, isOptional);
 
 
 	}
@@ -551,7 +554,7 @@ public class PlainSelectWrapper implements Wrapper{
 			// create a new subselect
 			SubSelect subsell = new SubSelect();
 			subsell.setSelectBody(right.getSelectBody());
-			subsell.setAlias(SUBSEL_SUFFIX + translationContext.subquerycounter++);
+			subsell.setAlias(SUBSEL_SUFFIX + translationContext.getAndIncrementSubqueryCounter());
 			
 			Map<String,TermMap> rightVar2TermMap  = null;
 			

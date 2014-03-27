@@ -7,6 +7,4 @@ dependencies {
 	compile libraries.sqlutils
 	compile libraries.provdbs 
 	compile libraries.spring
-	
-	dbs libraries.provdbs
 }

@@ -104,9 +104,21 @@ public class TripleMap {
 	
 	public TripleMap getShallowCopy(){
 		TripleMap copy = new TripleMap(this.getUri(),this.from);
+		copy.setGraph(graph);
 		copy.pos = new HashSet<TripleMap.PO>(pos);
 		copy.subject = subject;
 		return copy;		
+	}
+	
+	public TripleMap getDeepCopy(){
+		TripleMap copy = new TripleMap(this.getUri(), this.from);
+		copy.setGraph(graph);
+		copy.subject = subject.clone("");
+		for(PO po:pos){
+			copy.addPO(po.getObject().clone(""), po.getPredicate().clone(""));
+		}
+		
+		return copy;
 	}
 	
 	@Override

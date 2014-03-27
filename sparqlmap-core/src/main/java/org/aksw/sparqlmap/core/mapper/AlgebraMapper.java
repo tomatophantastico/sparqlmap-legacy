@@ -35,6 +35,7 @@ import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.sparql.algebra.AlgebraGenerator;
+import com.hp.hpl.jena.sparql.algebra.AlgebraQuad;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.OpWalker;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
@@ -230,11 +231,11 @@ public class AlgebraMapper implements Mapper {
 		
 		List<TranslationContext> contexts = new ArrayList<TranslationContext>();
 		
-		Query spo = QueryFactory.create("SELECT ?s ?p ?o {{?s ?p ?o}}");
-//		Query spo = QueryFactory.create("SELECT ?g ?s ?p ?o {GRAPH ?g {?s ?p ?o}}");
+//		Query spo = QueryFactory.create("SELECT ?s ?p ?o {{?s ?p ?o}}");
+		Query spo = QueryFactory.create("SELECT ?g ?s ?p ?o {GRAPH ?g {?s ?p ?o}}");
 		
 		AlgebraGenerator gen = new AlgebraGenerator();
-		Op qop = gen.compile(spo);
+		Op qop = AlgebraQuad.quadize(gen.compile(spo));
 		
 		//Triple triple = ((OpBGP)((OpGraph)((OpProject)qop).getSubOp()).getSubOp()).getPattern().get(0);
 		Quad triple = ((OpQuadPattern)(((OpProject)qop)).getSubOp()).getPattern().get(0);

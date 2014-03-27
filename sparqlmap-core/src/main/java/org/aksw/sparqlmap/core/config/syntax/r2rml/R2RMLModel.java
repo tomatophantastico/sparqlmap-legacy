@@ -1,9 +1,7 @@
 package org.aksw.sparqlmap.core.config.syntax.r2rml;
 
 import java.io.StringReader;
-import java.sql.Date;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,16 +13,11 @@ import java.util.Set;
 import javax.annotation.PostConstruct;
 
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.ExpressionVisitor;
-import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.parser.CCJSqlParser;
-import net.sf.jsqlparser.parser.CCJSqlParserManager;
-import net.sf.jsqlparser.parser.JSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -50,17 +43,17 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.update.GraphStoreFactory;
 import com.hp.hpl.jena.update.UpdateExecutionFactory;
@@ -82,7 +75,7 @@ public class R2RMLModel {
 	Model mapping = null;
 	Model r2rmlSchema = null;
 	Model reasoningModel = null;
-	Map<String, TripleMap> tripleMaps = null;
+	Multimap<String,TripleMap> tripleMaps = HashMultimap.create();
 	
 	private int queryCount = 1;
 	private int tableCount = 1;
@@ -106,7 +99,6 @@ public class R2RMLModel {
 		resolveR2RMLShortcuts();
 		resolveMultipleGraphs();
 		validate();
-		RDFDataMgr.write(System.out, reasoningModel, Lang.TTL);
 		
 		loadTripleMaps();
 		loadParentTripleStatements();
@@ -334,68 +326,60 @@ public class R2RMLModel {
 		 List<Statement> parentTripleMapStatements = reasoningModel.listStatements((Resource)null, R2RML.parentTriplesMap, (RDFNode) null).toList();
 		
 		 
-		 for (Statement statement : parentTripleMapStatements) {
-			 
-			 Resource objectMap = statement.getSubject();
-			 
-			 //get the referenced map
-			 Resource parentTripleMap = statement.getObject().asResource();
-			 TripleMap parentTrM = this.tripleMaps.get(parentTripleMap.getURI());
+		for (Statement statement : parentTripleMapStatements) {
 
-			 
-			 //get the child map
-			 Resource poMap = reasoningModel.listStatements(null, R2RML.objectMap, objectMap).toList().get(0).getSubject();
-			 Resource mapping = reasoningModel.listStatements(null, R2RML.predicateObjectMap, poMap).toList().get(0).getSubject();
-			 TripleMap tripleMap = this.tripleMaps.get(mapping.getURI());
+			Resource objectMap = statement.getSubject();
 
-			 //we insert this
-			 TermMap newoTermMap = parentTrM.getSubject().clone("");
-			 
-			 newoTermMap.trm = parentTrM;
+			// get the referenced map
+			Resource parentTripleMap = statement.getObject().asResource();
+			for (TripleMap parentTrM : this.tripleMaps.get(parentTripleMap.getURI())) {
 
-			 
-			 
-			 //get the join condition
-			 List<Statement> joinconditions =  reasoningModel.listStatements(objectMap, R2RML.joinCondition,(RDFNode) null).toList();
-			 for (Statement joincondition : joinconditions) {
-				Resource joinconditionObject = joincondition.getObject().asResource();
-				
-				String parentjc = unescape(reasoningModel.listObjectsOfProperty(joinconditionObject, R2RML.parent).toList().get(0).asLiteral().getString());
-				String childjc = unescape(reasoningModel.listObjectsOfProperty(joinconditionObject, R2RML.child).toList().get(0).asLiteral().getString());
-				
-				
-				this.dbconf.getDataType(parentTrM.from,
-						getRealColumnName(parentjc, parentTrM.from));
-			
-				Column leftCol = ColumnHelper.createColumn(parentTrM.from.getAlias(), parentjc);
-				
-				Column rightCol = ColumnHelper.createColumn(tripleMap.from.getAlias(), childjc);
-				EqualsTo eq = new EqualsTo();
-				eq.setLeftExpression(dth.cast(leftCol, dth.getStringCastType()));
-				eq.setRightExpression(dth.cast(rightCol,
-						dth.getStringCastType()));
-				newoTermMap.getFromJoins().add(eq);
-				newoTermMap.addFromItem(tripleMap.from);
+				// get the child map
+				Resource poMap = reasoningModel.listStatements(null, R2RML.objectMap, objectMap).toList().get(0).getSubject();
+				Resource mapping = reasoningModel.listStatements(null, R2RML.predicateObjectMap, poMap).toList().get(0).getSubject();
+				for (TripleMap tripleMap : this.tripleMaps.get(mapping.getURI())) {
 
-				log.debug("And joins on parent: " + parentTrM.from.toString()
-						+ "." + parentjc + " and " + tripleMap.from.toString()
-						+ "." + childjc);
-				
-			}
-			 
-			 
-			 
-			// now we need to create the predicate
-			for (RDFNode pnode : reasoningModel.listObjectsOfProperty(poMap,
-					R2RML.predicateMap).toList()) {
-				// get the predicate Map
-				TermMapQueryResult ptmqr = new TermMapQueryResult(pnode.asResource(),
-						reasoningModel, tripleMap.from);
-				
-				TermMap ptm = mapQueryResultOnTermMap(ptmqr, tripleMap.from,tripleMap,R2RML.IRI);
-				
-				tripleMap.addPO(ptm, newoTermMap);
+					// we insert this
+					TermMap newoTermMap = parentTrM.getSubject().clone("");
 
+					newoTermMap.trm = parentTrM;
+
+					// get the join condition
+					List<Statement> joinconditions = reasoningModel.listStatements(objectMap, R2RML.joinCondition, (RDFNode) null).toList();
+					for (Statement joincondition : joinconditions) {
+						Resource joinconditionObject = joincondition.getObject().asResource();
+
+						String parentjc = unescape(reasoningModel.listObjectsOfProperty(joinconditionObject, R2RML.parent).toList().get(0).asLiteral()
+								.getString());
+						String childjc = unescape(reasoningModel.listObjectsOfProperty(joinconditionObject, R2RML.child).toList().get(0).asLiteral()
+								.getString());
+
+						this.dbconf.getDataType(parentTrM.from, getRealColumnName(parentjc, parentTrM.from));
+
+						Column leftCol = ColumnHelper.createColumn(parentTrM.from.getAlias(), parentjc);
+
+						Column rightCol = ColumnHelper.createColumn(tripleMap.from.getAlias(), childjc);
+						EqualsTo eq = new EqualsTo();
+						eq.setLeftExpression(dth.cast(leftCol, dth.getStringCastType()));
+						eq.setRightExpression(dth.cast(rightCol, dth.getStringCastType()));
+						newoTermMap.getFromJoins().add(eq);
+						newoTermMap.addFromItem(tripleMap.from);
+
+						log.debug("And joins on parent: " + parentTrM.from.toString() + "." + parentjc + " and " + tripleMap.from.toString() + "." + childjc);
+
+					}
+
+					// now we need to create the predicate
+					for (RDFNode pnode : reasoningModel.listObjectsOfProperty(poMap, R2RML.predicateMap).toList()) {
+						// get the predicate Map
+						TermMapQueryResult ptmqr = new TermMapQueryResult(pnode.asResource(), reasoningModel, tripleMap.from);
+
+						TermMap ptm = mapQueryResultOnTermMap(ptmqr, tripleMap.from, tripleMap, R2RML.IRI);
+
+						tripleMap.addPO(ptm, newoTermMap);
+
+					}
+				}
 			}
 
 		}
@@ -421,6 +405,9 @@ public class R2RMLModel {
 			CompatibilityChecker ccs = new SimpleCompatibilityChecker(
 					tripleMap.getSubject(),this.dbconf,this.dth);
 			tripleMap.getSubject().setCompChecker(ccs);
+			
+			CompatibilityChecker ccg = new SimpleCompatibilityChecker(tripleMap.getGraph(),this.dbconf,this.dth);
+			tripleMap.getGraph().setCompChecker(ccg);
 
 			for (PO po : tripleMap.getPos()) {
 				CompatibilityChecker ccp = new SimpleCompatibilityChecker(
@@ -461,11 +448,16 @@ public class R2RMLModel {
 
 		return new HashSet(tripleMaps.values());
 	}
-
+	/**
+	 * read the prepared model into SparqlMap objects.
+	 * 
+	 * behold this
+	 * 
+	 * @throws R2RMLValidationException
+	 * @throws JSQLParserException
+	 */
 	private void loadTripleMaps() throws R2RMLValidationException,
 			JSQLParserException {
-		Map<String, TripleMap> tripleMaps = new HashMap<String, TripleMap>();
-
 		String tmquery = "PREFIX rr: <http://www.w3.org/ns/r2rml#> SELECT ?tm ?tableName ?query ?version {?tm a rr:TriplesMap. ?tm rr:logicalTable ?tab . {?tab rr:tableName ?tableName} UNION {?tab rr:sqlQuery ?query. OPTIONAL{?tab rr:sqlVersion ?version}}}";
 		ResultSet tmrs = QueryExecutionFactory.create(
 				QueryFactory.create(tmquery), reasoningModel).execSelect();
@@ -518,25 +510,21 @@ public class R2RMLModel {
 			}
 
 			TripleMap triplemap = new TripleMap(tmUri.getURI(), fromItem);
+			Map<Resource,TripleMap> g2trimap  = new HashMap<Resource,TripleMap>();
 
 			// fetch the subject and validate it
-			String squery = "PREFIX rr: <http://www.w3.org/ns/r2rml#> SELECT"
-					+ " * {" + " <" + tmUri.getURI() + "> rr:subjectMap ?sm  "
-					+ getTermMapQuery("s") + "}";
-			ResultSet srs = QueryExecutionFactory.create(
-					QueryFactory.create(squery), this.mapping).execSelect();
+			List<Statement> subjectResStmtnt = reasoningModel.listStatements(tmUri, R2RML.subjectMap,(RDFNode) null).toList();
+			
+			
 			// there should only be one
-			if (srs.hasNext() == false) {
+			if (subjectResStmtnt.size() != 1) {
 				throw new R2RMLValidationException("Triple map " + tmUri
-						+ " has no subject term map, fix this");
+						+ "has " +subjectResStmtnt.size()+"  subject term map, fix this");
 			}
-			QuerySolution sSoltution = srs.next();
-			TermMapQueryResult sres = new TermMapQueryResult(sSoltution, "s",
+			Resource subjectRes = subjectResStmtnt.get(0).getResource();
+			
+			TermMapQueryResult sres = new TermMapQueryResult(subjectRes, reasoningModel,
 					fromItem);
-			if (srs.hasNext() == true) {
-				throw new R2RMLValidationException("Triple map " + tmUri
-						+ " has more than one subject term map, fix this");
-			}
 			
 			
 			//create the subject term map
@@ -563,60 +551,35 @@ public class R2RMLModel {
 			triplemap.setSubject(stm);
 			
 			
-			//getting the graph information from the subject map
-			Resource subjectRes = reasoningModel.getProperty(tmUri, R2RML.subjectMap).getResource();
-			
-			Statement graphMapStmt =  reasoningModel.getProperty(subjectRes, R2RML.graphMap);
-			List<Expression> graph;
-
-			if(graphMapStmt!=null){
-				Resource graphMap =  graphMapStmt.getResource();
-				if(reasoningModel.contains(graphMap, R2RML.template)){
-					String template  = reasoningModel.getProperty(graphMap, R2RML.template).getString();
-					graph = templateToResourceExpression(
-							cleanTemplate(template, fromItem), fromItem, dth);
-				}else if(reasoningModel.contains(graphMap, R2RML.column)){
-					String column = reasoningModel.getProperty(graphMap, R2RML.column).getString();
-					String template = "\"{"
-							+ getRealColumnName(column, fromItem) + "\"}";
-					graph = templateToResourceExpression(
-							cleanTemplate(template, fromItem), fromItem, dth);
-				}else if(reasoningModel.contains(graphMap, R2RML.constant)){
-					Resource resource = reasoningModel.getProperty(graphMap, R2RML.constant).getResource();
-					graph = Arrays.asList( resourceToExpression(resource));
-				}else{
-					throw new R2RMLValidationException("Graphmap without valid value found for " + tmUri.getURI());
-				}
-			}else{
-				graph = Arrays.asList( resourceToExpression(R2RML.defaultGraph));
-			}
 		
-			//set the graph
-			TermMap gtm = new TermMap(dth);
-			gtm.setTermTyp(R2RML.IRI);
-			gtm.getResourceColSeg().addAll(graph);
-			triplemap.setGraph(gtm);
 			
+	
+			List<Statement> postmts = reasoningModel.listStatements(tmUri, R2RML.predicateObjectMap, (RDFNode) null).toList();
 			
+			Map<TermMap,TripleMap> graph2TripleMap = new HashMap(); 
 			
-			
-			// get the PO
-			String poQuery = "PREFIX rr: <http://www.w3.org/ns/r2rml#> "
-					+ "SELECT * {"
-					+ // ?ptemplate ?pcolumn ?pconstant ?ptermtype ?otemplate
-						// ?ocolumn ?oconstant ?otermtype ?olang ?odatatype {" +
-					"<" + tmUri.getURI() + "> <" + R2RML.predicateObjectMap
-					+ "> ?pom. ?pom <" + R2RML.predicateMap + "> ?pm . ?pom <"
-					+ R2RML.objectMap + "> ?om." + getTermMapQuery("p")
-					+ getTermMapQuery("o") + "}";
 
-			ResultSet pors = QueryExecutionFactory.create(
-					QueryFactory.create(poQuery), reasoningModel).execSelect();
+			for  (Statement postmt: postmts) {
+				Resource poResource = postmt.getResource();
+				
+				Resource predicateMapResource = reasoningModel.getProperty(poResource, R2RML.predicateMap).getResource();
+				Resource objectMapResource = reasoningModel.getProperty(poResource, R2RML.objectMap).getResource();
+				
+				
+				// get the graph statements for the po here.
+				List<Statement> graphMapStmts =  reasoningModel.listStatements(poResource, R2RML.graphMap,(RDFNode) null).toList();
+				List<TermMap> graphMaps = getGraphmapsForPO(tmUri, fromItem, graphMapStmts);
+				
+				
+				
+				
+				
+				
+				
+				
+		
 
-			while (pors.hasNext()) {
-				QuerySolution posol = pors.next();
-
-				TermMapQueryResult p = new TermMapQueryResult(posol, "p",
+				TermMapQueryResult p = new TermMapQueryResult(predicateMapResource,reasoningModel,
 						fromItem);
 				
 				
@@ -630,7 +593,7 @@ public class R2RMLModel {
 			
 
 
-				TermMapQueryResult qr_o = new TermMapQueryResult(posol, "o",
+				TermMapQueryResult qr_o = new TermMapQueryResult(objectMapResource,reasoningModel,
 						fromItem);
 				//the term type definition according to the R2RML spec  http://www.w3.org/TR/r2rml/#termtype
 				
@@ -654,64 +617,60 @@ public class R2RMLModel {
 					}
 				
 				
-				triplemap.addPO(ptm, otm);
+				for(TermMap graphTermMap: graphMaps){
+					TripleMap graphTripleMap = graph2TripleMap.get(graphTermMap);
+					if(graphTripleMap==null){
+						graphTripleMap = triplemap.getDeepCopy();
+						graphTripleMap.setGraph(graphTermMap);
+						graph2TripleMap.put(graphTermMap, graphTripleMap);
+					}					
+					graphTripleMap.addPO(ptm, otm);	
+				}				
+				this.tripleMaps.putAll(tmUri.toString(),graph2TripleMap.values());
+			}
+		}
+	}
+
+	public List<TermMap> getGraphmapsForPO(Resource tmUri, FromItem fromItem, List<Statement> graphMapStmts) throws R2RMLValidationException {
+
+		List<TermMap> graphMaps = new ArrayList();
+		if (graphMapStmts == null || graphMapStmts.isEmpty()) {
+			graphMaps = Arrays.asList(this.tfac.createTermMap(R2RML.defaultGraph.asNode()));
+		} else {
+			for (Statement graphMapStmt : graphMapStmts) {
+				List<Expression> graph;
+
+				if (graphMapStmt != null) {
+					Resource graphMap = graphMapStmt.getResource();
+					if (reasoningModel.contains(graphMap, R2RML.template)) {
+						String template = reasoningModel.getProperty(graphMap, R2RML.template).getString();
+						graph = templateToResourceExpression(cleanTemplate(template, fromItem), fromItem, dth);
+					} else if (reasoningModel.contains(graphMap, R2RML.column)) {
+						String column = reasoningModel.getProperty(graphMap, R2RML.column).getString();
+						String template = "\"{" + getRealColumnName(column, fromItem) + "\"}";
+						graph = templateToResourceExpression(cleanTemplate(template, fromItem), fromItem, dth);
+					} else if (reasoningModel.contains(graphMap, R2RML.constant)) {
+						Resource resource = reasoningModel.getProperty(graphMap, R2RML.constant).getResource();
+						graph = Arrays.asList(resourceToExpression(resource));
+					} else {
+						throw new R2RMLValidationException("Graphmap without valid value found for " + tmUri.getURI());
+					}
+				} else {
+					graph = Arrays.asList(resourceToExpression(R2RML.defaultGraph));
+				}
+
+				// set the graph
+				TermMap gtm = new TermMap(dth);
+				gtm.setTermTyp(R2RML.IRI);
+				gtm.getResourceColSeg().addAll(graph);
+
+				graphMaps.add(gtm);
 
 			}
-			
-			tripleMaps.put(tmUri.toString(), triplemap);
-
 		}
-
-		this.tripleMaps = tripleMaps;
+		return graphMaps;
 	}
-//
-//	private TermMap createTermMap(FromItem fromItem, Resource tmUri,
-//			TripleMap triplemap, Expression graph, TermMapQueryResult tmqrs,
-//			Integer otermtype) {
-//		TermMap tm = null;
-//		
-//		
-//		String datatype = tmqrs.datatypeuri != null ? tmqrs.datatypeuri
-//				.getURI() : null;
-//		if (tmqrs.column != null) {
-//			// generate from colum
-//			Column col = new Column();
-//			if (fromItem instanceof Table) {
-//				col.setTable((Table) fromItem);
-//			} else {
-//				Table tab = new Table("null", fromItem.getAlias());
-//				tab.setAlias(fromItem.getAlias());
-//				col.setTable(tab);
-//			}
-//
-//			col.setColumnName(tmqrs.column);
-//			List<Expression> oexprs = columnhelper.getExpression(col,
-//					otermtype, dbconf.getDataType(fromItem, tmqrs.column),
-//					datatype, tmqrs.lang, null, dth);
-//			tm = TermMap.createTermMap(dth, oexprs, Arrays.asList(fromItem), null,
-//					triplemap);
-//		} else if (tmqrs.constant != null) {
-//			// use constant term
-//
-//			List<Expression> oexprs = columnhelper.getExpression(
-//					tmqrs.constant.asNode(), dth);
-//			tm = TermMap.createTermMap(dth, oexprs, Arrays.asList(fromItem), null,
-//					triplemap);
-//		} else if (tmqrs.template != null) {
-//			int sqlType = ColumnHelper.COL_VAL_SQL_TYPE_RESOURCE;
-//			if (!otermtype.equals(ColumnHelper.COL_VAL_RES_LENGTH_LITERAL)) {
-//				sqlType = Types.VARCHAR;
-//			}
-//
-//			// from template
-//			List<Expression> otmExpressions = columnhelper.getExpression(
-//					tmqrs.template, otermtype, sqlType, datatype, tmqrs.lang,
-//					null, dth, fromItem, graph, tmUri.getNameSpace());
-//			tm = TermMap.createTermMap(dth, otmExpressions, Arrays.asList(fromItem),
-//					null, triplemap);
-//		}
-//		return tm;
-//	}
+
 
 	/**
 	 * creates a part of a query that creates
@@ -754,28 +713,7 @@ public class R2RMLModel {
 			
 		}
 
-		public TermMapQueryResult(QuerySolution sol, String prefix, FromItem fi) {
-			template = sol.get("?" + prefix + "template") != null ? cleanTemplate(
-					sol.get("?" + prefix + "template").asLiteral().getString(),
-					fi) : null;
-			column = sol.get("?" + prefix + "column") != null ? sol
-					.get("?" + prefix + "column").asLiteral().getString()
-					: null;
-			column = getRealColumnName(column, fi);
-
-			lang = sol.get("?" + prefix + "lang") != null ? sol
-					.get("?" + prefix + "lang").asLiteral().getString() : null;
-			inverseExpression = sol.get("?" + prefix + "inverseexpression") != null ? sol
-					.get("?" + prefix + "inverseexpression").asLiteral()
-					.getString()
-					: null;
-			constant = sol.get("?" + prefix + "constant");
-			datatypeuri = sol.get("?" + prefix + "datatype") != null ? sol.get(
-					"?" + prefix + "datatype").asResource() : null;
-			tmclass = sol.get("?" + prefix + "tmclass") != null ? sol.get(
-					"?" + prefix + "tmclass").asResource() : null;
-			termType = sol.getResource("?" + prefix + "termtype");
-		}
+		
 		String[] template;
 		String column;
 		RDFNode constant;
@@ -796,20 +734,12 @@ public class R2RMLModel {
 		if(termType!=null){
 			tm.setTermTyp(termType);
 		}
-		
-		
-		
 		if(qr.constant!=null){
-			
-			tm = tfac.createTermMap(qr.constant.asNode());
-			
-			
-			
+			tm = tfac.createTermMap(qr.constant.asNode());			
 		}else if(qr.template!=null){
 			if(termType.equals(R2RML.Literal)){
-				
+			
 				List<Expression> resourceExpression = templateToResourceExpression(qr.template, fi, dth);
-				
 				tm.literalValString = FilterUtil.concat(resourceExpression.toArray(new Expression[0]));
 
 			}else{
