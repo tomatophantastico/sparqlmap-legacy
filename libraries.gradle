@@ -12,7 +12,6 @@ ext {
 				'com.google.guava:guava:12.0',
 				'joda-time:joda-time:2.1',
 				'org.aksw.commons:util-standalone:0.5-SNAPSHOT',
-				'org.aksw.commons:sparql:0.5-SNAPSHOT',
 				'org.apache.commons:commons-math3:3.2',
 				'org.apache.commons:commons-lang3:3.1'
 
