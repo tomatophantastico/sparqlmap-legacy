@@ -5,3 +5,4 @@ sparqlmap-core/log/
 *.log
 target/
 sparqlmap-*/bin/
+*~

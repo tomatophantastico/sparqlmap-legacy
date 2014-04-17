@@ -1,15 +1,7 @@
 package org.aksw.sparqlmap.core.db;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
 import javax.annotation.PostConstruct;
 
@@ -18,8 +10,6 @@ import org.aksw.sparqlmap.core.db.impl.HSQLDBConnector;
 import org.aksw.sparqlmap.core.db.impl.HSQLDBDataTypeHelper;
 import org.aksw.sparqlmap.core.db.impl.MySQLConnector;
 import org.aksw.sparqlmap.core.db.impl.MySQLDataTypeHelper;
-import org.aksw.sparqlmap.core.db.impl.OracleConnector;
-import org.aksw.sparqlmap.core.db.impl.OracleDataTypeHelper;
 import org.aksw.sparqlmap.core.db.impl.PostgeSQLConnector;
 import org.aksw.sparqlmap.core.db.impl.PostgreSQLDataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
@@ -28,7 +18,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import com.google.common.reflect.Reflection;
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
 
@@ -121,8 +110,6 @@ public class DBAccessConfigurator {
 			return new MySQLDataTypeHelper();
 		}else if(dbname.equals(PostgreSQLDataTypeHelper.getDBName())){
 			return new PostgreSQLDataTypeHelper();
-		}else if(dbname.equals(OracleDataTypeHelper.getDBName())){
-			return new OracleDataTypeHelper();
 		}
 		
 		
@@ -143,10 +130,6 @@ public class DBAccessConfigurator {
 			return new DBAccess(conn);
 		}else if(dbname.equals(HSQLDBConnector.HSQLDB_NAME)){
 			HSQLDBConnector conn = new HSQLDBConnector();
-			conn.setDs(bcp);
-			return new DBAccess(conn);
-		}else if(dbname.equals(OracleConnector.ORACLE_DBNAME)){
-			OracleConnector conn = new OracleConnector();
 			conn.setDs(bcp);
 			return new DBAccess(conn);
 		}

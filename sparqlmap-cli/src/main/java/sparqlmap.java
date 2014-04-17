@@ -197,15 +197,9 @@ public class sparqlmap {
 			// perform the specified action
 			
 			if(cl.hasOption("dump")){
-				//validate conf
-				if(cl.hasOption("r2rmlfile")){
-					System.err.println("Creating an RDF dump.");
-					dump(outputlang);
-				}else{
-					error("For -dump, please provide an R2RML file.");
-				}
-				
-				
+				System.err.println("Creating an RDF dump.");
+				dump(outputlang);
+
 			}else if(cl.hasOption("generateMapping")){
 				
 				

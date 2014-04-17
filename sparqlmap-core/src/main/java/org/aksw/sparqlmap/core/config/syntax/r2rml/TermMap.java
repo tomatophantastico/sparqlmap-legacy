@@ -1,6 +1,7 @@
 package org.aksw.sparqlmap.core.config.syntax.r2rml;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -17,9 +18,11 @@ import net.sf.jsqlparser.expression.ExpressionWithString;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.NullValue;
+import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
@@ -554,19 +557,47 @@ public class TermMap{
 	public Expression getTermType() {
 		return termType;
 	}
+	
+	
+	public List<Expression> getLiteralVals(){
+	  
+	  return Arrays.asList(getLiteralValBinary(), getLiteralValBool(), getLiteralValString(), getLiteralValDate(), getLiteralValNumeric());
+	}
+	
+	
+	/**
+	 * Creates an Expression that returns, if the Term represented here returns null.
+	 * 
+	 * In case of all null statements, it will return constant false,
+	 * in case of constant expressions, it will return constant true; 
+	 * @return
+	 */
+	public Expression getNotNullExpression(){
+	  
+	  List<Expression> toChecks = new ArrayList<Expression>( getLiteralVals());
+	  toChecks.addAll(getResourceColSeg());
+	  
+	 
+	  List<Expression> isNotNulls = new ArrayList<Expression>();
+	  for(Expression tocheck: toChecks){
+	    IsNullExpression inn = new IsNullExpression();
+	    inn.setNot(true);
+	    inn.setLeftExpression(tocheck);
+	    isNotNulls.add(inn );
+	  }
+	  
+	  
+	
+	  
+	 
+	  
+	  
+	  
+	  return  new Parenthesis(FilterUtil.disjunct(isNotNulls));
+	  
+	  
+	}
+	
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-	
-	
 	
 }

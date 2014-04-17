@@ -261,7 +261,7 @@ private static BitSet RESERVED = new BitSet();
 		} else {
 			Expression exp = exprs.iterator().next();
 			exprs.remove(exp);
-			OrExpression and = new OrExpression(exp, conjunct(exprs));
+			OrExpression and = new OrExpression(exp, disjunct(exprs));
 			return and;
 		}
 	}

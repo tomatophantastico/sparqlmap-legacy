@@ -39,7 +39,7 @@ public class OptimizationConfiguration {
 	
 	@PostConstruct
 	public void setOptimize(){
-		shortcutFilters = new Boolean(env.getProperty("sm.opt.shortcutfilters"));
+		shortcutFilters = new Boolean(env.getProperty("sm.opt.shortcutfilter"));
 		log.info("Filter shortcutting is: " + (shortcutFilters?"on":"off"));
 		optimizeSelfJoin = new Boolean(env.getProperty("sm.opt.optimizeSelfJoin"));
 		log.info("Selfjoinopt is: " + (optimizeSelfJoin?"on":"off"));

@@ -3,24 +3,28 @@ apply from: "./libraries.gradle"
 apply plugin: "eclipse"
 
 allprojects  {
-  apply plugin: 'maven'
-  
+ 
   group = 'org.aksw.sparqlmap'
-  version = '0.6.3-snapshot'
+  version = '0.6.3-SNAPSHOT'
   buildDir =  "target"
+
   
 }
 
 ext{
-	sourceCompatibility = 1.7
-	targetCompatibility = 1.7
+	sourceCompatibility = 1.6
+	targetCompatibility = 1.6
 }
 
 subprojects { subproject ->
   if( subproject.name == 'sparqlmap-webfrontend')
 	return;
+	
+	
+	
   apply plugin: 'java'
   apply plugin: 'eclipse'
+  apply plugin: 'maven'
 
 
 

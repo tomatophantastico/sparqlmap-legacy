@@ -443,19 +443,7 @@ public class PlainSelectWrapper implements Wrapper{
 		List<Expression> notnulls = new ArrayList<Expression>();
 		for (TermMap tm : var2termMap.values()) {
 			if (!optionalTermMaps.contains(tm)) {
-				for (Expression expr : tm.getValueExpressions()) {
-					expr = DataTypeHelper.uncast(expr);
-					if (expr instanceof Column
-							&& !((Column) expr).getTable().getAlias()
-									.startsWith("subsel_")) {
-						IsNullExpression notnull = new IsNullExpression();
-						notnull.setNot(true);
-						notnull.setLeftExpression(expr);
-
-						notnulls.add(notnull);
-					}
-
-				}
+				notnulls.add(tm.getNotNullExpression());
 			}
 		}
 		if (!notnulls.isEmpty()) {

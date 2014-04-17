@@ -1,6 +1,7 @@
 description = 'SparqlMap core features'
 dependencies {
-	compile project(':sparqlmap-shared')
+
+
 	compile libraries.jena
 	compile libraries.utils
 	compile libraries.sqlutils

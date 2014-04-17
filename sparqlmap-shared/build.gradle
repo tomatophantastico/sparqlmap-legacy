@@ -10,21 +10,21 @@ sourceSets {
 			srcDir 'src/main/java/'
 		}
 	
-		resources {
-			srcDir 'src/main/resources/sample-data/db'
-		}
+//		resources {
+//			srcDir 'src/main/resources/sample-data/db'
+//		}
 	}
 
 }
 
 
 
-task sampleDbJar(type: Jar){
+//task sampleDbJar(type: Jar){
+//
+//	baseName "sampledb2"
+//	from  sourceSets.sampleDb.resources
+//}
 
-	baseName "sampledb2"
-	from  sourceSets.sampleDb.resources
-}
-
-artifacts {
-    archives sampleDbJar
-}
+//artifacts {
+//    archives sampleDbJar
+//}

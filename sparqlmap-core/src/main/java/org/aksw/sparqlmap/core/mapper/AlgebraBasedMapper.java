@@ -259,6 +259,20 @@ public class AlgebraBasedMapper implements Mapper {
 			Select select = qbv.getSqlQuery();
 			SelectDeParser selectDeParser  = dbconf.getSelectDeParser(sbsql);
 			
+      if (fopt.isOptimizeSelfUnion()) {
+
+        QueryDeunifier unionOpt =
+          new QueryDeunifier(context.getQueryInformation(),
+            context.getQueryBinding(), dth, exprconv, colhelp, fopt);
+        if (!unionOpt.isFailed()) {
+          QueryInformation newqi = unionOpt.getQueryInformation();
+          newqi.setProjectionPushable(context.getQueryInformation()
+            .isProjectionPush());
+          context.setQueryInformation(newqi);
+          context.setQueryBinding(unionOpt.getQueryBinding());
+        }
+      }
+
 			selectDeParser.setBuffer(sbsql);
 //			ExpressionDeParser expressionDeParser =  mappingConf.getR2rconf().getDbConn().getExpressionDeParser(selectDeParser, out);
 //			selectDeParser.setExpressionVisitor(expressionDeParser);
