@@ -1,12 +1,36 @@
 apply from: "./libraries.gradle"
+apply plugin: 'maven'
+apply plugin: 'distribution'
+
+
+// configuration of the licence plugin
+buildscript {
+
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.7.0'
+	}
+}
+
+apply plugin: 'license'
+
+downloadLicenses {
+	includeProjectDependencies = true
+}
 
 allprojects  {
  
-  group = 'org.aksw.sparqlmap'
-  version = '0.6.3-SNAPSHOT'
-  buildDir =  "target"
+	group = 'org.aksw.sparqlmap'
+	version = '0.6.3-SNAPSHOT'
+	buildDir =  "target"
 
-  
+	license {
+		header rootProject.file('quality/licences/HEADER')
+		strictCheck true
+		ignoreFailures true
+		}
 }
 
 ext{
@@ -15,6 +39,15 @@ ext{
 }
 
 subprojects { subproject ->
+
+	apply plugin: 'checkstyle'
+	
+	checkstyle {
+		configFile = new File(rootDir, "quality/checkstyle/checkstyle.xml")
+		reportsDir   rootProject.file("target/report/${project.name}/")
+	}
+
+
   if( subproject.name == 'sparqlmap-webfrontend')
 	return;
 	
@@ -26,16 +59,9 @@ subprojects { subproject ->
 
 
 
-  	license {
-    	header rootProject.file('quality/licences/HEADER')
-    	strictCheck true
-    	ignoreFailures true
-	}
+
+  	
 	
-	checkstyle {
-		configFile = new File(rootDir, "quality/checkstyle/checkstyle.xml")
-		reportsDir   rootProject.file("target/report/${project.name}/")
-	}
   
   repositories {
   
@@ -106,21 +132,7 @@ distributions {
 }
 
 
-// configuration of the licence plugin
-buildscript {
 
-	repositories {
-    	mavenCentral()
-    }
-
-    dependencies {
-    	classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.7.0'
-    }
-}
-
-downloadLicenses {
-	includeProjectDependencies = true
-}
    
 
 

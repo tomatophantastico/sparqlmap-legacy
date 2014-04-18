@@ -20,6 +20,8 @@ ext {
 				'net.sf.jsqlparser:jsqlparser:0.8.1.SPARQLMAP-SNAPSHOT',
 				'com.jolbox:bonecp:0.8.0.RELEASE',
 				'net.sf.supercsv:super-csv:2.1.0',
+				'org.hsqldb:sqltool:2.3.2'
+
 				
 				
 		],

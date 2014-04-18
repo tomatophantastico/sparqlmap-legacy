@@ -6,14 +6,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.aksw.sparqlmap.core.mapper.finder.MappingBinding;
 import org.aksw.sparqlmap.core.mapper.finder.QueryInformation;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.WebContent;
 
 import com.google.common.base.Stopwatch;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.algebra.Op;
-import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
 
 /**
  * This class holds all information needed for a specific translation.
@@ -181,6 +178,14 @@ public class TranslationContext {
 		
 		return sb.toString();
 	}
+	
+	
+  public int getAndIncrementDuplicateCounter() {
+    return this.duplicatecounter++;
+  }
+  public int getAndIncrementSubqueryCounter() {
+   return this.subquerycounter++;
+  }
 
 	
 	

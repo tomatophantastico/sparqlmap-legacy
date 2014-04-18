@@ -10,14 +10,14 @@ description = 'SparqlMap Shared Resources'
 //}
 
 
-		java {
-			srcDir 'src/main/java/'
-		}
+//		java {
+//			srcDir 'src/main/java/'
+//		}
 	
 //		resources {
 //			srcDir 'src/main/resources/sample-data/db'
 //		}
-	}
+//	}
 
 //task sampleDbJar(type: Jar){
 //	baseName "sampledb2"

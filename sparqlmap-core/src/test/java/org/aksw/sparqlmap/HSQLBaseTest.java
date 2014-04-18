@@ -16,7 +16,6 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.WebContent;
 import org.hsqldb.cmdline.SqlFile;
-import org.hsqldb.cmdline.SqlToolError;
 import org.hsqldb.server.Server;
 import org.junit.After;
 import org.junit.Before;
