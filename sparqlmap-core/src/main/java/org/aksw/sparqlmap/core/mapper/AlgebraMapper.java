@@ -103,7 +103,7 @@ public class AlgebraMapper implements Mapper {
 
 		context.setQueryInformation(FilterFinder.getQueryInformation(context.getBeautifiedQuery()));
 		
-		Binder binder = new Binder(this.mappingConf,context.getQueryInformation());
+		Binder binder = new Binder(this.mappingConf,context);
 		
 		context.setQueryBinding(binder.bind(context.getBeautifiedQuery()));
 		if(log.isDebugEnabled()){

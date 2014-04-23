@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
@@ -49,8 +51,13 @@ public class SparqlBeautifier extends TransformCopy {
 
 	private AlgebraGenerator agen = new  AlgebraGenerator();
 	private int i = 0;
+	
+	Logger log = LoggerFactory.getLogger(SparqlBeautifier.class); 
+	
 
 	Map<String,Node> termToVariable = new HashMap<String, Node>();
+	
+	
 	@Override
 	public Op transform(OpQuadPattern quadBlock) {
 		List<Quad> patterns = quadBlock.getPattern().getList();
@@ -80,7 +87,7 @@ public class SparqlBeautifier extends TransformCopy {
 	@Override
 	public Op transform(OpFilter opFilter, Op subOp) {
 
-		return opFilter;
+		return opFilter.copy(subOp);
 	}
 
 	
@@ -192,6 +199,8 @@ public class SparqlBeautifier extends TransformCopy {
 		Op query  = agen.compile(sparql);
 		
 		
+		
+		
 		// this odd construct is neccessary as there seems to be no convenient way of extracting the vars of a query from the non-algebra-version.
 		if(sparql.getProject().isEmpty()){
 		
@@ -209,6 +218,7 @@ public class SparqlBeautifier extends TransformCopy {
 		
 		
 		
+		log.warn(newOp.toString());
 		
 		return newOp;
 	}

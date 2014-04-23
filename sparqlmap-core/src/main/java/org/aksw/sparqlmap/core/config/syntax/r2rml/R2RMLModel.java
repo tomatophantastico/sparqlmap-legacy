@@ -39,8 +39,6 @@ import org.aksw.sparqlmap.core.mapper.compatibility.CompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.compatibility.SimpleCompatibilityChecker;
 import org.aksw.sparqlmap.core.mapper.translate.DataTypeHelper;
 import org.aksw.sparqlmap.core.mapper.translate.FilterUtil;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.collect.HashMultimap;
@@ -556,7 +554,7 @@ public class R2RMLModel {
 	
 			List<Statement> postmts = reasoningModel.listStatements(tmUri, R2RML.predicateObjectMap, (RDFNode) null).toList();
 			
-			Map<TermMap,TripleMap> graph2TripleMap = new HashMap(); 
+			Map<TermMap,TripleMap> graph2TripleMap = new HashMap<TermMap,TripleMap>(); 
 			
 
 			for  (Statement postmt: postmts) {
@@ -633,7 +631,7 @@ public class R2RMLModel {
 
 	public List<TermMap> getGraphmapsForPO(Resource tmUri, FromItem fromItem, List<Statement> graphMapStmts) throws R2RMLValidationException {
 
-		List<TermMap> graphMaps = new ArrayList();
+		List<TermMap> graphMaps = new ArrayList<TermMap>();
 		if (graphMapStmts == null || graphMapStmts.isEmpty()) {
 			graphMaps = Arrays.asList(this.tfac.createTermMap(R2RML.defaultGraph.asNode()));
 		} else {
@@ -672,25 +670,6 @@ public class R2RMLModel {
 	}
 
 
-	/**
-	 * creates a part of a query that creates
-	 * 
-	 * @param prefix
-	 * @return
-	 */
-	private String getTermMapQuery(String prefix) {
-		String p = prefix;
-		String query = "{?" + p + "m rr:column ?" + p + "column} " + "UNION {?"
-				+ p + "m rr:constant ?" + p + "constant} " + "UNION {?" + p
-				+ "m rr:template ?" + p + "template} " + "OPTIONAL {?" + p
-				+ "m rr:termType ?" + p + "termtype} " + "OPTIONAL {?" + p
-				+ "m rr:datatype ?" + p + "datatype} " + "OPTIONAL {?" + p
-				+ "m <" + R2RML.language + "> ?" + p + "lang} " + "OPTIONAL {?"
-				+ p + "m <" + R2RML.inverseExpression + "> ?" + p
-				+ "inverseexpression}";
-
-		return query;
-	}
 
 	private class TermMapQueryResult {
 		
@@ -705,9 +684,7 @@ public class R2RMLModel {
 			
 			inverseExpression = model.listObjectsOfProperty(tm, R2RML.inverseExpression).hasNext()?model.listObjectsOfProperty(tm, R2RML.inverseExpression).next().asLiteral().getString():null;
 			constant = model.listObjectsOfProperty(tm, R2RML.constant).hasNext()?model.listObjectsOfProperty(tm, R2RML.constant).next():null;
-			datatypeuri =model.listObjectsOfProperty(tm, R2RML.datatype).hasNext()?model.listObjectsOfProperty(tm, R2RML.datatype).next().asResource():null;
-			
-			tmclass = model.listObjectsOfProperty(tm, R2RML.hasClass).hasNext()?model.listObjectsOfProperty(tm, R2RML.hasClass).next().asResource():null;
+			datatypeuri =model.listObjectsOfProperty(tm, R2RML.datatype).hasNext()?model.listObjectsOfProperty(tm, R2RML.datatype).next().asResource():null;		
 			termType =  model.listObjectsOfProperty(tm, R2RML.termType).hasNext()?model.listObjectsOfProperty(tm, R2RML.termType).next().asResource():null;
 			
 			
@@ -720,9 +697,7 @@ public class R2RMLModel {
 		String lang;
 		Resource datatypeuri;
 		String inverseExpression;
-		Resource tmclass;
 		Resource termType;
-		int termTypeInt;
 		
 		
 	}

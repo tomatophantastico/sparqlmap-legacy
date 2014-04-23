@@ -3,9 +3,12 @@ package org.aksw.sparqlmap.bsbmtestcases;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.aksw.sparqlmap.core.SparqlMap;
@@ -51,9 +54,14 @@ public class BSBMHSQLDBTest extends BSBMBaseTest{
 	public void setupSparqlMap() {
 		
 		
-		String pathToConf = "./src/main/resources/bsbmhsql";
+		Properties props = getDBProperties();
 		
-		con = ContextSetup.contextFromFolder(pathToConf);
+		
+		
+		Map<String,Properties> name2props = new HashMap<String,Properties>();
+		name2props.put("hsql-conf", props);
+		
+		con = ContextSetup.contextFromProperties(name2props);
 		r2r = (SparqlMap) con.getBean("sparqlMap");
 
 	}
@@ -74,12 +82,12 @@ public class BSBMHSQLDBTest extends BSBMBaseTest{
 			try {
 				conn = getConnector().getConnection();
 				SqlFile schemaSqlFile = new SqlFile(new File(
-						"./src/main/resources/bsbm/bsbm2-schema-hsql.sql"));
+						"./src/main/resources/bsbm-datasets/bsbm2-schema-hsql.sql"));
 				schemaSqlFile.setConnection(conn);
 				schemaSqlFile.execute();
 				conn.commit();
 				SqlFile dataSqlFile = new SqlFile(new File(
-						"./src/main/resources/bsbm/bsbm2-data-100k.sql"));
+						"./src/main/resources/bsbm-datasets/bsbm2-data-100k.sql"));
 				dataSqlFile.setConnection(conn);
 				dataSqlFile.execute();
 			} catch (Exception e) {
@@ -113,19 +121,16 @@ public class BSBMHSQLDBTest extends BSBMBaseTest{
 	}
 
 	public Properties getDBProperties() {
+		Properties props = new Properties();
+		
+		props.put("sm.mappingfile", "./src/main/resources/bsbm-test/bsbm-r2rml.ttl");
 
-		Properties dbprops = new Properties();
-
-		try {
-			dbprops.load(new FileInputStream("./src/main/resources/bsbmhsql/db.properties"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return dbprops;
+		// replicating the values from initDatabase
+		props.put("jdbc.url","jdbc:hsqldb:file:" + hsqldbFileLocation);
+		props.put("jdbc.username","sa");
+		props.put("jdbc.password","");
+		
+		return props;
 	}
 	
 	

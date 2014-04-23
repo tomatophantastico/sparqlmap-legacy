@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.aksw.sparqlmap.core.ImplementationException;
+import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap;
@@ -42,13 +43,13 @@ import com.hp.hpl.jena.sparql.expr.Expr;
 public class Binder {
 	private static Logger log = LoggerFactory.getLogger(Binder.class);
 	
-	private QueryInformation qi;
+	private TranslationContext tc;
 	private R2RMLModel mapconf;
 
 	
-	public Binder(R2RMLModel mappingConf, QueryInformation qi) {
+	public Binder(R2RMLModel mappingConf, TranslationContext tc) {
 		this.mapconf = mappingConf;
-		this.qi = qi;
+		this.tc = tc;
 	}
 
 
@@ -56,7 +57,7 @@ public class Binder {
 		
 		Map<Quad, Collection<TripleMap>> bindingMap = new HashMap<Quad, Collection<TripleMap>>();
 		
-		OpWalker.walk(op, new BinderVisitor(qi.getFiltersforvariables(), bindingMap));
+		OpWalker.walk(op, new BinderVisitor(tc.getQueryInformation().getFiltersforvariables(), bindingMap));
 		
 		
 

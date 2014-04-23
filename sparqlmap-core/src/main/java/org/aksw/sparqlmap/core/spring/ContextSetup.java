@@ -44,8 +44,6 @@ public abstract class ContextSetup {
 	public static ApplicationContext contextFromFolder(String folder){
 		
 		return contextFromProperties(readDirectory(new File(folder)));
-		
-		
 	}
 	
 	public static Map<String, Properties> readDirectory(File dir){
