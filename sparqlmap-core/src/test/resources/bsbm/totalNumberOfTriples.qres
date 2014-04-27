@@ -1,0 +1,17 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+    xmlns:rs="http://www.w3.org/2001/sw/DataAccess/tests/result-set#">
+  <rs:ResultSet>
+    <rs:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int"
+    >1</rs:size>
+    <rs:solution rdf:parseType="Resource">
+      <rs:binding rdf:parseType="Resource">
+        <rs:value rdf:datatype="http://www.w3.org/2001/XMLSchema#integer"
+        >0</rs:value>
+        <rs:variable>no</rs:variable>
+      </rs:binding>
+    </rs:solution>
+    <rs:resultVariable>no</rs:resultVariable>
+  </rs:ResultSet>
+</rdf:RDF>
