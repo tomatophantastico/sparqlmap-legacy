@@ -5,6 +5,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -24,18 +26,27 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.io.ClassPathResource;
 
+import com.hp.hpl.jena.query.Dataset;
+import com.hp.hpl.jena.query.DatasetFactory;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.ResultSetFactory;
+import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.sparql.resultset.ResultSetCompare;
+import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
 import com.hp.hpl.jena.sparql.util.ModelUtils;
 
+
+/**
+ * Base test for integration testing using HSQL.
+ * 
+ * @author joerg
+ *
+ */
 public abstract class HSQLBaseTest {
 	
-	public static String jdbcurl  = "jdbc:hsqldb:mem:testing";
-	public static String jdbcuser = "SA";
-	public static String jdbcpass  = "";
 	
 	public AnnotationConfigApplicationContext context;
 	Server server;
@@ -46,12 +57,23 @@ public abstract class HSQLBaseTest {
 	@Before
 	public void setup() throws Exception{
 		
-		Connection conn = DriverManager.getConnection(
-		         "jdbc:hsqldb:mem:testing", "SA", "");
-		SqlFile sqlFile = new SqlFile(new File(getSQLFile()));
-		sqlFile.setConnection(conn);
-		sqlFile.execute();
-		conn.close();
+		String dbLocation =  "./target/" + getSQLFile() + "/hsqldb/db";
+		File dbFile = new File(dbLocation);
+		File dbTmpFile = new File(dbLocation + ".tmp");
+		
+		
+		
+		String jdbcurl =  "jdbc:hsqldb:file:" + dbLocation;
+		String jdbcuser = "SA";
+		String jdbcpass = "";
+		
+		if(!dbTmpFile.exists()){
+			Connection conn =  DriverManager.getConnection(jdbcurl, jdbcuser, jdbcpass);
+			SqlFile sqlFile = new SqlFile(new File(getSQLFile()));
+			sqlFile.setConnection(conn);
+			sqlFile.execute();
+			conn.close();
+		}
 		
 		// settin up SparqlMap
 		
@@ -88,16 +110,53 @@ public abstract class HSQLBaseTest {
 	 * @param xmlResultSet
 	 * @throws SQLException 
 	 */
-	public void executeAndCompareSelect(String sparqlSelect, String xmlResultSet) throws SQLException{
+	public void executeAndCompareSelect(String sparqlSelect, File xmlResultSet){
 		
-		ResultSet expectedRS =  ResultSetFactory.fromXML(new ByteArrayInputStream(xmlResultSet.getBytes()));
+		if(!xmlResultSet.exists()){
+			createResultSet(sparqlSelect, xmlResultSet);
+		}
+		
+		
+		ResultSet expectedRS =  ResultSetFactory.load(xmlResultSet.getAbsolutePath(), ResultsFormat.FMT_RDF_XML);
+		
 		
 		SparqlMap sm  = context.getBean(SparqlMap.class);
 		
-		ResultSet result  = sm.executeSelect(sparqlSelect);	
+		ResultSet result;
+		try {
+			result = sm.executeSelect(sparqlSelect);
+			assertTrue(ResultSetCompare.equalsByTermAndOrder(result, expectedRS));
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}	
 		
-		ResultSetCompare.equalsByTermAndOrder(result, expectedRS);
+		
 	}
+	
+	
+	private void createResultSet(String sparqlSelect, File xmlResultSetFile){
+
+		try {
+			
+			Dataset ds = DatasetFactory.create(sparqlmap.dump());
+			ResultSet rs = QueryExecutionFactory.create(sparqlSelect, ds).execSelect();
+			
+			ResultSetFormatter.output(new FileOutputStream(xmlResultSetFile), rs, ResultsFormat.FMT_RDF_XML);
+			
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	
 	
 	public void executeAndCompareConstruct(String sparqlConstruct, String resultmodelLocation) throws SQLException{
 		Model expectedResult = ModelFactory.createDefaultModel();

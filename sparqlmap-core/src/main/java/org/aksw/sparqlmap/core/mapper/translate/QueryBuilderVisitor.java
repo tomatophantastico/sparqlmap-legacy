@@ -12,49 +12,55 @@ import java.util.Set;
 import java.util.Stack;
 
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.Parenthesis;
-import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
-import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
-import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
-import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
-import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.Distinct;
-import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SelectVisitor;
 import net.sf.jsqlparser.statement.select.SetOperationList;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
+import org.aksw.sparqlmap.core.ImplementationException;
 import org.aksw.sparqlmap.core.TranslationContext;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.ColumnHelper;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TermMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap;
 import org.aksw.sparqlmap.core.config.syntax.r2rml.TripleMap.PO;
-import org.aksw.sparqlmap.core.mapper.finder.MappingBinding;
-import org.aksw.sparqlmap.core.mapper.finder.QueryInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.Sets;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.sparql.algebra.OpVisitorBase;
+import com.hp.hpl.jena.sparql.algebra.op.OpAssign;
 import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
+import com.hp.hpl.jena.sparql.algebra.op.OpConditional;
+import com.hp.hpl.jena.sparql.algebra.op.OpDatasetNames;
+import com.hp.hpl.jena.sparql.algebra.op.OpDiff;
+import com.hp.hpl.jena.sparql.algebra.op.OpDisjunction;
+import com.hp.hpl.jena.sparql.algebra.op.OpDistinct;
+import com.hp.hpl.jena.sparql.algebra.op.OpExt;
+import com.hp.hpl.jena.sparql.algebra.op.OpExtend;
 import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
 import com.hp.hpl.jena.sparql.algebra.op.OpGraph;
 import com.hp.hpl.jena.sparql.algebra.op.OpJoin;
+import com.hp.hpl.jena.sparql.algebra.op.OpLabel;
 import com.hp.hpl.jena.sparql.algebra.op.OpLeftJoin;
+import com.hp.hpl.jena.sparql.algebra.op.OpList;
+import com.hp.hpl.jena.sparql.algebra.op.OpMinus;
+import com.hp.hpl.jena.sparql.algebra.op.OpNull;
+import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
+import com.hp.hpl.jena.sparql.algebra.op.OpPath;
+import com.hp.hpl.jena.sparql.algebra.op.OpProcedure;
+import com.hp.hpl.jena.sparql.algebra.op.OpProject;
+import com.hp.hpl.jena.sparql.algebra.op.OpPropFunc;
 import com.hp.hpl.jena.sparql.algebra.op.OpQuad;
-import com.hp.hpl.jena.sparql.algebra.op.OpQuadBlock;
 import com.hp.hpl.jena.sparql.algebra.op.OpQuadPattern;
+import com.hp.hpl.jena.sparql.algebra.op.OpReduced;
+import com.hp.hpl.jena.sparql.algebra.op.OpSequence;
+import com.hp.hpl.jena.sparql.algebra.op.OpService;
 import com.hp.hpl.jena.sparql.algebra.op.OpTable;
+import com.hp.hpl.jena.sparql.algebra.op.OpTopN;
 import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
 import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.core.Var;
@@ -133,12 +139,7 @@ public class QueryBuilderVisitor extends QuadVisitorBase {
 	}
 	
 	
-	
-	@Override
-	public void visit(OpGraph opGraph) {
-		log.error("implement opGRaph");
-		
-	}
+
 
 	@Override
 	public void visit(OpLeftJoin opLeftJoin) {
@@ -512,6 +513,160 @@ public class QueryBuilderVisitor extends QuadVisitorBase {
 		return select;
 	}
 	
+
+	
+	@Override
+	public void visit(OpBGP opBGP) {
+		log.error("implement opBGP");
+	}
+	
+	
+	@Override
+	public void visit(OpGraph opGraph) {
+		log.error("implement opGRaph");
+		
+	}
+	
+	@Override
+	public void visit(OpQuad opQuad) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpPath opPath) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpNull opNull) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpProcedure opProc) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpPropFunc opPropFunc) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpService opService) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpDatasetNames dsNames) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpLabel opLabel) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpAssign opAssign) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpExtend opExtend) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpDiff opDiff) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpMinus opMinus) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpConditional opCondition) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpSequence opSequence) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpDisjunction opDisjunction) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpExt opExt) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpList opList) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpOrder opOrder) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpProject opProject) {
+		//projection is managed in the getSQL method
+		
+	}
+
+	@Override
+	public void visit(OpReduced opReduced) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+	@Override
+	public void visit(OpDistinct opDistinct) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
+//	@Override
+//	public void visit(OpSlice opSlice) {
+//		throw new ImplementationException("Unimplemented Function");
+//		
+//	}
+
+	
+
+	@Override
+	public void visit(OpTopN opTop) {
+		throw new ImplementationException("Unimplemented Function");
+		
+	}
+
 
 
 }

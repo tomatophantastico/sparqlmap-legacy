@@ -408,7 +408,7 @@ public class SparqlMap {
 
       mapper.rewrite(context);
 
-      LoggerFactory.getLogger("sqllog").info("SQL " + context.getQueryName() + " " + context.getSqlQuery());
+      LoggerFactory.getLogger("sqllog").debug("SQL " + context.getQueryName() + " " + context.getSqlQuery());
 
       ResultSet rs = dbConf.executeSQL(context, baseUri);
 

@@ -1,0 +1,10 @@
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+    xmlns:rs="http://www.w3.org/2001/sw/DataAccess/tests/result-set#">
+  <rs:ResultSet>
+    <rs:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int"
+    >0</rs:size>
+    <rs:resultVariable>o</rs:resultVariable>
+  </rs:ResultSet>
+</rdf:RDF>

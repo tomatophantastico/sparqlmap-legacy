@@ -24,7 +24,15 @@ public class PostgeSQLConnector extends Connector {
 	public static final String POSTGRES_DBNAME = "PostgreSQL";
 
 
-	
+	{
+		try{
+			Class.forName("org.postgresql.Driver" ); 
+		} catch (Exception e) {
+			LoggerFactory.getLogger(MySQLConnector.class).info("PostgreSQL driver not present",e);
+		}
+			
+		
+	}
 
 	private static Logger log = LoggerFactory.getLogger(MySQLConnector.class);
 	

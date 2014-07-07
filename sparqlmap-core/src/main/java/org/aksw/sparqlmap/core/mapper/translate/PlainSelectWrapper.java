@@ -37,6 +37,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.sparql.expr.Expr;
+import com.hp.hpl.jena.util.iterator.Filter;
 
 public class PlainSelectWrapper implements Wrapper{
 	
@@ -332,7 +333,11 @@ public class PlainSelectWrapper implements Wrapper{
 	
 	public void addFilterExpression(Collection<Expr> exprs) {
 		for(Expr expr:exprs){
-			this.filters.add(exprconv.asFilter(expr, var2termMap));
+			Expression filter = exprconv.asFilter(expr, var2termMap);
+			if(filter!=null && !(filter instanceof NullValue)){
+				this.filters.add(filter);
+			}
+			
 		}
 		
 		
@@ -437,7 +442,7 @@ public class PlainSelectWrapper implements Wrapper{
 		createJoins();
 		createSelectExpressionItems();
 		setFilter();
-		setNullForNonOptionals();
+		//setNullForNonOptionals();
 
 	}
 

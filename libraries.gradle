@@ -36,9 +36,8 @@ ext {
 		
 		jetty:  [ 	dependencies.create("org.eclipse.jetty:jetty-runner:${jettyVersion}"){transitive = false}],
 		
-		provdbs: ['org.hsqldb:hsqldb:[2,):jdk6debug@jar',
-				'org.postgresql:postgresql:9.2-1002-jdbc4',
-				'mysql:mysql-connector-java:5.1.11' ],
+		provdbs: [	'org.hsqldb:hsqldb:2.3.2',
+				'org.postgresql:postgresql:9.2-1002-jdbc4'],
 		
 		otherdbs: [ 'mysql:mysql-connector-java:5.1.11'],
 		

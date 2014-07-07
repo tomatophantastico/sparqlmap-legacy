@@ -9,6 +9,16 @@ import com.jolbox.bonecp.BoneCPDataSource;
 
 public class HSQLDBConnector extends Connector {
 	
+	{
+		try{
+			Class.forName("org.hsqldb.jdbcDriver" ); 
+		} catch (Exception e) {
+			LoggerFactory.getLogger(HSQLDBConnector.class).error("Error loading HSQLDB driver",e);
+		}
+			
+		
+	}
+	
 
 	public static final String HSQLDB_NAME = "HSQL Database Engine";
 

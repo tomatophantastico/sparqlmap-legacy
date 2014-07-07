@@ -159,7 +159,20 @@ public class SparqlBeautifier extends TransformCopy {
 
 			}else{
 				//is uri
-				newExpr  =new E_Equals(new ExprVar(nNew),NodeValue.makeNode(n));
+				
+				//check if the uri is the arq generated default graph node
+				
+				if(n.equals(Quad.defaultGraphNodeGenerated)){
+					//yes it is, replace it by a variable
+					newExpr = new ExprVar(nNew); 
+				}else{
+					//no it is not, create the equivalnce check
+					newExpr  =new E_Equals(new ExprVar(nNew),NodeValue.makeNode(n));
+					
+				}
+				  
+				
+				
 			}
 			addTo.add(newExpr);
 			}	
