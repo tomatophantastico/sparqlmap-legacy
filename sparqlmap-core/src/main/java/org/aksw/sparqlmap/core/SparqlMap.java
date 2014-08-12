@@ -4,8 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,12 +11,10 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 import org.aksw.sparqlmap.core.config.syntax.r2rml.R2RMLModel;
 import org.aksw.sparqlmap.core.db.DBAccess;
 import org.aksw.sparqlmap.core.mapper.Mapper;
-import org.apache.commons.math3.stat.StatUtils;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
@@ -30,8 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
@@ -357,39 +351,45 @@ public class SparqlMap {
     }
   }
 
-  /**
-   * dumps into the whole config into the writer.
-   * 
-   * @param writer
-   * @throws SQLException
-   */
+	/**
+	 * dumps into the whole config into the writer.
+	 * 
+	 * @param writer
+	 * @throws SQLException
+	 */
 
-  public DatasetGraph dump() throws SQLException {
+	public DatasetGraph dump() throws SQLException {
 
-    DatasetGraph dataset = DatasetGraphFactory.createMem();
+		DatasetGraph dataset = DatasetGraphFactory.createMem();
 
-    List<TranslationContext> contexts = mapper.dump();
-    for (TranslationContext context : contexts) {
-      log.info("SQL: " + context.getSqlQuery());
-      com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(context, baseUri);
-      while (rs.hasNext()) {
-        Binding bind = rs.nextBinding();
-        try {
-          Quad toadd =
-            new Quad(bind.get(Var.alloc("g")), bind.get(Var.alloc("s")), bind.get(Var.alloc("p")), bind.get(Var
-              .alloc("o")));
-          dataset.add(toadd);
-        } catch (Exception e) {
+		List<TranslationContext> contexts = mapper.dump();
+		for (TranslationContext context : contexts) {
+			log.debug("SQL: " + context.getSqlQuery());
+			com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(context,
+					baseUri);
+			while (rs.hasNext()) {
+				Binding bind = rs.nextBinding();
+				try {
+					Node g = bind.get(Var.alloc("g"));
+					Node s = bind.get(Var.alloc("s"));
+					Node p = bind.get(Var.alloc("p"));
+					Node o = bind.get(Var.alloc("o"));
+					if (p != null && s != null && p != null && o != null) {
+						Quad toadd = new Quad(g, s, p, o);
+						dataset.add(toadd);
+					}
 
-          log.error("Error:", e);
-          if (!continueWithInvalidUris) {
-            throw new RuntimeException(e);
-          }
-        }
-      }
-    }
-    return dataset;
-  }
+				} catch (Exception e) {
+
+					log.error("Error:", e);
+					if (!continueWithInvalidUris) {
+						throw new RuntimeException(e);
+					}
+				}
+			}
+		}
+		return dataset;
+	}
 
   public ResultSet executeSelect(String query) throws SQLException {
 
