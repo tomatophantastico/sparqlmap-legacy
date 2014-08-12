@@ -363,7 +363,7 @@ public class R2RMLModel {
 						newoTermMap.getFromJoins().add(eq);
 						newoTermMap.addFromItem(tripleMap.from);
 
-						log.debug("And joins on parent: " + parentTrM.from.toString() + "." + parentjc + " and " + tripleMap.from.toString() + "." + childjc);
+						log.debug("Adding join between parent: \"" + parentTrM.from.toString() + "." + parentjc + "\" and child: \"" + tripleMap.from.toString() + "." + childjc + "\"");
 
 					}
 
@@ -479,7 +479,7 @@ public class R2RMLModel {
 
 				fromTable = new Table(null, tablename);
 				fromTable.setAlias(tablename);
-				log.info("Table named " + tablename + " is referred to as: " +tableCount++);
+				log.debug("Table: \"" + tablename + "\" is internally referred to as: \"" +tableCount++ + "\"");
 				fromTable.setAlias("table_" + tableCount);
 				fromItem = fromTable;
 			} else if (tablename == null && query != null) {
