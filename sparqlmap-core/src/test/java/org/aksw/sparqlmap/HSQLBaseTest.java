@@ -32,11 +32,15 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.ResultSetFactory;
 import com.hp.hpl.jena.query.ResultSetFormatter;
+import com.hp.hpl.jena.query.ResultSetRewindable;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.sparql.resultset.ResultSetCompare;
+import com.hp.hpl.jena.sparql.resultset.ResultSetMem;
 import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
 import com.hp.hpl.jena.sparql.util.ModelUtils;
+import com.hp.hpl.jena.sparql.util.ResultSetUtils;
+import com.sun.org.apache.bcel.internal.generic.CPInstruction;
 
 
 /**
@@ -117,15 +121,32 @@ public abstract class HSQLBaseTest {
 		}
 		
 		
-		ResultSet expectedRS =  ResultSetFactory.load(xmlResultSet.getAbsolutePath(), ResultsFormat.FMT_RDF_XML);
 		
 		
 		SparqlMap sm  = context.getBean(SparqlMap.class);
 		
-		ResultSet result;
 		try {
-			result = sm.executeSelect(sparqlSelect);
-			assertTrue(ResultSetCompare.equalsByTermAndOrder(result, expectedRS));
+			
+			boolean matches = ResultSetCompare.equalsByTermAndOrder(
+					sm.executeSelect(sparqlSelect), 
+					ResultSetFactory.load(
+							xmlResultSet.getAbsolutePath(), 
+							ResultsFormat.FMT_RS_JSON));
+			
+			StringBuffer comparison = new StringBuffer();
+			if (!matches) {
+				ResultSet result = sm.executeSelect(sparqlSelect);
+				ResultSet expectedRS = ResultSetFactory.load(
+						xmlResultSet.getAbsolutePath(),
+						ResultsFormat.FMT_RS_JSON);
+
+				comparison
+						.append("Resultsets do no match, compare: \n Reference Set:\n");
+				comparison.append(ResultSetFormatter.asText(expectedRS));
+				comparison.append("\n===================== Executed Set:\n");
+				comparison.append(ResultSetFormatter.asText(result));
+			}
+			assertTrue(comparison.toString(),matches);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -143,7 +164,7 @@ public abstract class HSQLBaseTest {
 			Dataset ds = DatasetFactory.create(sparqlmap.dump());
 			ResultSet rs = QueryExecutionFactory.create(sparqlSelect, ds).execSelect();
 			
-			ResultSetFormatter.output(new FileOutputStream(xmlResultSetFile), rs, ResultsFormat.FMT_RDF_XML);
+			ResultSetFormatter.output(new FileOutputStream(xmlResultSetFile), rs, ResultsFormat.FMT_RS_JSON);
 			
 			
 		} catch (SQLException e) {
