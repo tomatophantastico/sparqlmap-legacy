@@ -18,6 +18,11 @@ import org.apache.http.protocol.HTTP;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.common.collect.Collections2;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Lists;
+import com.hp.hpl.jena.assembler.exceptions.NotExpectedTypeException;
+
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.CaseExpression;
 import net.sf.jsqlparser.expression.Expression;
@@ -60,127 +65,8 @@ public class FilterUtil {
 	public OptimizationConfiguration getOptConf() {
 		return optConf;
 	}
-
-//	public static List<EqualsTo> createEqualsTos(List<Expression> left,
-//			List<Expression> right) {
-//		List<EqualsTo> eqs = new ArrayList<EqualsTo>();
-//
-//		left = new ArrayList<Expression>(left);
-//		right = new ArrayList<Expression>(right);
-//
-//		// purge identical values
-//		List<Expression> lremove = new ArrayList<Expression>();
-//		List<Expression> rremove = new ArrayList<Expression>();
-//		for (int i = 0; i < left.size() && i < right.size(); i++) {
-//			if (left.get(i).toString().equals(right.get(i).toString())) {
-//				lremove.add(left.get(i));
-//				rremove.add(right.get(i));
-//			}
-//		}
-//
-//		left.removeAll(lremove);
-//		right.removeAll(rremove);
-//
-//		if (left.size() == 0 && right.size() == 0) {
-//			EqualsTo eq = new EqualsTo();
-//			eq.setLeftExpression(new StringValue("\"true\""));
-//			eq.setRightExpression(new StringValue("\"true\""));
-//			eqs.add(eq);
-//		} else if (left.size() != right.size()) {
-//			EqualsTo eq = new EqualsTo();
-//			eq.setLeftExpression(concat(left.toArray(new Expression[0])));
-//			eq.setRightExpression(concat(right.toArray(new Expression[0])));
-//			eqs.add( eq);
-//		} else {
-//			for (int i = 0; i < left.size(); i++) {
-//				EqualsTo eq = new EqualsTo();
-//				eq.setLeftExpression(left.get(i));
-//				eq.setRightExpression(right.get(i));
-//				eqs.add(eq);
-//				
-//			}
-//		}
-//		return  eqs;
-//
-//	}
-
-//	public static Expression createEqualsTo(List<Expression> left,
-//			List<Expression> right) {
-//		
-//		Iterator<EqualsTo> eqs = createEqualsTos(left, right).iterator(); 
-//		Expression eq = eqs.next();
-//		while (eqs.hasNext()) {
-//			EqualsTo next = eqs.next();
-//			AndExpression and = new AndExpression(eq,next);
-//			eq = and;
-//		}
-//		return eq;
-//	}
-//	
-//	public static List<NotEqualsTo> createNotEqualsTos(List<Expression> left,
-//			List<Expression> right) {
-//		List<NotEqualsTo> neqs = new ArrayList<NotEqualsTo>();
-//
-//		left = new ArrayList<Expression>(left);
-//		right = new ArrayList<Expression>(right);
-//
-//		// purge identical values
-//		List<Expression> lremove = new ArrayList<Expression>();
-//		List<Expression> rremove = new ArrayList<Expression>();
-//		for (int i = 0; i < left.size() && i < right.size(); i++) {
-//			if (left.get(i).toString().equals(right.get(i).toString())) {
-//				lremove.add(left.get(i));
-//				rremove.add(right.get(i));
-//			}
-//		}
-//
-//		left.removeAll(lremove);
-//		right.removeAll(rremove);
-//
-//		if (left.size() == 0 && right.size() == 0) {
-//			NotEqualsTo neq = new NotEqualsTo();
-//			neq.setLeftExpression(new StringValue("\"true\""));
-//			neq.setRightExpression(new StringValue("\"true\""));
-//			neqs.add(neq);
-//		} else if (left.size() != right.size()) {
-//			NotEqualsTo neq = new NotEqualsTo();
-//			neq.setLeftExpression(concat(left.toArray(new Expression[0])));
-//			neq.setRightExpression(concat(right.toArray(new Expression[0])));
-//			neqs.add( neq);
-//		} else {
-//			for (int i = 0; i < left.size(); i++) {
-//				NotEqualsTo neq = new NotEqualsTo();
-//				neq.setLeftExpression(left.get(i));
-//				neq.setRightExpression(right.get(i));
-//				neqs.add(neq);
-//				
-//			}
-//		}
-//		return  neqs;
-//
-//	}
-//
-//	public static Expression createNotEqualsTo(List<Expression> left,
-//			List<Expression> right) {
-//		
-//		Iterator<NotEqualsTo> eqs = createNotEqualsTos(left, right).iterator(); 
-//		Expression neq = eqs.next();
-//		while (eqs.hasNext()) {
-//			NotEqualsTo next = eqs.next();
-//			AndExpression and = new AndExpression(neq,next);
-//			neq = and;
-//		}
-//		return neq;
-//	}
-
 	
-
-	
-
-
-	
-	
-	public static String CONCAT = "CONCAT";
+public static String CONCAT = "CONCAT";
 
 private static BitSet RESERVED = new BitSet();
 
@@ -220,7 +106,7 @@ private static BitSet RESERVED = new BitSet();
 
 
 
-
+	
 	
 
 	
@@ -270,7 +156,14 @@ private static BitSet RESERVED = new BitSet();
 	
 	
 
-	
+	/**
+	 * Here the join is created.
+	 * 
+	 * @param left
+	 * @param right
+	 * @param test
+	 * @return
+	 */
 	
 	public TermMap compareTermMaps(TermMap left, TermMap right, Class<? extends BinaryExpression> test){
 		
@@ -323,6 +216,25 @@ private static BitSet RESERVED = new BitSet();
 			}
 		}
 		
+		// and check that not all of any side are null
+		
+		
+		Expression leftNull = areAllNull(left.getExpressions());
+		Expression rightNull = areAllNull(right.getExpressions());
+		
+		if(leftNull != null && rightNull != null){
+			OrExpression anySideCompletelyNull = new OrExpression(
+					new Parenthesis(leftNull), 
+					new Parenthesis(rightNull));
+
+			Parenthesis not = new Parenthesis();
+			not.setNot();
+			not.setExpression(anySideCompletelyNull);
+			
+			eqs.add(anySideCompletelyNull);
+		}
+		
+		
 		} catch (InstantiationException | IllegalAccessException e) {
 			log.error("Error creating xpathtest",e);
 		}
@@ -333,6 +245,42 @@ private static BitSet RESERVED = new BitSet();
 			return  tmf.createBoolTermMap( conjunct(eqs));
 		}
 		
+	}
+	
+	/**
+	 * 
+	 * @param exprs
+	 * @return null, if there is at least one constant value, otherwise an expression with the necessary checks.
+	 */
+	private Expression areAllNull(List<Expression> exprs){
+		List<Expression> areNulls = Lists.newArrayList();
+		for(Expression expr: exprs){
+			
+			expr = DataTypeHelper.uncast(expr);
+			
+			// check if we have an constant value 
+			if(!(expr instanceof NullValue) && !(expr instanceof Column)){
+				return null;
+			}
+			
+			if(expr instanceof NullValue){
+				// make sure there is at least one "true" value in it
+				if (areNulls.isEmpty()) {
+					areNulls.add(
+							dth.cast(new StringValue("true"), 
+									dth.getBooleanCastType()));
+				}
+			}else{
+				IsNullExpression in = new IsNullExpression();
+				in.setLeftExpression(expr);
+				areNulls.add(in);
+			}
+						
+			
+		}
+		
+		return conjunct(areNulls);
+			
 	}
 	
 	
@@ -643,7 +591,7 @@ private static BitSet RESERVED = new BitSet();
 	
 	
 	
-	public Expression bothNullOrBinary(Expression expr1, Expression expr2, BinaryExpression function, DataTypeHelper dth){
+	private Expression bothNullOrBinary(Expression expr1, Expression expr2, BinaryExpression function, DataTypeHelper dth){
 		
 		// odd, but left and right seems to be twisted
 		function.setLeftExpression(expr2);
@@ -683,18 +631,12 @@ private static BitSet RESERVED = new BitSet();
 	}
 	
 	
-	public  static TermMap testEquality(TermMap tm1, TermMap tm2){
-		
-		
-		return null;
-	}
 	
 	
 	
 	
 	
-	
-	public Expression bothNullOr(Expression expr1, Expression expr2, Expression function, DataTypeHelper dth){
+	private Expression bothNullOr(Expression expr1, Expression expr2, Expression function, DataTypeHelper dth){
 		Expression uncast1 = DataTypeHelper.uncast(expr1);
 		Expression uncast2 = DataTypeHelper.uncast(expr2);
 		if(optConf.isShortcutFilters()){
@@ -703,12 +645,20 @@ private static BitSet RESERVED = new BitSet();
 			}
 		}
 		
-		IsNullExpression literalTypeLeftIsNull = new IsNullExpression();
-		literalTypeLeftIsNull.setLeftExpression(expr1);
-		IsNullExpression literalTypeRightIsNull = new IsNullExpression();
-		literalTypeRightIsNull.setLeftExpression(expr2);
+		List<Expression> isNulls = Lists.newArrayList();	
+		if(!(uncast1 instanceof NullValue)|| !optConf.isShortcutFilters()){
+			IsNullExpression literalTypeLeftIsNull = new IsNullExpression();
+			literalTypeLeftIsNull.setLeftExpression(uncast1);
+			isNulls.add(literalTypeLeftIsNull);
+		}
+		if(!(uncast2 instanceof NullValue) || !optConf.isShortcutFilters() ){
+			IsNullExpression literalTypeRightIsNull = new IsNullExpression();
+			literalTypeRightIsNull.setLeftExpression(uncast2);
+			isNulls.add(literalTypeRightIsNull);
+		}
 		
-		Expression isNullCheck =  FilterUtil.conjunct(Arrays.asList((Expression)literalTypeLeftIsNull,(Expression)literalTypeRightIsNull));
+		
+		Expression isNullCheck =  FilterUtil.conjunct(isNulls);
 
 		
 		
