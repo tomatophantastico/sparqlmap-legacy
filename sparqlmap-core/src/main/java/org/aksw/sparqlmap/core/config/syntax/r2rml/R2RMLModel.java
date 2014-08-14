@@ -53,6 +53,7 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.update.GraphStoreFactory;
 import com.hp.hpl.jena.update.UpdateExecutionFactory;
 import com.hp.hpl.jena.update.UpdateFactory;
@@ -629,32 +630,38 @@ public class R2RMLModel {
 		}
 	}
 
-	public List<TermMap> getGraphmapsForPO(Resource tmUri, FromItem fromItem, List<Statement> graphMapStmts) throws R2RMLValidationException {
+	public List<TermMap> getGraphmapsForPO(Resource tmUri, FromItem fromItem,
+			List<Statement> graphMapStmts) throws R2RMLValidationException {
 
 		List<TermMap> graphMaps = new ArrayList<TermMap>();
 		if (graphMapStmts == null || graphMapStmts.isEmpty()) {
-			graphMaps = Arrays.asList(this.tfac.createTermMap(R2RML.defaultGraph.asNode()));
+			graphMaps = Arrays.asList(this.tfac
+					.createTermMap(Quad.defaultGraphIRI));
 		} else {
 			for (Statement graphMapStmt : graphMapStmts) {
 				List<Expression> graph;
 
-				if (graphMapStmt != null) {
-					Resource graphMap = graphMapStmt.getResource();
-					if (reasoningModel.contains(graphMap, R2RML.template)) {
-						String template = reasoningModel.getProperty(graphMap, R2RML.template).getString();
-						graph = templateToResourceExpression(cleanTemplate(template, fromItem), fromItem, dth);
-					} else if (reasoningModel.contains(graphMap, R2RML.column)) {
-						String column = reasoningModel.getProperty(graphMap, R2RML.column).getString();
-						String template = "\"{" + getRealColumnName(column, fromItem) + "\"}";
-						graph = templateToResourceExpression(cleanTemplate(template, fromItem), fromItem, dth);
-					} else if (reasoningModel.contains(graphMap, R2RML.constant)) {
-						Resource resource = reasoningModel.getProperty(graphMap, R2RML.constant).getResource();
-						graph = Arrays.asList(resourceToExpression(resource));
-					} else {
-						throw new R2RMLValidationException("Graphmap without valid value found for " + tmUri.getURI());
-					}
+				Resource graphMap = graphMapStmt.getResource();
+				if (reasoningModel.contains(graphMap, R2RML.template)) {
+					String template = reasoningModel.getProperty(graphMap,
+							R2RML.template).getString();
+					graph = templateToResourceExpression(
+							cleanTemplate(template, fromItem), fromItem, dth);
+				} else if (reasoningModel.contains(graphMap, R2RML.column)) {
+					String column = reasoningModel.getProperty(graphMap,
+							R2RML.column).getString();
+					String template = "\"{"
+							+ getRealColumnName(column, fromItem) + "\"}";
+					graph = templateToResourceExpression(
+							cleanTemplate(template, fromItem), fromItem, dth);
+				} else if (reasoningModel.contains(graphMap, R2RML.constant)) {
+					Resource resource = reasoningModel.getProperty(graphMap,
+							R2RML.constant).getResource();
+					graph = Arrays.asList(resourceToExpression(resource));
 				} else {
-					graph = Arrays.asList(resourceToExpression(R2RML.defaultGraph));
+					throw new R2RMLValidationException(
+							"Graphmap without valid value found for "
+									+ tmUri.getURI());
 				}
 
 				// set the graph
