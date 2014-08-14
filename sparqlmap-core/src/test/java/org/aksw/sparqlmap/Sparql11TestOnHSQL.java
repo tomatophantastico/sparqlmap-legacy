@@ -16,13 +16,7 @@ public class Sparql11TestOnHSQL extends BSBMTestOnHSQL{
 		
 	}
 	
-	@Test
-	public void simpleTest(){
-		String query = "SELECT ?o WHERE {  ?s <http://www.w3.org/2000/01/rdf-schema#label> ?o } LIMIT 10";
-		executeAndCompareSelect(query, new File("./src/test/resources/bsbm/somelabels.qres"));
-		
-		
-	}
+
 	
 	@Test
 	public void selectPersonsTest(){
