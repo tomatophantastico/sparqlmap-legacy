@@ -36,6 +36,7 @@ import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 import net.sf.jsqlparser.expression.operators.relational.MinorThan;
 import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.OrderByExpressionElement;
 
@@ -135,9 +136,14 @@ public class ExpressionConverter {
 				TermMap tc  = var2termMap.get(var);
 
 				for(Expression exp :tc.getExpressions()){
-					OrderByExpressionElement ob = new OrderByExpressionElement(exp);
-					ob.setAsc(soCond.getDirection() == 1 ? false : true);
-					obys.add(ob);
+					//remove cast here, as e.g. hsql cannot handle them
+					exp = DataTypeHelper.uncast(exp);
+					//and ignore null values
+					if(exp instanceof Column){
+						OrderByExpressionElement ob = new OrderByExpressionElement(exp);
+						ob.setAsc(soCond.getDirection() == 1 ? false : true);
+						obys.add(ob);
+					}
 				}
 
 			} else if (expr instanceof ExprFunction) {
