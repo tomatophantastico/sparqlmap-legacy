@@ -124,63 +124,45 @@ public class SparqlBeautifier extends TransformCopy {
 
 
 	private Node rewriteNode(Node n, ExprList addTo, Map<String,Node> termToVariable,Map<String,String> var2Value){
-		
+
 		if(n.isConcrete()){
-			
+
 			Node nNew = termToVariable.get(n.toString()); 
 			if(nNew==null){
 				nNew = Var.alloc(i++ + ColumnHelper.COL_NAME_INTERNAL);
 				termToVariable.put(n.toString(), nNew);
 			}
-			
+
 
 			if(! (var2Value.containsKey(nNew.getName())&&var2Value.get(nNew.getName()).equals(n.toString()))){
 				var2Value.put(nNew.getName(), n.toString());
-				
-			
 
-			
-			
-			Expr newExpr = null;
-			if(n.isLiteral()){
-				newExpr = 
-						new E_Equals(new ExprVar(nNew),NodeValue.makeString(n.getLiteralValue().toString()));
-				
-
-				if(n.getLiteralDatatypeURI()!=null && !n.getLiteralDatatypeURI().isEmpty()){
+				Expr newExpr = null;
+				if(n.isLiteral()){
 					newExpr = 
-						new E_Equals(
-								new E_Datatype(new ExprVar(nNew)),
-								NodeValue.makeNodeString(n.getLiteralDatatypeURI()));
-				}
-				if(n.getLiteralLanguage()!=null && !n.getLiteralLanguage().isEmpty()){
-					newExpr = new E_LangMatches(new ExprVar(nNew), NodeValue.makeString(n.getLiteralLanguage()));
-				}
+							new E_Equals(new ExprVar(nNew),NodeValue.makeString(n.getLiteralValue().toString()));
 
-			}else{
-				//is uri
-				
-				//check if the uri is the arq generated default graph node
-				
-				if(n.equals(Quad.defaultGraphNodeGenerated)){
-					//yes it is, replace it by a variable
-					newExpr = new ExprVar(nNew); 
+
+					if(n.getLiteralDatatypeURI()!=null && !n.getLiteralDatatypeURI().isEmpty()){
+						newExpr = 
+								new E_Equals(
+										new E_Datatype(new ExprVar(nNew)),
+										NodeValue.makeNodeString(n.getLiteralDatatypeURI()));
+					}
+					if(n.getLiteralLanguage()!=null && !n.getLiteralLanguage().isEmpty()){
+						newExpr = new E_LangMatches(new ExprVar(nNew), NodeValue.makeString(n.getLiteralLanguage()));
+					}
+
 				}else{
-					//no it is not, create the equivalnce check
-					newExpr  =new E_Equals(new ExprVar(nNew),NodeValue.makeNode(n));
-					
+					// no it is not, create the equivalnce check
+					newExpr = new E_Equals(new ExprVar(nNew),
+							NodeValue.makeNode(n));
+
 				}
-				  
-				
-				
-			}
-			addTo.add(newExpr);
+				addTo.add(newExpr);
 			}	
 			n = nNew;
-		
-		
 		}
-		
 		return n;
 	}
 	
@@ -230,9 +212,7 @@ public class SparqlBeautifier extends TransformCopy {
 		Op newOp = Transformer.transform(this, query);
 		
 		
-		
-		log.warn(newOp.toString());
-		
+			
 		return newOp;
 	}
 	
