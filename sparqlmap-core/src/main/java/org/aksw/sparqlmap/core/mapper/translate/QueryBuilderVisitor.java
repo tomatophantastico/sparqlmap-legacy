@@ -59,6 +59,7 @@ import com.hp.hpl.jena.sparql.algebra.op.OpQuadPattern;
 import com.hp.hpl.jena.sparql.algebra.op.OpReduced;
 import com.hp.hpl.jena.sparql.algebra.op.OpSequence;
 import com.hp.hpl.jena.sparql.algebra.op.OpService;
+import com.hp.hpl.jena.sparql.algebra.op.OpSlice;
 import com.hp.hpl.jena.sparql.algebra.op.OpTable;
 import com.hp.hpl.jena.sparql.algebra.op.OpTopN;
 import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
@@ -631,12 +632,15 @@ public class QueryBuilderVisitor extends QuadVisitorBase {
 
 	@Override
 	public void visit(OpOrder opOrder) {
-		throw new ImplementationException("Unimplemented Function");
+		super.visit(opOrder);
+		// gets ignored here
+		
 		
 	}
 
 	@Override
 	public void visit(OpProject opProject) {
+		super.visit(opProject);
 		//projection is managed in the getSQL method
 		
 	}
@@ -649,15 +653,16 @@ public class QueryBuilderVisitor extends QuadVisitorBase {
 
 	@Override
 	public void visit(OpDistinct opDistinct) {
-		throw new ImplementationException("Unimplemented Function");
+		//can be ignored here
 		
 	}
 
-//	@Override
-//	public void visit(OpSlice opSlice) {
-//		throw new ImplementationException("Unimplemented Function");
-//		
-//	}
+	@Override
+	public void visit(OpSlice opSlice) {
+		super.visit(opSlice);
+		//ignore here
+		
+	}
 
 	
 
