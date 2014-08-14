@@ -1,10 +1,39 @@
-<rdf:RDF
-    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-    xmlns:rs="http://www.w3.org/2001/sw/DataAccess/tests/result-set#">
-  <rs:ResultSet>
-    <rs:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int"
-    >0</rs:size>
-    <rs:resultVariable>o</rs:resultVariable>
-  </rs:ResultSet>
-</rdf:RDF>
+{
+  "head": {
+    "vars": [ "o" ]
+  } ,
+  "results": {
+    "bindings": [
+      {
+        "o": { "type": "literal" , "value": "Thing" }
+      } ,
+      {
+        "o": { "type": "literal" , "value": "abaser easterly manumissions" }
+      } ,
+      {
+        "o": { "type": "literal" , "value": "abdicates" }
+      } ,
+      {
+        "o": { "type": "literal" , "value": "abhorrences" }
+      } ,
+      {
+        "o": { "type": "literal" , "value": "abjuration rationalization cudweeds" }
+      } ,
+      {
+        "o": { "type": "literal" , "value": "ablest cadaveric" }
+      } ,
+      {
+        "o": { "type": "literal" , "value": "abortionist seppukus" }
+      } ,
+      {
+        "o": { "type": "literal" , "value": "absconder staccatos" }
+      } ,
+      {
+        "o": { "type": "literal" , "value": "absurdities" }
+      } ,
+      {
+        "o": { "type": "literal" , "value": "abysm colorable histrionics" }
+      }
+    ]
+  }
+}

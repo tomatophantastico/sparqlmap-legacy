@@ -1,0 +1,59 @@
+{
+  "head": {
+    "vars": [ "product" , "label" , "value1" ]
+  } ,
+  "results": {
+    "bindings": [
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer4/Product175" } ,
+        "label": { "type": "literal" , "value": "abysm colorable histrionics" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "956" }
+      } ,
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer3/Product112" } ,
+        "label": { "type": "literal" , "value": "acknowledging" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "751" }
+      } ,
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer5/Product181" } ,
+        "label": { "type": "literal" , "value": "acquiescence photocomposes rewire" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "302" }
+      } ,
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer1/Product12" } ,
+        "label": { "type": "literal" , "value": "adiposity" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "1242" }
+      } ,
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer1/Product7" } ,
+        "label": { "type": "literal" , "value": "aerometer preaccepted neurologies" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "1567" }
+      } ,
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer4/Product142" } ,
+        "label": { "type": "literal" , "value": "aerosolize apartmental" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "957" }
+      } ,
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer4/Product164" } ,
+        "label": { "type": "literal" , "value": "aetheric" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "1103" }
+      } ,
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer1/Product35" } ,
+        "label": { "type": "literal" , "value": "amazement weightless jeweller" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "465" }
+      } ,
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer7/Product280" } ,
+        "label": { "type": "literal" , "value": "animadverted burweed nonforfeiture" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "1085" }
+      } ,
+      {
+        "product": { "type": "uri" , "value": "http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/dataFromProducer6/Product239" } ,
+        "label": { "type": "literal" , "value": "arguing upsweeps" } ,
+        "value1": { "datatype": "http://www.w3.org/2001/XMLSchema#integer" , "type": "typed-literal" , "value": "316" }
+      }
+    ]
+  }
+}
